@@ -8,7 +8,6 @@
     <!-- Tailwind CSS pour le style -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons pour les icônes -->
-    <!-- CORRECTION: Utilisation de la bonne librairie Lucide (non-React) -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <!-- PapaParse pour l'import CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -47,8 +46,49 @@
 
 <body class="bg-gray-100 font-sans">
 
-    <!-- Conteneur principal -->
-    <div class="flex h-screen bg-gray-200">
+    <!-- NOUVEAU: Écran de Connexion/Inscription -->
+    <div id="auth-container" class="fixed inset-0 bg-gray-200 flex items-center justify-center z-[100]">
+        <div class="w-full max-w-md p-8 bg-white rounded-xl shadow-2xl">
+            <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Ma Boutique</h1>
+            
+            <!-- Formulaire de Connexion -->
+            <form id="login-form" class="space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Se Connecter</h2>
+                <div>
+                    <label for="login-email" class="text-lg font-medium text-gray-600 block mb-2">Email</label>
+                    <input type="email" id="login-email" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" required>
+                </div>
+                <div>
+                    <label for="login-password" class="text-lg font-medium text-gray-600 block mb-2">Mot de passe</label>
+                    <input type="password" id="login-password" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl">
+                    Connexion
+                </button>
+            </form>
+
+            <div class="my-6 border-t border-gray-300"></div>
+
+            <!-- Formulaire d'Inscription -->
+            <form id="register-form" class="space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Créer un compte</h2>
+                <div>
+                    <label for="register-email" class="text-lg font-medium text-gray-600 block mb-2">Email</label>
+                    <input type="email" id="register-email" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" required>
+                </div>
+                <div>
+                    <label for="register-password" class="text-lg font-medium text-gray-600 block mb-2">Mot de passe</label>
+                    <input type="password" id="register-password" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" required>
+                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-xl">
+                    Créer le compte
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Conteneur principal (caché par défaut) -->
+    <div id="app-container" class="flex h-screen bg-gray-200 hidden">
 
         <!-- Barre de navigation latérale -->
         <div class="w-24 md:w-64 bg-gray-800 text-white flex flex-col fixed h-full">
@@ -69,7 +109,6 @@
                     <i data-lucide="package" class="w-8 h-8"></i>
                     <span class="hidden md:inline">Stock</span>
                 </a>
-                <!-- NOUVEL ONGLET: CRÉDITS -->
                 <a href="#credits"
                     class="nav-link flex items-center justify-center md:justify-start gap-4 text-2xl md:text-xl py-5 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
                     <i data-lucide="users" class="w-8 h-8"></i>
@@ -80,15 +119,19 @@
                     <i data-lucide="bar-chart-3" class="w-8 h-8"></i>
                     <span class="hidden md:inline">Rapports</span>
                 </a>
-                <!-- NOUVEL ONGLET: CHARGES -->
                 <a href="#charges"
                     class="nav-link flex items-center justify-center md:justify-start gap-4 text-2xl md:text-xl py-5 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
                     <i data-lucide="credit-card" class="w-8 h-8"></i>
                     <span class="hidden md:inline">Charges</span>
                 </a>
             </nav>
+            <!-- NOUVEAU: Bouton Déconnexion -->
+            <button id="logout-btn" class="flex items-center justify-center md:justify-start gap-4 text-2xl md:text-xl py-5 px-6 text-red-400 hover:bg-red-700 hover:text-white transition duration-200 ease-in-out">
+                <i data-lucide="log-out" class="w-8 h-8"></i>
+                <span class="hidden md:inline">Se Déconnecter</span>
+            </button>
             <div class="p-4 text-center text-gray-500 text-sm">
-                <p class="mb-2">ID Utilisateur:</p>
+                <p class="mb-2">Utilisateur:</p>
                 <p id="user-id-display" class="font-mono break-all">Chargement...</p>
             </div>
         </div>
@@ -159,9 +202,7 @@
                             </table>
                         </div>
                         
-                        <!-- MODIFIÉ: Ajout de la sélection client -->
                         <div class="mt-8 pt-6 border-t-2 border-gray-300 space-y-6">
-                            <!-- NOUVEAU: Sélection Client Crédit -->
                             <div>
                                 <label for="sale-client-select" class="text-lg font-medium text-gray-600 block mb-2">Mettre au crédit de (Optionnel)</label>
                                 <select id="sale-client-select"
@@ -178,7 +219,6 @@
                                 </button>
                             </div>
                         </div>
-                        <!-- FIN MODIFICATION -->
                     </div>
                 </div>
             </div>
@@ -255,7 +295,7 @@
                             </form>
                         </div>
 
-                        <!-- NOUVEAU: Importation en Masse -->
+                        <!-- Importation en Masse -->
                         <div class="bg-white p-6 rounded-xl shadow-lg">
                             <h2 class="text-2xl font-semibold mb-6 text-gray-700">Importation en Masse (CSV)</h2>
                             <p class="text-lg text-gray-600 mb-4">Préparez un fichier CSV avec les en-têtes (1ère ligne) :</p>
@@ -295,7 +335,7 @@
                 </div>
             </div>
 
-            <!-- NOUVELLE PAGE: CRÉDITS -->
+            <!-- Page Crédits -->
             <div id="page-credits" class="page-content hidden">
                 <h1 class="text-4xl font-bold text-gray-800 mb-8">Gestion des Crédits</h1>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -377,7 +417,7 @@
                     <span>Rafraîchir les Rapports</span>
                 </button>
 
-                <!-- NOUVEAU: Section d'Exportation -->
+                <!-- Section d'Exportation -->
                 <div class="mt-6 border-t border-gray-300 pt-6 bg-white p-6 rounded-xl shadow-lg">
                     <h3 class="text-2xl font-semibold mb-4 text-gray-700">Exporter les Données</h3>
                     <p class="text-lg text-gray-600 mb-6">Enregistrez une copie de vos données sur votre ordinateur (format CSV).</p>
@@ -395,7 +435,7 @@
                     </div>
                 </div>
 
-                <!-- NOUVEAU: Importation Ventes Précédentes -->
+                <!-- Importation Ventes Précédentes -->
                 <div class="mt-8 border-t border-gray-300 pt-6 bg-white p-6 rounded-xl shadow-lg">
                     <h3 class="text-2xl font-semibold mb-4 text-gray-700">Importer les Ventes Précédentes</h3>
                     <p class="text-lg text-gray-600 mb-4">Importez un CSV de vos ventes passées (n'affecte pas le stock).</p>
@@ -441,7 +481,6 @@
                                     <th class="py-3 px-4 text-lg font-semibold text-gray-600">Date</th>
                                     <th class="py-3 px-4 text-lg font-semibold text-gray-600">Produits</th>
                                     <th class="py-3 px-4 text-lg font-semibold text-gray-600">Total</th>
-                                    <!-- NOUVEAU: Colonne Action -->
                                     <th class="py-3 px-4 text-lg font-semibold text-gray-600">Action</th>
                                 </tr>
                             </thead>
@@ -453,7 +492,7 @@
                 </div>
             </div>
 
-            <!-- NOUVELLE PAGE: CHARGES -->
+            <!-- Page Charges -->
             <div id="page-charges" class="page-content hidden">
                 <h1 class="text-4xl font-bold text-gray-800 mb-8">Gestion des Charges</h1>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -497,7 +536,6 @@
                                         <th class="py-3 px-4 text-lg font-semibold text-gray-600">Date</th>
                                         <th class="py-3 px-4 text-lg font-semibold text-gray-600">Description</th>
                                         <th class="py-3 px-4 text-lg font-semibold text-gray-600">Montant</th>
-                                        <!-- NOUVEAU: Colonne Action -->
                                         <th class="py-3 px-4 text-lg font-semibold text-gray-600">Action</th>
                                     </tr>
                                 </thead>
@@ -513,7 +551,7 @@
         </main>
     </div>
 
-    <!-- NOUVEAU: Modale de Confirmation -->
+    <!-- Modale de Confirmation -->
     <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full">
             <h2 id="confirm-modal-title" class="text-3xl font-bold text-gray-800 mb-4">Êtes-vous sûr ?</h2>
@@ -531,7 +569,7 @@
         </div>
     </div>
 
-    <!-- NOUVEAU: Modale Détail Client -->
+    <!-- Modale Détail Client -->
     <div id="client-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[60]">
         <div class="bg-gray-100 p-8 rounded-xl shadow-2xl max-w-3xl w-full h-5/6 flex flex-col">
             <div class="flex justify-between items-center mb-6">
@@ -607,8 +645,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import {
             getAuth,
-            signInAnonymously,
-            onAuthStateChanged
+            onAuthStateChanged,
+            // NOUVEAU: Imports pour l'authentification par email
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
             getFirestore,
@@ -623,10 +664,10 @@
             query,
             setLogLevel,
             deleteDoc,
-            where // NOUVEAU: Pour les requêtes sur les crédits
+            where 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuration Firebase (REMPLACEZ PAR LA VÔTRE)
+        // Configuration Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCluRVv-olQsTuZZBPjjJns1jHq0vkhjSw",
             authDomain: "maboutique-7891.firebaseapp.com",
@@ -642,10 +683,18 @@
         let allSales = [];
         let saleCart = [];
         let allExpenses = []; 
-        let allClients = []; // NOUVEAU: Pour les clients
-        let userRef; // Référence à la collection de l'utilisateur
+        let allClients = []; 
+        let userRef; 
         let actionToConfirm = null; 
-        let currentClientHistoryListener = null; // NOUVEAU: Pour l'écouteur du client
+        let currentClientHistoryListener = null; 
+        
+        // NOUVEAU: Éléments DOM pour l'authentification et l'application
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const logoutBtn = document.getElementById('logout-btn');
+
 
         // Toast (notification)
         function showToast(message, type = "success") {
@@ -659,34 +708,26 @@
             }, 3000);
         }
 
-        // NOUVEAU: Helper function pour formater les prix
+        // Helper function pour formater les prix
         function formatPrice(price) {
             if (typeof price !== 'number') {
                 price = parseFloat(price) || 0;
             }
-            // 'fr-FR' utilise un espace comme séparateur de milliers
             return price.toLocaleString('fr-FR') + ' CFA';
         }
 
         // Fonction principale
         async function main() {
-            // Vérifier si la config est en mode test
-            if (firebaseConfig.apiKey === "VOTRE_API_KEY") {
-                const errorMsg = "Erreur: Configurez votre 'firebaseConfig' dans le code HTML (ligne 297).";
-                console.error(errorMsg);
-                document.body.innerHTML = `<div class="p-10 text-center text-2xl text-red-600">${errorMsg}</div>`;
-                return;
-            }
-
             try {
                 // Initialisation
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 appId = firebaseConfig.projectId;
-                setLogLevel('Debug'); // Pour voir les logs
+                setLogLevel('Debug'); 
 
                 // Authentification
+                setupAuthForms();
                 setupAuthListener();
             } catch (error) {
                 console.error("Erreur critique de Firebase.", error);
@@ -694,38 +735,79 @@
             }
         }
 
-        // Authentification
+        // NOUVEAU: Gestion des formulaires de connexion/inscription
+        function setupAuthForms() {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showToast("Connexion réussie !", "success");
+                } catch (error) {
+                    console.error("Erreur de connexion:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('register-email').value;
+                const password = document.getElementById('register-password').value;
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showToast("Compte créé avec succès ! Vous êtes connecté.", "success");
+                } catch (error) {
+                    console.error("Erreur d'inscription:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+        }
+
+        // MODIFIÉ: Gestion de l'état de connexion
         function setupAuthListener() {
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
+                    // L'utilisateur est connecté
                     console.log("Utilisateur connecté:", user.uid);
                     userId = user.uid;
-                    document.getElementById('user-id-display').textContent = userId;
+                    document.getElementById('user-id-display').textContent = user.email; // Afficher l'email
                     userRef = doc(db, "artifacts", appId, "users", userId);
+
+                    // Afficher l'application, cacher la connexion
+                    appContainer.classList.remove('hidden');
+                    authContainer.classList.add('hidden');
 
                     // L'utilisateur est connecté, on active l'application
                     initializeApplication();
 
                 } else {
-                    console.log("Aucun utilisateur. Tentative de connexion...");
-                    try {
-                        await signInAnonymously(auth);
-                    } catch (error) {
-                        console.error("Erreur d'authentification:", error);
-                        showToast(`Erreur d'authentification: ${error.message}`, "error");
-                    }
+                    // L'utilisateur est déconnecté
+                    console.log("Aucun utilisateur.");
+                    
+                    // Cacher l'application, afficher la connexion
+                    appContainer.classList.add('hidden');
+                    authContainer.classList.remove('hidden');
+                    
+                    // Nettoyer les données (si nécessaire)
+                    allProducts = [];
+                    allSales = [];
+                    allClients = [];
+                    allExpenses = [];
+                    saleCart = [];
                 }
             });
         }
 
-        // Initialisation de l'application (après connexion)
+        // Initialisation de l'application (appelée après connexion)
         function initializeApplication() {
             setupNavigation();
             setupStockManagement();
             setupSalesPage();
             setupReportsPage();
             setupExpensesPage(); 
-            setupCreditsPage(); // NOUVEAU: Activer la page des crédits
+            setupCreditsPage(); 
+            setupLogout(); // NOUVEAU
             // Lier les boutons d'export
             document.getElementById('export-products-btn').addEventListener('click', exportProductsToCSV);
             document.getElementById('export-sales-btn').addEventListener('click', exportSalesToCSV);
@@ -733,8 +815,22 @@
             setupProductCsvImport();
             setupSalesCsvImport(); 
             setupModalListeners(); 
-            setupClientModalListeners(); // NOUVEAU: Activer la modale client
+            setupClientModalListeners(); 
             showToast("Application connectée et prête !", "success");
+        }
+        
+        // NOUVEAU: Gestion de la déconnexion
+        function setupLogout() {
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    showToast("Vous avez été déconnecté.", "success");
+                    // onAuthStateChanged s'occupera de cacher l'application
+                } catch (error) {
+                    console.error("Erreur de déconnexion:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
         }
 
         // Navigation
@@ -743,7 +839,6 @@
             const pages = document.querySelectorAll('.page-content');
             const icons = document.querySelectorAll('[data-lucide]');
 
-            // Remplacer les balises <i> par des SVGs Lucide
             if (window.lucide) {
                 window.lucide.createIcons();
             }
@@ -800,7 +895,6 @@
                 const salePrice = parseFloat(document.getElementById('product-sale-price').value);
                 const stock = parseInt(document.getElementById('product-stock').value);
 
-                // Validation
                 if (!name || isNaN(salePrice) || isNaN(stock)) {
                     showToast("Nom, Prix de Vente et Stock sont requis.", "error");
                     return;
@@ -857,7 +951,6 @@
                 renderStockList(allProducts);
                 populateProductDropdowns(allProducts);
 
-                // Mettre à jour les rapports si la liste des produits change
                 if (allSales.length > 0) {
                     calculateAndRenderReports();
                 }
@@ -867,12 +960,10 @@
             });
         }
 
-        // --- DÉBUT DES FONCTIONS RESTAURÉES ---
-
         // Affichage de la liste de stock
         function renderStockList(products) {
             const stockTableBody = document.getElementById('stock-table-body');
-            stockTableBody.innerHTML = ''; // Vider la liste
+            stockTableBody.innerHTML = ''; 
             if (products.length === 0) {
                 stockTableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-4 text-center text-lg text-gray-500">Aucun produit en stock.</td></tr>';
                 return;
@@ -913,7 +1004,7 @@
             const productSelect = document.getElementById('sale-product-select');
             const priceInput = document.getElementById('sale-price');
             const finalizeBtn = document.getElementById('finalize-sale-btn');
-            const clientSelect = document.getElementById('sale-client-select'); // NOUVEAU
+            const clientSelect = document.getElementById('sale-client-select'); 
 
             // Remplir le prix auto quand on sélectionne un produit
             productSelect.addEventListener('change', () => {
@@ -943,7 +1034,6 @@
                     return;
                 }
 
-                // Vérifier stock
                 const currentStock = product.stock;
                 const inCartQuantity = saleCart.filter(item => item.sku === sku).reduce((sum, item) => sum + item.quantity, 0);
                 
@@ -952,12 +1042,11 @@
                     return;
                 }
 
-                // Ajouter au panier
                 saleCart.push({
                     sku: product.sku,
                     name: product.name,
                     quantity: quantity,
-                    salePrice: salePrice, // Prix négocié
+                    salePrice: salePrice, 
                 });
 
                 renderCart();
@@ -973,20 +1062,18 @@
                     return;
                 }
 
-                // NOUVEAU: Vérifier si c'est une vente à crédit
                 const clientId = clientSelect.value;
                 const client = allClients.find(c => c.id === clientId);
 
                 const batch = writeBatch(db);
                 let totalSale = 0;
-                const stockUpdates = {}; // Pour regrouper les décrémentations
+                const stockUpdates = {}; 
 
                 saleCart.forEach(item => {
                     totalSale += item.quantity * item.salePrice;
                     stockUpdates[item.sku] = (stockUpdates[item.sku] || 0) + item.quantity;
                 });
 
-                // 1. Décrémenter le stock pour chaque produit
                 for (const sku in stockUpdates) {
                     const productRef = doc(userRef, "products", sku);
                     batch.update(productRef, {
@@ -994,34 +1081,29 @@
                     });
                 }
 
-                // 2. Créer un nouvel enregistrement de vente
                 const saleRef = doc(collection(userRef, "sales"));
                 batch.set(saleRef, {
                     items: saleCart,
                     total: totalSale,
                     createdAt: serverTimestamp(),
                     status: 'completed',
-                    clientId: clientId || null // NOUVEAU: Lier le client à la vente
+                    clientId: clientId || null 
                 });
 
-                // NOUVEAU: 3. Si c'est à crédit, ajouter la dette
                 if (client) {
-                    // 3a. Ajouter le mouvement de crédit
                     const moveRef = doc(collection(userRef, "credit_movements"));
                     batch.set(moveRef, {
                         clientId: client.id,
                         date: serverTimestamp(),
-                        description: `Vente #${saleRef.id.substring(0, 5)}`, // Description auto
-                        amount: totalSale // Montant positif = dette
+                        description: `Vente #${saleRef.id.substring(0, 5)}`, 
+                        amount: totalSale 
                     });
 
-                    // 3b. Mettre à jour le total de la dette du client
                     const clientRef = doc(userRef, "clients", client.id);
                     batch.update(clientRef, {
                         totalDebt: increment(totalSale)
                     });
                 }
-                // FIN NOUVEAU
 
                 try {
                     await batch.commit();
@@ -1032,9 +1114,9 @@
                         showToast("Vente finalisée avec succès !", "success");
                     }
 
-                    saleCart = []; // Vider le panier
+                    saleCart = []; 
                     renderCart();
-                    clientSelect.value = ""; // Réinitialiser le dropdown
+                    clientSelect.value = ""; 
                 } catch (error) {
                     console.error("Erreur finalisation vente:", error);
                     showToast(`Erreur: ${error.message}`, "error");
@@ -1074,17 +1156,15 @@
 
             cartTotalEl.textContent = formatPrice(total);
             
-            // Remplacer les icônes de poubelle
             if (window.lucide) {
                 window.lucide.createIcons();
             }
 
-            // Ajouter les écouteurs pour les boutons "supprimer"
             document.querySelectorAll('.remove-from-cart').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const index = parseInt(e.currentTarget.getAttribute('data-index'));
-                    saleCart.splice(index, 1); // Supprimer l'article du panier
-                    renderCart(); // Ré-afficher le panier
+                    saleCart.splice(index, 1); 
+                    renderCart(); 
                 });
             });
         }
@@ -1098,11 +1178,8 @@
                 showToast("Rapports rafraîchis.", "success");
             });
 
-            // Écouteur de la collection Ventes
             onSnapshot(query(salesColRef), (snapshot) => {
-                // MODIFIÉ: On garde l'ID du document
                 allSales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Trier du plus récent au plus ancien
                 allSales.sort((a, b) => {
                     const dateA = a.createdAt ? a.createdAt.seconds : 0;
                     const dateB = b.createdAt ? b.createdAt.seconds : 0;
@@ -1119,7 +1196,6 @@
 
         // Calcul et affichage des rapports
         function calculateAndRenderReports() {
-            // Vider les stats si pas de données
             const resetStats = () => {
                 const statsHtml = `
                 <div class="bg-white p-6 rounded-xl shadow-lg">
@@ -1149,18 +1225,17 @@
             }
 
             let totalRevenue = 0;
-            let grossProfit = 0; // Bénéfice avant charges
-            const productStats = {}; // {sku: {name, totalSold, totalProfit}}
-            let totalSalesCount = 0; // NOUVEAU: Compteur de ventes valides
+            let grossProfit = 0; 
+            const productStats = {}; 
+            let totalSalesCount = 0; 
 
             const productMap = new Map(allProducts.map(p => [p.sku, p]));
 
             allSales.forEach(sale => {
-                // NOUVEAU: Ignorer les ventes annulées dans les calculs
                 if (sale.status === 'cancelled') return;
 
                 totalRevenue += sale.total;
-                totalSalesCount++; // NOUVEAU: Compter la vente
+                totalSalesCount++; 
                 (sale.items || []).forEach(item => {
                     const product = productMap.get(item.sku);
                     let profitPerItem = 0;
@@ -1179,13 +1254,10 @@
                 });
             });
 
-            // NOUVEAU: Calcul du Bénéfice Net
             const totalExpenses = allExpenses.reduce((sum, ex) => sum + ex.amount, 0);
             const netProfit = grossProfit - totalExpenses;
-            // NOUVEAU: Calcul du Total des Créances
             const totalOwed = allClients.reduce((sum, client) => sum + (client.totalDebt || 0), 0);
 
-            // Afficher les stats
             const statsHtml = `
                 <div class="bg-white p-6 rounded-xl shadow-lg">
                     <h3 class="text-lg font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
@@ -1203,10 +1275,8 @@
                     <h3 class="text-lg font-semibold text-gray-500 mb-2">Nombre de Ventes</h3>
                     <p class="text-4xl font-bold text-gray-800">${totalSalesCount}</p>
                 </div>`;
-            // NOUVEAU: Séparer les conteneurs de stats
             document.getElementById('stats-container').innerHTML = statsHtml;
             
-            // Mettre à jour les stats des rapports (avec le total des charges)
             const reportStatsHtml = `
                 <div class="bg-white p-6 rounded-xl shadow-lg">
                     <h3 class="text-lg font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
@@ -1227,10 +1297,8 @@
             document.getElementById('reports-stats-container').innerHTML = reportStatsHtml;
 
 
-            // Afficher les Top 5
             const statsList = Object.values(productStats);
             
-            // Top Vendus
             const topSold = [...statsList].sort((a, b) => b.totalSold - a.totalSold).slice(0, 5);
             const topSoldList = document.getElementById('top-sold-list');
             topSoldList.innerHTML = topSold.map(item => `
@@ -1240,7 +1308,6 @@
                 </div>
             `).join('');
 
-            // Top Profit
             const topProfit = [...statsList].sort((a, b) => b.totalProfit - a.totalProfit).slice(0, 5);
             const topProfitList = document.getElementById('top-profit-list');
             topProfitList.innerHTML = topProfit.map(item => `
@@ -1264,7 +1331,6 @@
                 const date = sale.createdAt ? sale.createdAt.toDate().toLocaleString('fr-FR') : 'Date inconnue';
                 let itemsStr = (sale.items || []).map(i => `${i.name} (x${i.quantity})`).join(', ');
 
-                // NOUVEAU: Ajouter le nom du client si c'est une vente à crédit
                 if (sale.clientId) {
                     const client = allClients.find(c => c.id === sale.clientId);
                     if (client) {
@@ -1276,12 +1342,10 @@
                 let rowClass = 'hover:bg-gray-50';
 
                 if (sale.status === 'cancelled') {
-                    // Vente annulée
-                    rowClass = 'opacity-50 line-through'; // Griser et barrer
+                    rowClass = 'opacity-50 line-through'; 
                     const cancelDate = sale.cancelledAt ? sale.cancelledAt.toDate().toLocaleDateString('fr-FR') : '';
                     actionCell = `<td class="py-4 px-4 text-lg text-gray-500">Annulée ${cancelDate}</td>`;
                 } else {
-                    // Vente active
                     actionCell = `
                         <td class="py-4 px-4 text-lg">
                             <button class="delete-sale-btn text-red-500 hover:text-red-700" data-id="${sale.id}">
@@ -1301,10 +1365,8 @@
                 historyTableBody.innerHTML += row;
             });
 
-            // Recréer les icônes
             if (window.lucide) window.lucide.createIcons();
 
-            // Ajouter les écouteurs pour les boutons "supprimer"
             document.querySelectorAll('.delete-sale-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const saleId = e.currentTarget.dataset.id;
@@ -1317,10 +1379,7 @@
             });
         }
 
-        // --- FIN DES FONCTIONS RESTAURÉES ---
-
-
-        // --- NOUVEAU: Gestion de l'import CSV (Produits) ---
+        // --- Gestion de l'import CSV (Produits) ---
         function setupProductCsvImport() {
             const importBtn = document.getElementById('import-product-csv-btn');
             const fileInput = document.getElementById('product-csv-file-input');
@@ -1337,7 +1396,6 @@
                     return;
                 }
 
-                // Désactiver le bouton pendant l'import
                 importBtn.disabled = true;
                 importBtn.innerHTML = "Importation en cours...";
 
@@ -1352,11 +1410,10 @@
                             console.error("Erreur d'importation:", error);
                             showToast(`Erreur d'importation: ${error.message}`, "error");
                         } finally {
-                            // Réactiver le bouton
                             importBtn.disabled = false;
                             importBtn.innerHTML = '<i data-lucide="upload"></i> <span>Importer Produits</span>';
                             if (window.lucide) window.lucide.createIcons();
-                            fileInput.value = ''; // Vider le champ
+                            fileInput.value = ''; 
                         }
                     },
                     error: (error) => {
@@ -1380,17 +1437,15 @@
                 const name = prod['Articles'] ? prod['Articles'].trim() : null;
                 const stock = parseInt(prod['Quantités']);
                 const purchasePrice = parseFloat(prod["Prix d'Achat"]) || 0;
-                const salePrice = parseFloat(prod["Prix Vente"]) || 0; // MODIFIÉ: 0 si manquant
+                const salePrice = parseFloat(prod["Prix Vente"]) || 0; 
 
-                // Validation de la ligne
-                if (!name || isNaN(stock)) { // MODIFIÉ: Retiré la validation sur salePrice
+                if (!name || isNaN(stock)) { 
                     console.warn("Ligne CSV ignorée (nom ou quantité manquant):", prod);
-                    continue; // Ignorer cette ligne
+                    continue; 
                 }
                 
-                // Générer une référence de document unique
                 const productRef = doc(productsColRef); 
-                const finalSku = productRef.id; // Utiliser l'ID auto-généré comme SKU
+                const finalSku = productRef.id; 
 
                 batch.set(productRef, {
                     sku: finalSku,
@@ -1403,7 +1458,6 @@
                 operations++;
                 importedCount++;
 
-                // Limite de Firebase (500 opérations par batch)
                 if (operations >= 499) {
                     await batch.commit();
                     batch = writeBatch(db);
@@ -1411,7 +1465,6 @@
                 }
             }
 
-            // Envoyer le dernier batch s'il reste des opérations
             if (operations > 0) {
                 await batch.commit();
             }
@@ -1420,7 +1473,7 @@
         }
 
 
-        // --- NOUVEAU: Gestion de l'import CSV (Ventes Passées) ---
+        // --- Gestion de l'import CSV (Ventes Passées) ---
         function setupSalesCsvImport() {
             const importBtn = document.getElementById('import-sales-csv-btn');
             const fileInput = document.getElementById('sales-csv-file-input');
@@ -1473,7 +1526,6 @@
             let operations = 0;
             let importedCount = 0;
 
-            // Map des produits pour trouver le SKU (fragile mais nécessaire)
             const productMapByName = new Map(allProducts.map(p => [p.name.toLowerCase(), p]));
 
             for (const row of salesRows) {
@@ -1482,21 +1534,18 @@
                 const quantity = parseInt(row['Quantité']);
                 const totalSale = parseFloat(row['Total Vente']);
 
-                // Validation
                 if (!date || !name || isNaN(quantity) || isNaN(totalSale)) {
                     console.warn("Ligne Vente ignorée (données manquantes):", row);
                     continue;
                 }
 
-                // NOUVELLE GESTION DE LA DATE
                 let saleDate;
                 try {
-                    const parts = date.split('-'); // ex: ['20', '10', '2025']
+                    const parts = date.split('-'); 
                     if (parts.length !== 3) throw new Error('Format de date incorrect (JJ-MM-AAAA attendu)');
                     const day = parts[0];
                     const month = parts[1];
                     const year = parts[2];
-                    // Re-assembler en AAAA-MM-JJ que new Date() comprend
                     const isoDateStr = `${year}-${month}-${day}`;
                     saleDate = new Date(isoDateStr);
                     if (isNaN(saleDate.getTime())) throw new Error('Date invalide après conversion');
@@ -1504,7 +1553,6 @@
                     console.warn(`Ligne Vente ignorée (date invalide: ${e.message}):`, row);
                     continue;
                 }
-                // FIN NOUVELLE GESTION DE LA DATE
 
                 const product = productMapByName.get(name.toLowerCase());
                 const salePrice = totalSale / quantity;
@@ -1513,13 +1561,13 @@
                     sku: product ? product.sku : 'SKU_INCONNU',
                     name: name,
                     quantity: quantity,
-                    salePrice: salePrice // Prix unitaire calculé
+                    salePrice: salePrice 
                 };
 
                 const saleDoc = {
                     items: [saleItem],
                     total: totalSale,
-                    createdAt: saleDate, // Date de la vente (pas serverTimestamp)
+                    createdAt: saleDate, 
                     status: 'completed'
                 };
                 
@@ -1527,8 +1575,6 @@
                 batch.set(saleRef, saleDoc);
                 operations++;
                 importedCount++;
-
-                // PAS de mise à jour du stock pour les ventes passées
 
                 if (operations >= 499) {
                     await batch.commit();
@@ -1545,12 +1591,11 @@
         }
 
 
-        // --- NOUVEAU: Gestion Page des Charges ---
+        // --- Gestion Page des Charges ---
         function setupExpensesPage() {
             const addForm = document.getElementById('add-expense-form');
             const expensesColRef = collection(userRef, "expenses");
             
-            // 1. Ajouter une dépense
             addForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const date = document.getElementById('expense-date').value;
@@ -1562,7 +1607,6 @@
                     return;
                 }
                 
-                // Utiliser la date du sélecteur, en forçant l'heure à midi pour éviter les pbs de fuseau horaire
                 const [year, month, day] = date.split('-');
                 const expenseDate = new Date(year, month - 1, day, 12, 0, 0);
 
@@ -1574,7 +1618,7 @@
                 try {
                     const expenseRef = doc(expensesColRef);
                     await setDoc(expenseRef, {
-                        date: expenseDate, // Utiliser l'objet Date
+                        date: expenseDate, 
                         description: description,
                         amount: amount
                     });
@@ -1586,11 +1630,8 @@
                 }
             });
 
-            // 2. Écouteur de la collection Dépenses
             onSnapshot(query(expensesColRef), (snapshot) => {
-                // NOUVEAU: Capturer l'ID
                 allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Trier du plus récent au plus ancien
                 allExpenses.sort((a, b) => {
                     const dateA = a.date ? a.date.seconds : 0;
                     const dateB = b.date ? b.date.seconds : 0;
@@ -1598,7 +1639,7 @@
                 });
 
                 renderExpensesList(allExpenses);
-                calculateAndRenderReports(); // Recalculer le bénéfice net
+                calculateAndRenderReports(); 
             }, (error) => {
                 console.error("Erreur écouteur dépenses:", error);
                 showToast("Erreur de chargement des dépenses.", "error");
@@ -1629,28 +1670,25 @@
                 tableBody.innerHTML += row;
             });
 
-            // Recréer les icônes
             if (window.lucide) window.lucide.createIcons();
 
-            // Ajouter les écouteurs pour les boutons "supprimer"
             document.querySelectorAll('.delete-expense-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const expenseId = e.currentTarget.dataset.id;
                     showConfirmModal(
                         "Supprimer cette charge ?",
-                        "Cette action est irréversible et supprimera définitivelement la dépense.",
+                        "Cette action est irréversible et supprimera définitivement la dépense.",
                         () => { deleteExpense(expenseId); }
                     );
                 });
             });
         }
 
-        // --- NOUVEAU: Gestion Page des Crédits ---
+        // --- Gestion Page des Crédits ---
         function setupCreditsPage() {
             const addClientForm = document.getElementById('add-client-form');
             const clientsColRef = collection(userRef, "clients");
 
-            // 1. Ajouter un client
             addClientForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const name = document.getElementById('client-name').value.trim();
@@ -1660,7 +1698,7 @@
                     return;
                 }
                 try {
-                    const clientRef = doc(clientsColRef); // Laisse Firestore générer l'ID
+                    const clientRef = doc(clientsColRef); 
                     await setDoc(clientRef, {
                         id: clientRef.id,
                         name: name,
@@ -1675,14 +1713,13 @@
                 }
             });
 
-            // 2. Écouteur de la collection Clients
             onSnapshot(query(clientsColRef), (snapshot) => {
                 allClients = snapshot.docs.map(doc => doc.data());
                 allClients.sort((a, b) => a.name.localeCompare(b.name));
                 
                 renderClientList(allClients);
-                populateClientDropdown(allClients); // NOUVEAU: Mettre à jour la liste sur la page Vente
-                calculateAndRenderReports(); // Mettre à jour le total des créances
+                populateClientDropdown(allClients); 
+                calculateAndRenderReports(); 
             }, (error) => {
                 console.error("Erreur écouteur clients:", error);
                 showToast("Erreur de chargement des clients.", "error");
@@ -1714,7 +1751,6 @@
                 tableBody.innerHTML += row;
             });
 
-            // Ajouter les écouteurs pour les boutons "Gérer"
             document.querySelectorAll('.view-client-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const clientId = e.currentTarget.dataset.id;
@@ -1723,12 +1759,11 @@
             });
         }
 
-        // NOUVEAU: Remplir la liste déroulante des clients sur la page Vente
+        // Remplir la liste déroulante des clients sur la page Vente
         function populateClientDropdown(clients) {
             const clientSelect = document.getElementById('sale-client-select');
-            if (!clientSelect) return; // Au cas où
+            if (!clientSelect) return; 
             
-            // Garder l'option par défaut
             clientSelect.innerHTML = '<option value="">-- Vente au comptant --</option>'; 
 
             clients.forEach(client => {
@@ -1737,7 +1772,7 @@
             });
         }
 
-        // NOUVEAU: Fonctions de la Modale Client
+        // --- Fonctions de la Modale Client ---
         function setupClientModalListeners() {
             const modal = document.getElementById('client-detail-modal');
             const addDebtForm = document.getElementById('add-debt-form');
@@ -1752,7 +1787,7 @@
                 const amount = parseFloat(document.getElementById('debt-amount').value);
                 
                 if (clientId && description && amount > 0) {
-                    addCreditMovement(clientId, description, amount); // Montant positif = dette
+                    addCreditMovement(clientId, description, amount); 
                     addDebtForm.reset();
                 } else {
                     showToast("Description et montant valide requis.", "error");
@@ -1765,7 +1800,7 @@
                 const amount = parseFloat(document.getElementById('payment-amount').value);
                 
                 if (clientId && amount > 0) {
-                    addCreditMovement(clientId, "Paiement", -amount); // Montant négatif = paiement
+                    addCreditMovement(clientId, "Paiement", -amount); 
                     addPaymentForm.reset();
                 } else {
                     showToast("Montant valide requis.", "error");
@@ -1777,17 +1812,14 @@
             const client = allClients.find(c => c.id === clientId);
             if (!client) return;
 
-            // Arrêter l'ancien écouteur s'il existe
             if (currentClientHistoryListener) {
                 currentClientHistoryListener();
             }
 
             document.getElementById('client-modal-name').textContent = client.name;
-            // Stocker l'ID client sur les formulaires
             document.getElementById('add-debt-form').dataset.clientId = clientId;
             document.getElementById('add-payment-form').dataset.clientId = clientId;
             
-            // Écouter l'historique de ce client spécifique
             const historyColRef = collection(userRef, "credit_movements");
             const q = query(historyColRef, where("clientId", "==", clientId));
 
@@ -1798,17 +1830,15 @@
             });
 
             document.getElementById('client-detail-modal').classList.remove('hidden');
-            if (window.lucide) window.lucide.createIcons(); // Pour l'icône 'x'
+            if (window.lucide) window.lucide.createIcons(); 
         }
 
         function hideClientDetailModal() {
             document.getElementById('client-detail-modal').classList.add('hidden');
-            // Arrêter l'écouteur d'historique
             if (currentClientHistoryListener) {
                 currentClientHistoryListener();
                 currentClientHistoryListener = null;
             }
-            // Vider l'historique
             document.getElementById('client-history-table-body').innerHTML = '';
         }
 
@@ -1837,16 +1867,14 @@
         async function addCreditMovement(clientId, description, amount) {
             const batch = writeBatch(db);
 
-            // 1. Ajouter le mouvement
             const moveRef = doc(collection(userRef, "credit_movements"));
             batch.set(moveRef, {
                 clientId: clientId,
                 date: serverTimestamp(),
                 description: description,
-                amount: amount // peut être positif (dette) ou négatif (paiement)
+                amount: amount 
             });
 
-            // 2. Mettre à jour le total de la dette du client
             const clientRef = doc(userRef, "clients", clientId);
             batch.update(clientRef, {
                 totalDebt: increment(amount)
@@ -1863,7 +1891,7 @@
         }
 
 
-        // --- NOUVEAU: Fonctions de Modale ---
+        // --- Fonctions de Modale de Confirmation ---
         function setupModalListeners() {
             const modal = document.getElementById('confirm-modal');
             document.getElementById('modal-cancel-btn').addEventListener('click', hideConfirmModal);
@@ -1887,11 +1915,10 @@
             actionToConfirm = null;
         }
 
-        // NOUVEAU: Action d'annulation de Vente
+        // Action d'annulation de Vente
         async function cancelSale(saleId) {
             const saleRef = doc(userRef, "sales", saleId);
             try {
-                // On ne supprime pas, on met à jour le statut
                 await updateDoc(saleRef, {
                     status: 'cancelled',
                     cancelledAt: serverTimestamp()
@@ -1903,11 +1930,10 @@
             }
         }
 
-        // NOUVEAU: Action de suppression de Charge
+        // Action de suppression de Charge
         async function deleteExpense(expenseId) {
             const expenseRef = doc(userRef, "expenses", expenseId);
             try {
-                // Ici, on supprime vraiment
                 await deleteDoc(expenseRef);
                 showToast('Charge supprimée avec succès.', 'success');
             } catch (error) {
@@ -1917,9 +1943,8 @@
         }
 
 
-        // --- NOUVEAU: Fonctions d'Exportation CSV ---
+        // --- Fonctions d'Exportation CSV ---
 
-        // Helper pour télécharger le contenu
         function downloadCSV(csvContent, fileName) {
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
@@ -1933,7 +1958,6 @@
             URL.revokeObjectURL(url);
         }
 
-        // Exportation des Produits
         function exportProductsToCSV() {
             if (allProducts.length === 0) {
                 showToast("Aucun produit à exporter.", "error");
@@ -1947,7 +1971,6 @@
                 const row = headers.map(header => {
                     let val = prod[header];
                     if (typeof val === 'string') {
-                        // Échapper les guillemets en les doublant et envelopper dans des guillemets
                         val = `"${val.replace(/"/g, '""')}"`;
                     }
                     return val;
@@ -1959,7 +1982,6 @@
             showToast("Exportation des produits terminée.", "success");
         }
 
-        // Exportation des Ventes (détaillée)
         function exportSalesToCSV() {
             if (allSales.length === 0) {
                 showToast("Aucune vente à exporter.", "error");
@@ -1970,7 +1992,6 @@
             let csvContent = headers.join(',') + '\n';
 
             allSales.forEach(sale => {
-                // NOUVEAU: Ignorer les ventes annulées de l'export
                 if (sale.status === 'cancelled') return;
 
                 const saleId = sale.id;
@@ -1983,11 +2004,11 @@
                         `"${saleId}"`,
                         saleDate,
                         `"${item.sku}"`,
-                        `"${item.name.replace(/"/g, '""')}"`, // Échapper les guillemets
+                        `"${item.name.replace(/"/g, '""')}"`, 
                         item.quantity,
                         item.salePrice,
                         itemTotal,
-                        clientId // NOUVEAU
+                        clientId 
                     ];
                     csvContent += row.join(',') + '\n';
                 });
