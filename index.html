@@ -34,10 +34,10 @@
 
         .toast {
             animation: fadeIn 0.5s ease-out;
-            padding: 16px 24px;
-            border-radius: 12px;
+            padding: 12px 20px;
+            border-radius: 10px;
             /* Police réduite */
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 600;
             color: white;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -47,44 +47,44 @@
 
 <body class="bg-gray-100 font-sans">
 
-    <!-- NOUVEAU: Écran de Connexion/Inscription -->
+    <!-- Écran de Connexion/Inscription -->
     <div id="auth-container" class="fixed inset-0 bg-gray-200 flex items-center justify-center z-[100] p-4">
-        <div class="w-full max-w-md p-8 bg-white rounded-xl shadow-2xl">
+        <div class="w-full max-w-md p-6 md:p-8 bg-white rounded-xl shadow-2xl">
             <!-- Police réduite -->
-            <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Ma Boutique</h1>
+            <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6">Ma Boutique</h1>
             
             <!-- Formulaire de Connexion -->
             <form id="login-form" class="space-y-4">
-                <h2 class="text-xl font-semibold text-gray-700">Se Connecter</h2>
+                <h2 class="text-lg md:text-xl font-semibold text-gray-700">Se Connecter</h2>
                 <div>
                     <!-- Police réduite -->
-                    <label for="login-email" class="text-base font-medium text-gray-600 block mb-2">Email</label>
-                    <input type="email" id="login-email" class="w-full p-3 text-base border-2 border-gray-300 rounded-lg" required>
+                    <label for="login-email" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Email</label>
+                    <input type="email" id="login-email" class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg" required>
                 </div>
                 <div>
-                    <label for="login-password" class="text-base font-medium text-gray-600 block mb-2">Mot de passe</label>
-                    <input type="password" id="login-password" class="w-full p-3 text-base border-2 border-gray-300 rounded-lg" required>
+                    <label for="login-password" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Mot de passe</label>
+                    <input type="password" id="login-password" class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg" required>
                 </div>
                 <!-- Police et padding réduits -->
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-lg">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg">
                     Connexion
                 </button>
             </form>
 
-            <div class="my-6 border-t border-gray-300"></div>
+            <div class="my-4 md:my-6 border-t border-gray-300"></div>
 
             <!-- Formulaire d'Inscription -->
             <form id="register-form" class="space-y-4">
-                <h2 class="text-xl font-semibold text-gray-700">Créer un compte</h2>
+                <h2 class="text-lg md:text-xl font-semibold text-gray-700">Créer un compte</h2>
                 <div>
-                    <label for="register-email" class="text-base font-medium text-gray-600 block mb-2">Email</label>
-                    <input type="email" id="register-email" class="w-full p-3 text-base border-2 border-gray-300 rounded-lg" required>
+                    <label for="register-email" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Email</label>
+                    <input type="email" id="register-email" class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg" required>
                 </div>
                 <div>
-                    <label for="register-password" class="text-base font-medium text-gray-600 block mb-2">Mot de passe</label>
-                    <input type="password" id="register-password" class="w-full p-3 text-base border-2 border-gray-300 rounded-lg" required>
+                    <label for="register-password" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Mot de passe</label>
+                    <input type="password" id="register-password" class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg" required>
                 </div>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-lg">
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg">
                     Créer le compte
                 </button>
             </form>
@@ -94,93 +94,109 @@
     <!-- Conteneur principal (caché par défaut) -->
     <div id="app-container" class="flex h-screen bg-gray-200 hidden">
 
-        <!-- Barre de navigation latérale -->
-        <div class="w-24 md:w-64 bg-gray-800 text-white flex flex-col fixed h-full">
-            <div class="text-xl font-bold p-6 text-center text-white">Boutique</div>
-            <nav class="flex-1 mt-10">
+        <!-- Barre de navigation latérale (plus petite sur mobile) -->
+        <div class="w-20 md:w-64 bg-gray-800 text-white flex flex-col fixed h-full">
+            <div class="text-lg md:text-xl font-bold p-4 md:p-6 text-center text-white">Boutique</div>
+            <nav class="flex-1 mt-4 md:mt-10">
                 <!-- Polices et icônes réduites -->
                 <a href="#dashboard"
-                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-xl md:text-base py-4 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="layout-dashboard" class="w-7 h-7"></i>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="layout-dashboard" class="w-6 h-6 md:w-7 md:h-7"></i>
                     <span class="hidden md:inline">Dashboard</span>
                 </a>
                 <a href="#ventes"
-                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-xl md:text-base py-4 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="shopping-cart" class="w-7 h-7"></i>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="shopping-cart" class="w-6 h-6 md:w-7 md:h-7"></i>
                     <span class="hidden md:inline">Vente</span>
                 </a>
                 <a href="#stock"
-                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-xl md:text-base py-4 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="package" class="w-7 h-7"></i>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="package" class="w-6 h-6 md:w-7 md:h-7"></i>
                     <span class="hidden md:inline">Stock</span>
                 </a>
                 <a href="#credits"
-                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-xl md:text-base py-4 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="users" class="w-7 h-7"></i>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="users" class="w-6 h-6 md:w-7 md:h-7"></i>
                     <span class="hidden md:inline">Crédits</span>
                 </a>
                 <a href="#rapports"
-                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-xl md:text-base py-4 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="bar-chart-3" class="w-7 h-7"></i>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="bar-chart-3" class="w-6 h-6 md:w-7 md:h-7"></i>
                     <span class="hidden md:inline">Rapports</span>
                 </a>
                 <a href="#charges"
-                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-xl md:text-base py-4 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="credit-card" class="w-7 h-7"></i>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="credit-card" class="w-6 h-6 md:w-7 md:h-7"></i>
                     <span class="hidden md:inline">Charges</span>
                 </a>
             </nav>
-            <button id="logout-btn" class="flex items-center justify-center md:justify-start gap-4 text-xl md:text-base py-4 px-6 text-red-400 hover:bg-red-700 hover:text-white transition duration-200 ease-in-out">
-                <i data-lucide="log-out" class="w-7 h-7"></i>
+            <button id="logout-btn" class="flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 text-red-400 hover:bg-red-700 hover:text-white transition duration-200 ease-in-out">
+                <i data-lucide="log-out" class="w-6 h-6 md:w-7 md:h-7"></i>
                 <span class="hidden md:inline">Se Déconnecter</span>
             </button>
-            <div class="p-4 text-center text-gray-500 text-xs">
-                <p class="mb-2">Utilisateur:</p>
-                <p id="user-id-display" class="font-mono break-all">Chargement...</p>
+            <div class="p-2 md:p-4 text-center text-gray-500 text-xs">
+                <p class="mb-1 md:mb-2 hidden md:block">Utilisateur:</p>
+                <p id="user-id-display" class="font-mono break-all text-[10px] md:text-xs">Chargement...</p>
             </div>
         </div>
 
-        <!-- Contenu principal (padding responsive) -->
-        <main class="flex-1 ml-24 md:ml-64 p-4 md:p-8 overflow-y-auto">
+        <!-- Contenu principal (marge de gauche ajustée) -->
+        <main class="flex-1 ml-20 md:ml-64 p-4 md:p-8 overflow-y-auto">
 
             <!-- Page Dashboard -->
             <div id="page-dashboard" class="page-content">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Dashboard</h1>
+                <h1 class="text-2xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8">Dashboard</h1>
                 <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                    <!-- Stats chargées par JS -->
+                    <!-- Stats (polices réduites) -->
+                    <div class="bg-white p-4 rounded-xl shadow-lg">
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-lg">
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-lg">
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-lg">
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Nombre de Ventes</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0</p>
+                    </div>
                 </div>
             </div>
 
             <!-- Page Ventes -->
             <div id="page-ventes" class="page-content hidden">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Enregistrer une Vente</h1>
+                <h1 class="text-2xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8">Enregistrer une Vente</h1>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                     <!-- Formulaire d'ajout -->
                     <div class="lg:col-span-1 bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Ajouter au Panier</h2>
+                        <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Ajouter au Panier</h2>
                         <form id="add-to-cart-form" class="space-y-4">
                             <div>
-                                <label for="sale-product-select" class="text-base font-medium text-gray-600 block mb-2">Produit</label>
+                                <label for="sale-product-select" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Produit</label>
                                 <select id="sale-product-select"
-                                    class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                                     <option>Chargement des produits...</option>
                                 </select>
                             </div>
                             <div>
-                                <label for="sale-price" class="text-base font-medium text-gray-600 block mb-2">Prix de Vente (Négocié)</label>
+                                <label for="sale-price" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Prix de Vente (Négocié)</label>
                                 <input type="number" id="sale-price" step="0.01"
-                                    class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="Prix négocié">
                             </div>
                             <div>
-                                <label for="sale-quantity" class="text-base font-medium text-gray-600 block mb-2">Quantité</label>
+                                <label for="sale-quantity" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Quantité</label>
                                 <input type="number" id="sale-quantity" value="1" min="1"
-                                    class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                             </div>
                             <button type="submit"
-                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                                <i data-lucide="plus"></i>
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
                                 <span>Ajouter</span>
                             </button>
                         </form>
@@ -188,16 +204,17 @@
 
                     <!-- Panier -->
                     <div class="lg:col-span-2 bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Panier Actuel</h2>
+                        <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Panier Actuel</h2>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
                                 <thead class="border-b-2 border-gray-300">
                                     <tr>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Produit</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Qté</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Prix U.</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Total</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600"></th>
+                                        <!-- Polices de tableau réduites -->
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Produit</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Qté</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Prix U.</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Total</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="cart-table-body" class="divide-y divide-gray-200">
@@ -206,20 +223,19 @@
                             </table>
                         </div>
                         
-                        <div class="mt-8 pt-6 border-t-2 border-gray-300 space-y-6">
+                        <div class="mt-6 pt-5 border-t-2 border-gray-300 space-y-5">
                             <div>
-                                <label for="sale-client-select" class="text-base font-medium text-gray-600 block mb-2">Mettre au crédit de (Optionnel)</label>
+                                <label for="sale-client-select" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Mettre au crédit de (Optionnel)</label>
                                 <select id="sale-client-select"
-                                    class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">-- Vente au comptant --</option>
                                     <!-- Clients chargés par JS -->
                                 </select>
                             </div>
-                            <!-- Layout responsive pour mobile -->
                             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                                <span class="text-2xl font-bold text-gray-800">Total: <span id="cart-total">0 CFA</span></span>
+                                <span class="text-xl md:text-2xl font-bold text-gray-800">Total: <span id="cart-total">0 CFA</span></span>
                                 <button id="finalize-sale-btn"
-                                    class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out">
+                                    class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-base md:text-lg transition duration-200 ease-in-out">
                                     Finaliser la Vente
                                 </button>
                             </div>
@@ -230,47 +246,47 @@
 
             <!-- Page Stock -->
             <div id="page-stock" class="page-content hidden">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Gestion du Stock</h1>
+                <h1 class="text-2xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8">Gestion du Stock</h1>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                     <!-- Formulaires d'ajout/renouvellement -->
-                    <div class="lg:col-span-1 space-y-8">
+                    <div class="lg:col-span-1 space-y-6">
                         <!-- Ajouter un nouveau produit -->
                         <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                            <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Ajouter un Nouveau Produit</h2>
+                            <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Ajouter un Nouveau Produit</h2>
                             <form id="add-product-form" class="space-y-4">
                                 <div>
-                                    <label for="product-sku" class="text-base font-medium text-gray-600 block mb-2">Code Produit (Optionnel)</label>
+                                    <label for="product-sku" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Code Produit (Optionnel)</label>
                                     <input type="text" id="product-sku"
-                                        class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="Laissez vide pour auto-générer">
                                 </div>
                                 <div>
-                                    <label for="product-name" class="text-base font-medium text-gray-600 block mb-2">Nom Produit</label>
+                                    <label for="product-name" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Nom Produit</label>
                                     <input type="text" id="product-name"
-                                        class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="Crème hydratante" required>
                                 </div>
                                 <div>
-                                    <label for="product-purchase-price" class="text-base font-medium text-gray-600 block mb-2">Prix d'Achat (Optionnel)</label>
+                                    <label for="product-purchase-price" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Prix d'Achat (Optionnel)</label>
                                     <input type="number" id="product-purchase-price" step="0.01"
-                                        class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="Laissez vide ou 0 si inconnu">
                                 </div>
                                 <div>
-                                    <label for="product-sale-price" class="text-base font-medium text-gray-600 block mb-2">Prix de Vente (Défaut)</label>
+                                    <label for="product-sale-price" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Prix de Vente (Défaut)</label>
                                     <input type="number" id="product-sale-price" step="0.01"
-                                        class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="Prix de vente" required>
                                 </div>
                                 <div>
-                                    <label for="product-stock" class="text-base font-medium text-gray-600 block mb-2">Stock Initial</label>
+                                    <label for="product-stock" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Stock Initial</label>
                                     <input type="number" id="product-stock"
-                                        class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="Quantité en stock" required>
                                 </div>
                                 <button type="submit"
-                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                                    <i data-lucide="plus"></i>
+                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
                                     <span>Ajouter Produit</span>
                                 </button>
                             </form>
@@ -278,23 +294,23 @@
 
                         <!-- Renouveler le stock -->
                         <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                            <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Renouveler le Stock</h2>
+                            <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Renouveler le Stock</h2>
                             <form id="restock-form" class="space-y-4">
                                 <div>
-                                    <label for="restock-product-select" class="text-base font-medium text-gray-600 block mb-2">Produit</label>
+                                    <label for="restock-product-select" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Produit</label>
                                     <select id="restock-product-select"
-                                        class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                        class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                                         <option>Chargement...</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label for="restock-quantity" class="text-base font-medium text-gray-600 block mb-2">Quantité à Ajouter</label>
+                                    <label for="restock-quantity" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Quantité à Ajouter</label>
                                     <input type="number" id="restock-quantity" value="1" min="1"
-                                        class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                        class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                                 </div>
                                 <button type="submit"
-                                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                                    <i data-lucide="check"></i>
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                    <i data-lucide="check" class="w-5 h-5"></i>
                                     <span>Renouveler</span>
                                 </button>
                             </form>
@@ -302,16 +318,16 @@
 
                         <!-- Importation en Masse -->
                         <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                            <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Importation en Masse (CSV)</h2>
-                            <p class="text-base text-gray-600 mb-4">En-têtes requis :</p>
-                            <p class="text-sm md:text-base font-mono text-blue-600 mb-6">Articles,Quantités,Prix d'Achat,Prix Vente</p>
+                            <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Importation en Masse (CSV)</h2>
+                            <p class="text-sm md:text-base text-gray-600 mb-4">En-têtes requis :</p>
+                            <p class="text-sm font-mono text-blue-600 mb-4">Articles,Quantités,Prix d'Achat,Prix Vente</p>
                             <div class="space-y-4">
                                 <input type="file" id="product-csv-file-input"
                                     class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                                     accept=".csv">
                                 <button id="import-product-csv-btn"
-                                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                                    <i data-lucide="upload"></i>
+                                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                    <i data-lucide="upload" class="w-5 h-5"></i>
                                     <span>Importer Produits</span>
                                 </button>
                             </div>
@@ -320,15 +336,15 @@
 
                     <!-- Liste du stock -->
                     <div class="lg:col-span-2 bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Mon Stock Actuel</h2>
+                        <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Mon Stock Actuel</h2>
                         <div id="stock-list-container" class="overflow-x-auto">
                             <table class="w-full text-left">
                                 <thead class="border-b-2 border-gray-300">
                                     <tr>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Nom</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">P. Vente</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">P. Achat</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Stock</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Nom</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">P. Vente</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">P. Achat</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Stock</th>
                                     </tr>
                                 </thead>
                                 <tbody id="stock-table-body" class="divide-y divide-gray-200">
@@ -342,27 +358,27 @@
 
             <!-- Page Crédits -->
             <div id="page-credits" class="page-content hidden">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Gestion des Crédits</h1>
+                <h1 class="text-2xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8">Gestion des Crédits</h1>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                     <!-- Formulaire d'ajout de client -->
                     <div class="lg:col-span-1 bg-white p-4 md:p-6 rounded-xl shadow-lg h-fit">
-                        <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Ajouter un Client</h2>
+                        <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Ajouter un Client</h2>
                         <form id="add-client-form" class="space-y-4">
                             <div>
-                                <label for="client-name" class="text-base font-medium text-gray-600 block mb-2">Nom du Client</label>
+                                <label for="client-name" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Nom du Client</label>
                                 <input type="text" id="client-name"
-                                    class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="Nom complet" required>
                             </div>
                             <div>
-                                <label for="client-phone" class="text-base font-medium text-gray-600 block mb-2">Téléphone (Optionnel)</label>
+                                <label for="client-phone" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Téléphone (Optionnel)</label>
                                 <input type="tel" id="client-phone"
-                                    class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="Numéro de téléphone">
                             </div>
                             <button type="submit"
-                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                                <i data-lucide="user-plus"></i>
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                <i data-lucide="user-plus" class="w-5 h-5"></i>
                                 <span>Ajouter Client</span>
                             </button>
                         </form>
@@ -370,15 +386,15 @@
 
                     <!-- Liste des clients -->
                     <div class="lg:col-span-2 bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Dettes Clients</h2>
+                        <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Dettes Clients</h2>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
                                 <thead class="border-b-2 border-gray-300">
                                     <tr>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Nom</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Téléphone</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Dette Totale</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Actions</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Nom</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Téléphone</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Dette Totale</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="clients-table-body" class="divide-y divide-gray-200">
@@ -393,48 +409,48 @@
 
             <!-- Page Rapports -->
             <div id="page-rapports" class="page-content hidden">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Rapports des Ventes</h1>
+                <h1 class="text-2xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8">Rapports des Ventes</h1>
 
                 <!-- Stats Clés -->
                 <div id="reports-stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-                    <!-- Stats chargées par JS (taille de police réduite) -->
+                    <!-- Stats (polices réduites) -->
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h3 class="text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
-                        <p class="text-3xl font-bold text-gray-800">0 CFA</p>
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
                     </div>
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h3 class="text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
-                        <p class="text-3xl font-bold text-gray-800">0 CFA</p>
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
                     </div>
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h3 class="text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
-                        <p class="text-3xl font-bold text-gray-800">0 CFA</p>
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
                     </div>
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h3 class="text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
-                        <p class="text-3xl font-bold text-gray-800">0 CFA</p>
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
                     </div>
                 </div>
 
                 <button id="refresh-reports-btn"
-                    class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out mb-8 flex items-center justify-center gap-2">
-                    <i data-lucide="refresh-cw"></i>
+                    class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg text-base md:text-lg transition duration-200 ease-in-out mb-8 flex items-center justify-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
                     <span>Rafraîchir les Rapports</span>
                 </button>
 
                 <!-- Section d'Exportation -->
                 <div class="mt-6 border-t border-gray-300 pt-6 bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-xl md:text-2xl font-semibold mb-4 text-gray-700">Exporter les Données</h3>
-                    <p class="text-base text-gray-600 mb-6">Enregistrez une copie de vos données (format CSV).</p>
+                    <h3 class="text-lg md:text-2xl font-semibold mb-4 text-gray-700">Exporter les Données</h3>
+                    <p class="text-sm md:text-base text-gray-600 mb-6">Enregistrez une copie de vos données (format CSV).</p>
                     <div class="flex flex-col sm:flex-row gap-4 md:gap-6">
                         <button id="export-products-btn"
-                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                            <i data-lucide="save"></i>
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-5 h-5"></i>
                             <span>Exporter les Produits</span>
                         </button>
                         <button id="export-sales-btn"
-                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                            <i data-lucide="save"></i>
+                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-sm md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-5 h-5"></i>
                             <span>Exporter les Ventes</span>
                         </button>
                     </div>
@@ -442,18 +458,18 @@
 
                 <!-- Importation Ventes Précédentes -->
                 <div class="mt-8 border-t border-gray-300 pt-6 bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-xl md:text-2xl font-semibold mb-4 text-gray-700">Importer les Ventes Précédentes</h3>
-                    <p class="text-base text-gray-600 mb-4">Importez un CSV de vos ventes passées (n'affecte pas le stock).</p>
-                    <p class="text-base text-gray-600 mb-4">En-têtes requis :</p>
-                    <p class="text-base font-mono text-blue-600 mb-6">Date,Nom Produit,Quantité,Total Vente</p>
-                    <p class="text-sm text-gray-500 mb-4">Format Date: JJ-MM-AAAA (ex: 30-10-2024)</p>
+                    <h3 class="text-lg md:text-2xl font-semibold mb-4 text-gray-700">Importer les Ventes Précédentes</h3>
+                    <p class="text-sm md:text-base text-gray-600 mb-4">Importez un CSV de vos ventes passées (n'affecte pas le stock).</p>
+                    <p class="text-sm md:text-base text-gray-600 mb-4">En-têtes requis :</p>
+                    <p class="text-sm md:text-base font-mono text-blue-600 mb-6">Date,Nom Produit,Quantité,Total Vente</p>
+                    <p class="text-xs md:text-sm text-gray-500 mb-4">Format Date: JJ-MM-AAAA (ex: 30-10-2024)</p>
                     <div class="space-y-4">
                         <input type="file" id="sales-csv-file-input"
-                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            class="w-full text-xs md:text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                             accept=".csv">
                         <button id="import-sales-csv-btn"
-                            class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                            <i data-lucide="history"></i>
+                            class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                            <i data-lucide="history" class="w-5 h-5"></i>
                             <span>Importer Ventes Passées</span>
                         </button>
                     </div>
@@ -463,13 +479,13 @@
                 <!-- Top 5 -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 my-8">
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Top 5 - Produits les Plus Vendus (par Quantité)</h2>
+                        <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Top 5 - Produits les Plus Vendus (par Quantité)</h2>
                         <div id="top-sold-list" class="space-y-3">
                             <!-- Rempli par JS -->
                         </div>
                     </div>
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Top 5 - Produits les Plus Rentables (par Bénéfice)</h2>
+                        <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Top 5 - Produits les Plus Rentables (par Bénéfice)</h2>
                         <div id="top-profit-list" class="space-y-3">
                             <!-- Rempli par JS -->
                         </div>
@@ -478,15 +494,15 @@
 
                 <!-- Historique des ventes -->
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg mt-8">
-                    <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Historique des Ventes</h2>
+                    <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Historique des Ventes</h2>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="border-b-2 border-gray-300">
                                 <tr>
-                                    <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Date</th>
-                                    <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Produits</th>
-                                    <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Total</th>
-                                    <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Action</th>
+                                    <th class="py-3 px-2 text-sm font-semibold text-gray-600">Date</th>
+                                    <th class="py-3 px-2 text-sm font-semibold text-gray-600">Produits</th>
+                                    <th class="py-3 px-2 text-sm font-semibold text-gray-600">Total</th>
+                                    <th class="py-3 px-2 text-sm font-semibold text-gray-600">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="sales-history-table-body" class="divide-y divide-gray-200">
@@ -499,33 +515,33 @@
 
             <!-- Page Charges -->
             <div id="page-charges" class="page-content hidden">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Gestion des Charges</h1>
+                <h1 class="text-2xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8">Gestion des Charges</h1>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                     <!-- Formulaire d'ajout de charge -->
                     <div class="lg:col-span-1 bg-white p-4 md:p-6 rounded-xl shadow-lg h-fit">
-                        <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Ajouter une Dépense</h2>
+                        <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Ajouter une Dépense</h2>
                         <form id="add-expense-form" class="space-y-4">
                             <div>
-                                <label for="expense-date" class_alias="text-base font-medium text-gray-600 block mb-2">Date</label>
+                                <label for="expense-date" class_alias="text-sm md:text-base font-medium text-gray-600 block mb-2">Date</label>
                                 <input type="date" id="expense-date"
-                                    class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                     required>
                             </div>
                             <div>
-                                <label for="expense-desc" class="text-base font-medium text-gray-600 block mb-2">Description</label>
+                                <label for="expense-desc" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Description</label>
                                 <input type="text" id="expense-desc"
-                                    class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="Facture d'électricité" required>
                             </div>
                             <div>
-                                <label for="expense-amount" class="text-base font-medium text-gray-600 block mb-2">Montant</label>
+                                <label for="expense-amount" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Montant</label>
                                 <input type="number" id="expense-amount" step="0.01"
-                                    class="w-full p-3 text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="5000" required>
                             </div>
                             <button type="submit"
-                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                                <i data-lucide="plus"></i>
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
                                 <span>Ajouter Dépense</span>
                             </button>
                         </form>
@@ -533,15 +549,15 @@
 
                     <!-- Liste des charges -->
                     <div class="lg:col-span-2 bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h2 class="text-xl md:text-2xl font-semibold mb-6 text-gray-700">Historique des Dépenses</h2>
+                        <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Historique des Dépenses</h2>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
                                 <thead class="border-b-2 border-gray-300">
                                     <tr>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Date</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Description</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Montant</th>
-                                        <th class="py-3 px-2 md:px-4 text-base font-semibold text-gray-600">Action</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Date</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Description</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Montant</th>
+                                        <th class="py-3 px-2 text-sm font-semibold text-gray-600">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="expenses-table-body" class="divide-y divide-gray-200">
@@ -559,15 +575,15 @@
     <!-- Modale de Confirmation -->
     <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl max-w-md w-full">
-            <h2 id="confirm-modal-title" class="text-2xl font-bold text-gray-800 mb-4">Êtes-vous sûr ?</h2>
-            <p id="confirm-modal-text" class="text-base text-gray-600 mb-8">Cette action est irréversible.</p>
+            <h2 id="confirm-modal-title" class="text-xl md:text-2xl font-bold text-gray-800 mb-4">Êtes-vous sûr ?</h2>
+            <p id="confirm-modal-text" class="text-sm md:text-base text-gray-600 mb-8">Cette action est irréversible.</p>
             <div class="flex justify-end gap-4">
                 <button id="modal-cancel-btn"
-                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-5 rounded-lg text-base transition duration-200 ease-in-out">
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm md:text-base transition duration-200 ease-in-out">
                     Annuler
                 </button>
                 <button id="modal-confirm-btn"
-                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-5 rounded-lg text-base transition duration-200 ease-in-out">
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base transition duration-200 ease-in-out">
                     Confirmer
                 </button>
             </div>
@@ -578,9 +594,9 @@
     <div id="client-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[60]">
         <div class="bg-gray-100 p-4 md:p-8 rounded-xl shadow-2xl max-w-3xl w-full h-5/6 flex flex-col">
             <div class="flex justify-between items-center mb-4 md:mb-6">
-                <h2 id="client-modal-name" class="text-2xl md:text-3xl font-bold text-gray-800">Détail Client</h2>
+                <h2 id="client-modal-name" class="text-xl md:text-3xl font-bold text-gray-800">Détail Client</h2>
                 <button id="client-modal-close-btn" class="text-gray-500 hover:text-gray-800">
-                    <i data-lucide="x" class="w-8 h-8"></i>
+                    <i data-lucide="x" class="w-7 h-7"></i>
                 </button>
             </div>
             
@@ -589,30 +605,30 @@
                 <div class="space-y-4 md:space-y-6">
                     <!-- Ajouter une dette -->
                     <form id="add-debt-form" class="bg-white p-4 md:p-6 rounded-lg shadow">
-                        <h3 class_alias="text-lg font-semibold mb-4 text-gray-700">Ajouter un Achat à Crédit</h3>
+                        <h3 class_alias="text-base md:text-lg font-semibold mb-4 text-gray-700">Ajouter un Achat à Crédit</h3>
                         <div class="space-y-4">
                             <div>
-                                <label for="debt-desc" class="text-base font-medium text-gray-600 block mb-2">Description</label>
-                                <input type="text" id="debt-desc" class="w-full p-3 text-base border-2 border-gray-300 rounded-lg" placeholder="Achat de produits" required>
+                                <label for="debt-desc" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Description</label>
+                                <input type="text" id="debt-desc" class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg" placeholder="Achat de produits" required>
                             </div>
                             <div>
-                                <label for="debt-amount" class="text-base font-medium text-gray-600 block mb-2">Montant de la Dette</label>
-                                <input type="number" id="debt-amount" class="w-full p-3 text-base border-2 border-gray-300 rounded-lg" placeholder="15000" required>
+                                <label for="debt-amount" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Montant de la Dette</label>
+                                <input type="number" id="debt-amount" class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg" placeholder="15000" required>
                             </div>
-                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-5 rounded-lg text-base">
+                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-5 rounded-lg text-sm md:text-base">
                                 Ajouter Dette
                             </button>
                         </div>
                     </form>
                     <!-- Enregistrer un paiement -->
                     <form id="add-payment-form" class="bg-white p-4 md:p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-semibold mb-4 text-gray-700">Enregistrer un Paiement</h3>
+                        <h3 class="text-base md:text-lg font-semibold mb-4 text-gray-700">Enregistrer un Paiement</h3>
                         <div class="space-y-4">
                             <div>
-                                <label for="payment-amount" class_alias="text-base font-medium text-gray-600 block mb-2">Montant Payé</label>
-                                <input type="number" id="payment-amount" class="w-full p-3 text-base border-2 border-gray-300 rounded-lg" placeholder="5000" required>
+                                <label for="payment-amount" class_alias="text-sm md:text-base font-medium text-gray-600 block mb-2">Montant Payé</label>
+                                <input type="number" id="payment-amount" class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg" placeholder="5000" required>
                             </div>
-                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-base">
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-sm md:text-base">
                                 Enregistrer Paiement
                             </button>
                         </div>
@@ -620,14 +636,14 @@
                 </div>
                 <!-- Colonne de droite: Historique -->
                 <div class="bg-white p-4 md:p-6 rounded-lg shadow flex flex-col">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-700">Historique des Mouvements</h3>
+                    <h3 class="text-base md:text-lg font-semibold mb-4 text-gray-700">Historique des Mouvements</h3>
                     <div id="client-history-container" class="flex-1 overflow-y-auto">
                         <table class="w-full text-left">
                             <thead class="border-b-2 border-gray-300">
                                 <tr>
-                                    <th class="py-2 px-3 text-sm font-semibold text-gray-600">Date</th>
-                                    <th class="py-2 px-3 text-sm font-semibold text-gray-600">Description</th>
-                                    <th class="py-2 px-3 text-sm font-semibold text-gray-600">Montant</th>
+                                    <th class="py-2 px-2 text-xs md:text-sm font-semibold text-gray-600">Date</th>
+                                    <th class="py-2 px-2 text-xs md:text-sm font-semibold text-gray-600">Description</th>
+                                    <th class="py-2 px-2 text-xs md:text-sm font-semibold text-gray-600">Montant</th>
                                 </tr>
                             </thead>
                             <tbody id="client-history-table-body" class="divide-y divide-gray-200">
@@ -970,17 +986,17 @@
             const stockTableBody = document.getElementById('stock-table-body');
             stockTableBody.innerHTML = ''; 
             if (products.length === 0) {
-                stockTableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-2 md:px-4 text-center text-base text-gray-500">Aucun produit en stock.</td></tr>';
+                stockTableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-2 md:px-4 text-center text-sm md:text-base text-gray-500">Aucun produit en stock.</td></tr>';
                 return;
             }
             products.forEach(prod => {
                 const stockColor = prod.stock <= 0 ? 'text-red-600' : (prod.stock < 10 ? 'text-yellow-600' : 'text-green-600');
                 const row = `
                     <tr class="hover:bg-gray-50">
-                        <td class="py-4 px-2 md:px-4 text-base font-medium text-gray-800">${prod.name}</td>
-                        <td class="py-4 px-2 md:px-4 text-base text-gray-600">${formatPrice(prod.salePrice)}</td>
-                        <td class="py-4 px-2 md:px-4 text-base text-gray-600">${prod.purchasePrice > 0 ? formatPrice(prod.purchasePrice) : 'N/A'}</td>
-                        <td class="py-4 px-2 md:px-4 text-base font-bold ${stockColor}">${prod.stock}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base font-medium text-gray-800">${prod.name}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-600">${formatPrice(prod.salePrice)}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-600">${prod.purchasePrice > 0 ? formatPrice(prod.purchasePrice) : 'N/A'}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base font-bold ${stockColor}">${prod.stock}</td>
                     </tr>
                 `;
                 stockTableBody.innerHTML += row;
@@ -1137,7 +1153,7 @@
             let total = 0;
 
             if (saleCart.length === 0) {
-                cartTableBody.innerHTML = '<tr><td colspan="5" class="py-6 px-2 md:px-4 text-center text-base text-gray-500">Le panier est vide.</td></tr>';
+                cartTableBody.innerHTML = '<tr><td colspan="5" class="py-6 px-2 md:px-4 text-center text-sm md:text-base text-gray-500">Le panier est vide.</td></tr>';
             }
 
             saleCart.forEach((item, index) => {
@@ -1145,13 +1161,13 @@
                 total += itemTotal;
                 const row = `
                     <tr class="hover:bg-gray-50">
-                        <td class="py-4 px-2 md:px-4 text-base font-medium text-gray-800">${item.name}</td>
-                        <td class="py-4 px-2 md:px-4 text-base text-gray-600">${item.quantity}</td>
-                        <td class="py-4 px-2 md:px-4 text-base text-gray-600">${formatPrice(item.salePrice)}</td>
-                        <td class="py-4 px-2 md:px-4 text-base text-gray-600">${formatPrice(itemTotal)}</td>
-                        <td class="py-4 px-2 md:px-4 text-base text-gray-600">
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base font-medium text-gray-800">${item.name}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-600">${item.quantity}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-600">${formatPrice(item.salePrice)}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-600">${formatPrice(itemTotal)}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-600">
                             <button class="remove-from-cart text-red-500 hover:text-red-700" data-index="${index}">
-                                <i data-lucide="trash-2" class="w-6 h-6"></i>
+                                <i data-lucide="trash-2" class="w-5 h-5"></i>
                             </button>
                         </td>
                     </tr>
@@ -1204,20 +1220,20 @@
             const resetStats = () => {
                 const statsHtml = `
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
-                    <p class="text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
-                    <p class="text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
-                    <p class="text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
-                    <p class="text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
                 </div>`;
                 document.getElementById('stats-container').innerHTML = statsHtml;
                 document.getElementById('reports-stats-container').innerHTML = statsHtml;
@@ -1265,39 +1281,39 @@
 
             const statsHtml = `
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
-                    <p class="text-3xl font-bold text-gray-800">${formatPrice(totalRevenue)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(totalRevenue)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
-                    <p class="text-3xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatPrice(netProfit)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
+                    <p class="text-2xl md:text-3xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatPrice(netProfit)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class_alias="text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
-                    <p class="text-3xl font-bold text-orange-600">${formatPrice(totalOwed)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-orange-600">${formatPrice(totalOwed)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class_alias="text-base font-semibold text-gray-500 mb-2">Nombre de Ventes</h3>
-                    <p class="text-3xl font-bold text-gray-800">${totalSalesCount}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Nombre de Ventes</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${totalSalesCount}</p>
                 </div>`;
             document.getElementById('stats-container').innerHTML = statsHtml;
             
             const reportStatsHtml = `
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
-                    <p class="text-3xl font-bold text-gray-800">${formatPrice(totalRevenue)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(totalRevenue)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
-                    <p class="text-3xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatPrice(netProfit)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
+                    <p class="text-2xl md:text-3xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatPrice(netProfit)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
-                    <p class="text-3xl font-bold text-red-600">${formatPrice(totalExpenses)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-red-600">${formatPrice(totalExpenses)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class_alias="text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
-                    <p class="text-3xl font-bold text-orange-600">${formatPrice(totalOwed)}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-orange-600">${formatPrice(totalOwed)}</p>
                 </div>`;
             document.getElementById('reports-stats-container').innerHTML = reportStatsHtml;
 
@@ -1307,7 +1323,7 @@
             const topSold = [...statsList].sort((a, b) => b.totalSold - a.totalSold).slice(0, 5);
             const topSoldList = document.getElementById('top-sold-list');
             topSoldList.innerHTML = topSold.map(item => `
-                <div class="flex justify-between text-base py-2 border-b">
+                <div class="flex justify-between text-sm md:text-base py-2 border-b">
                     <span class="font-medium text-gray-700">${item.name}</span>
                     <span class="font-bold text-gray-900">${item.totalSold} unités</span>
                 </div>
@@ -1316,7 +1332,7 @@
             const topProfit = [...statsList].sort((a, b) => b.totalProfit - a.totalProfit).slice(0, 5);
             const topProfitList = document.getElementById('top-profit-list');
             topProfitList.innerHTML = topProfit.map(item => `
-                <div class="flex justify-between text-base py-2 border-b">
+                <div class="flex justify-between text-sm md:text-base py-2 border-b">
                     <span class="font-medium text-gray-700">${item.name}</span>
                     <span class="font-bold text-green-600">${formatPrice(item.totalProfit)}</span>
                 </div>
@@ -1328,7 +1344,7 @@
             const historyTableBody = document.getElementById('sales-history-table-body');
             historyTableBody.innerHTML = '';
             if (sales.length === 0) {
-                historyTableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-2 md:px-4 text-center text-base text-gray-500">Aucune vente enregistrée.</td></tr>';
+                historyTableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-2 md:px-4 text-center text-sm md:text-base text-gray-500">Aucune vente enregistrée.</td></tr>';
                 return;
             }
 
@@ -1339,7 +1355,7 @@
                 if (sale.clientId) {
                     const client = allClients.find(c => c.id === sale.clientId);
                     if (client) {
-                        itemsStr += `<br><span class="text-sm text-blue-600">-> Crédit: ${client.name}</span>`;
+                        itemsStr += `<br><span class="text-xs text-blue-600">-> Crédit: ${client.name}</span>`;
                     }
                 }
 
@@ -1349,21 +1365,21 @@
                 if (sale.status === 'cancelled') {
                     rowClass = 'opacity-50 line-through'; 
                     const cancelDate = sale.cancelledAt ? sale.cancelledAt.toDate().toLocaleDateString('fr-FR') : '';
-                    actionCell = `<td class="py-4 px-2 md:px-4 text-base text-gray-500">Annulée ${cancelDate}</td>`;
+                    actionCell = `<td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-500">Annulée ${cancelDate}</td>`;
                 } else {
                     actionCell = `
-                        <td class="py-4 px-2 md:px-4 text-base">
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base">
                             <button class="delete-sale-btn text-red-500 hover:text-red-700" data-id="${sale.id}">
-                                <i data-lucide="trash-2" class="w-6 h-6"></i>
+                                <i data-lucide="trash-2" class="w-5 h-5"></i>
                             </button>
                         </td>`;
                 }
 
                 const row = `
                     <tr class="${rowClass}">
-                        <td class="py-4 px-2 md:px-4 text-base text-gray-600">${date}</td>
-                        <td class="py-4 px-2 md:px-4 text-base font-medium text-gray-800">${itemsStr}</td>
-                        <td class="py-4 px-2 md:px-4 text-base font-bold text-gray-900">${formatPrice(sale.total)}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-600">${date}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base font-medium text-gray-800">${itemsStr}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base font-bold text-gray-900">${formatPrice(sale.total)}</td>
                         ${actionCell}
                     </tr>
                 `;
@@ -1655,19 +1671,19 @@
             const tableBody = document.getElementById('expenses-table-body');
             tableBody.innerHTML = '';
             if (expenses.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-2 md:px-4 text-center text-base text-gray-500">Aucune dépense enregistrée.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-2 md:px-4 text-center text-sm md:text-base text-gray-500">Aucune dépense enregistrée.</td></tr>';
                 return;
             }
             expenses.forEach(ex => {
                 const date = ex.date ? ex.date.toDate().toLocaleDateString('fr-FR') : 'Date inconnue';
                 const row = `
                     <tr class="hover:bg-gray-50">
-                        <td class="py-4 px-2 md:px-4 text-base text-gray-600">${date}</td>
-                        <td class="py-4 px-2 md:px-4 text-base font-medium text-gray-800">${ex.description}</td>
-                        <td class="py-4 px-2 md:px-4 text-base font-bold text-red-600">${formatPrice(ex.amount)}</td>
-                        <td class="py-4 px-2 md:px-4 text-base">
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-600">${date}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base font-medium text-gray-800">${ex.description}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base font-bold text-red-600">${formatPrice(ex.amount)}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base">
                             <button class="delete-expense-btn text-red-500 hover:text-red-700" data-id="${ex.id}">
-                                <i data-lucide="trash-2" class="w-6 h-6"></i>
+                                <i data-lucide="trash-2" class="w-5 h-5"></i>
                             </button>
                         </td>
                     </tr>
@@ -1735,7 +1751,7 @@
             const tableBody = document.getElementById('clients-table-body');
             tableBody.innerHTML = '';
             if (clients.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-2 md:px-4 text-center text-base text-gray-500">Aucun client enregistré.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-2 md:px-4 text-center text-sm md:text-base text-gray-500">Aucun client enregistré.</td></tr>';
                 return;
             }
             clients.forEach(client => {
@@ -1743,10 +1759,10 @@
                 const debtColor = debt > 0 ? 'text-red-600' : 'text-green-600';
                 const row = `
                     <tr class="hover:bg-gray-50">
-                        <td class="py-4 px-2 md:px-4 text-base font-medium text-gray-800">${client.name}</td>
-                        <td class="py-4 px-2 md:px-4 text-base text-gray-600">${client.phone || 'N/A'}</td>
-                        <td class="py-4 px-2 md:px-4 text-base font-bold ${debtColor}">${formatPrice(debt)}</td>
-                        <td class="py-4 px-2 md:px-4 text-base">
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base font-medium text-gray-800">${client.name}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base text-gray-600">${client.phone || 'N/A'}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base font-bold ${debtColor}">${formatPrice(debt)}</td>
+                        <td class="py-4 px-2 md:px-4 text-sm md:text-base">
                             <button class="view-client-btn text-blue-600 hover:text-blue-800" data-id="${client.id}">
                                 Gérer
                             </button>
@@ -1851,7 +1867,7 @@
             const tableBody = document.getElementById('client-history-table-body');
             tableBody.innerHTML = '';
             if (history.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="3" class="py-4 px-3 text-center text-sm text-gray-500">Aucun mouvement.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="3" class="py-4 px-3 text-center text-xs md:text-sm text-gray-500">Aucun mouvement.</td></tr>';
                 return;
             }
             history.forEach(mov => {
@@ -1860,9 +1876,9 @@
                 const color = isDebt ? 'text-red-600' : 'text-green-600';
                 const row = `
                     <tr class="hover:bg-gray-50">
-                        <td class="py-3 px-3 text-sm text-gray-600">${date}</td>
-                        <td class="py-3 px-3 text-sm font-medium text-gray-800">${mov.description}</td>
-                        <td class="py-3 px-3 text-sm font-bold ${color}">${formatPrice(mov.amount)}</td>
+                        <td class="py-3 px-2 md:px-3 text-xs md:text-sm text-gray-600">${date}</td>
+                        <td class="py-3 px-2 md:px-3 text-xs md:text-sm font-medium text-gray-800">${mov.description}</td>
+                        <td class="py-3 px-2 md:px-3 text-xs md:text-sm font-bold ${color}">${formatPrice(mov.amount)}</td>
                     </tr>
                 `;
                 tableBody.innerHTML += row;
