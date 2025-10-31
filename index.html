@@ -131,7 +131,7 @@
             <!-- Page Dashboard -->
             <div id="page-dashboard" class="page-content">
                 <h1 class="text-2xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8">Dashboard</h1>
-                <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
                     <!-- Stats (polices réduites) -->
                     <div class="bg-white p-4 rounded-xl shadow-lg">
                         <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
@@ -147,6 +147,10 @@
                     </div>
                     <div class="bg-white p-4 rounded-xl shadow-lg">
                         <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-lg">
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Valeur du Stock</h3>
                         <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
                     </div>
                 </div>
@@ -239,12 +243,7 @@
                         <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
                             <h2 class="text-lg md:text-2xl font-semibold mb-5 text-gray-700">Ajouter un Nouveau Produit</h2>
                             <form id="add-product-form" class="space-y-4">
-                                <div>
-                                    <label for="product-sku" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Code Produit (Optionnel)</label>
-                                    <input type="text" id="product-sku"
-                                        class="w-full p-3 text-sm md:text-base border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Laissez vide pour auto-générer">
-                                </div>
+                                <!-- SUPPRIMÉ: Code Produit (Optionnel) -->
                                 <div>
                                     <label for="product-name" class="text-sm md:text-base font-medium text-gray-600 block mb-2">Nom Produit</label>
                                     <input type="text" id="product-name"
@@ -411,44 +410,6 @@
                     <span>Rafraîchir les Rapports</span>
                 </button>
 
-                <!-- Section d'Exportation -->
-                <div class="mt-6 border-t border-gray-300 pt-6 bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-lg md:text-2xl font-semibold mb-4 text-gray-700">Exporter les Données</h3>
-                    <p class="text-sm md:text-base text-gray-600 mb-6">Enregistrez une copie de vos données (format CSV).</p>
-                    <div class="flex flex-col sm:flex-row gap-4 md:gap-6">
-                        <button id="export-products-btn"
-                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                            <i data-lucide="save" class="w-5 h-5"></i>
-                            <span>Exporter les Produits</span>
-                        </button>
-                        <button id="export-sales-btn"
-                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-sm md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                            <i data-lucide="save" class="w-5 h-5"></i>
-                            <span>Exporter les Ventes</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Importation Ventes Précédentes -->
-                <div class="mt-8 border-t border-gray-300 pt-6 bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-lg md:text-2xl font-semibold mb-4 text-gray-700">Importer les Ventes Précédentes</h3>
-                    <p class="text-sm md:text-base text-gray-600 mb-4">Importez un CSV de vos ventes passées (n'affecte pas le stock).</p>
-                    <p class="text-sm md:text-base text-gray-600 mb-4">En-têtes requis :</p>
-                    <p class="text-sm md:text-base font-mono text-blue-600 mb-6">Date,Nom Produit,Quantité,Total Vente</p>
-                    <p class="text-xs md:text-sm text-gray-500 mb-4">Format Date: JJ-MM-AAAA (ex: 30-10-2024)</p>
-                    <div class="space-y-4">
-                        <input type="file" id="sales-csv-file-input"
-                            class="w-full text-xs md:text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                            accept=".csv">
-                        <button id="import-sales-csv-btn"
-                            class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                            <i data-lucide="history" class="w-5 h-5"></i>
-                            <span>Importer Ventes Passées</span>
-                        </button>
-                    </div>
-                </div>
-
-
                 <!-- Top 5 -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 my-8">
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
@@ -482,6 +443,39 @@
                                 <!-- Historique chargé par JS -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- DÉPLACÉ: Section d'Exportation -->
+                <div class="mt-8 border-t border-gray-300 pt-6 bg-white p-4 md:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg md:text-2xl font-semibold mb-4 text-gray-700">Exporter les Données</h3>
+                    <p class="text-sm md:text-base text-gray-600 mb-6">Enregistrez une copie de vos données (format CSV).</p>
+                    <div class="flex flex-col sm:flex-row gap-4 md:gap-6">
+                        <button id="export-products-btn"
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-5 h-5"></i>
+                            <span>Exporter les Produits</span>
+                        </button>
+                        <button id="export-sales-btn"
+                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-sm md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-5 h-5"></i>
+                            <span>Exporter les Ventes</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DÉPLACÉ: Importation Ventes Précédentes -->
+                <div class="mt-8 border-t border-gray-300 pt-6 bg-white p-4 md:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg md:text-2xl font-semibold mb-4 text-gray-700">Importer les Ventes Précédentes</h3>
+                    <div class="space-y-4">
+                        <input type="file" id="sales-csv-file-input"
+                            class="w-full text-xs md:text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            accept=".csv">
+                        <button id="import-sales-csv-btn"
+                            class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-5 rounded-lg text-base md:text-lg transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                            <i data-lucide="history" class="w-5 h-5"></i>
+                            <span>Importer Ventes Passées</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -872,7 +866,7 @@
             // 1. Soumission du formulaire "Ajouter"
             addForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const sku = document.getElementById('product-sku').value.trim();
+                // SUPPRIMÉ: const sku = document.getElementById('product-sku').value.trim();
                 const name = document.getElementById('product-name').value.trim();
                 const purchasePrice = parseFloat(document.getElementById('product-purchase-price').value) || 0;
                 const salePrice = parseFloat(document.getElementById('product-sale-price').value);
@@ -883,7 +877,8 @@
                     return;
                 }
 
-                const finalSku = sku || `${name.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+                // MODIFIÉ: Générer automatiquement le SKU
+                const finalSku = `${name.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
                 const productRef = doc(productsColRef, finalSku);
 
                 try {
@@ -1196,6 +1191,10 @@
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
                     <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
                     <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Valeur du Stock</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
                 </div>`;
                 document.getElementById('stats-container').innerHTML = statsHtml;
                 
@@ -1218,8 +1217,16 @@
             let grossProfit = 0; 
             const productStats = {}; 
             let totalSalesCount = 0; 
+            let stockValue = 0; // NOUVEAU: Valeur du stock
 
             const productMap = new Map(allProducts.map(p => [p.sku, p]));
+
+            // NOUVEAU: Calcul de la valeur du stock
+            allProducts.forEach(product => {
+                if (product.purchasePrice > 0) {
+                    stockValue += product.purchasePrice * product.stock;
+                }
+            });
 
             allSales.forEach(sale => {
                 if (sale.status === 'cancelled') return;
@@ -1248,7 +1255,7 @@
             const netProfit = grossProfit - totalExpenses;
             const totalOwed = allClients.reduce((sum, client) => sum + (client.totalDebt || 0), 0);
 
-            // MODIFIÉ: Dashboard avec Total des Charges
+            // MODIFIÉ: Dashboard avec 5 statistiques
             const statsHtml = `
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
                     <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
@@ -1265,6 +1272,10 @@
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
                     <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
                     <p class="text-2xl md:text-3xl font-bold text-red-600">${formatPrice(totalExpenses)}</p>
+                </div>
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Valeur du Stock</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-blue-600">${formatPrice(stockValue)}</p>
                 </div>`;
             document.getElementById('stats-container').innerHTML = statsHtml;
             
@@ -1424,8 +1435,9 @@
                     continue; 
                 }
                 
-                const productRef = doc(productsColRef); 
-                const finalSku = productRef.id; 
+                // MODIFIÉ: Générer automatiquement le SKU
+                const finalSku = `${name.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+                const productRef = doc(productsColRef, finalSku);
 
                 batch.set(productRef, {
                     sku: finalSku,
