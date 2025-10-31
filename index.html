@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de Boutique</title>
+    <!-- Tailwind CSS pour le style -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons pour les icônes -->
+    <!-- CORRECTION: Utilisation de la bonne librairie Lucide (non-React) -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <!-- PapaParse pour l'import CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        /* Style simple pour le toast */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            animation: fadeIn 0.5s ease-out;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+    <!-- Conteneur principal -->
+    <div class="flex h-screen bg-gray-200">
+
+        <!-- Barre de navigation latérale -->
+        <div class="w-24 md:w-64 bg-gray-800 text-white flex flex-col fixed h-full">
+            <div class="text-2xl font-bold p-6 text-center text-white">Boutique</div>
+            <nav class="flex-1 mt-10">
+                <a href="#dashboard"
+                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-2xl md:text-xl py-5 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="layout-dashboard" class="w-8 h-8"></i>
+                    <span class="hidden md:inline">Dashboard</span>
+                </a>
+                <a href="#ventes"
+                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-2xl md:text-xl py-5 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="shopping-cart" class="w-8 h-8"></i>
+                    <span class="hidden md:inline">Vente</span>
+                </a>
+                <a href="#stock"
+                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-2xl md:text-xl py-5 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="package" class="w-8 h-8"></i>
+                    <span class="hidden md:inline">Stock</span>
+                </a>
+                <!-- NOUVEL ONGLET: CRÉDITS -->
+                <a href="#credits"
+                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-2xl md:text-xl py-5 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="users" class="w-8 h-8"></i>
+                    <span class="hidden md:inline">Crédits</span>
+                </a>
+                <a href="#rapports"
+                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-2xl md:text-xl py-5 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="bar-chart-3" class="w-8 h-8"></i>
+                    <span class="hidden md:inline">Rapports</span>
+                </a>
+                <!-- NOUVEL ONGLET: CHARGES -->
+                <a href="#charges"
+                    class="nav-link flex items-center justify-center md:justify-start gap-4 text-2xl md:text-xl py-5 px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="credit-card" class="w-8 h-8"></i>
+                    <span class="hidden md:inline">Charges</span>
+                </a>
+            </nav>
+            <div class="p-4 text-center text-gray-500 text-sm">
+                <p class="mb-2">ID Utilisateur:</p>
+                <p id="user-id-display" class="font-mono break-all">Chargement...</p>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <main class="flex-1 ml-24 md:ml-64 p-6 md:p-12 overflow-y-auto">
+
+            <!-- Page Dashboard -->
+            <div id="page-dashboard" class="page-content">
+                <h1 class="text-4xl font-bold text-gray-800 mb-8">Dashboard</h1>
+                <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Stats chargées par JS -->
+                </div>
+            </div>
+
+            <!-- Page Ventes -->
+            <div id="page-ventes" class="page-content hidden">
+                <h1 class="text-4xl font-bold text-gray-800 mb-8">Enregistrer une Vente</h1>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Formulaire d'ajout -->
+                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Ajouter au Panier</h2>
+                        <form id="add-to-cart-form" class="space-y-6">
+                            <div>
+                                <label for="sale-product-select" class="text-lg font-medium text-gray-600 block mb-2">Produit</label>
+                                <select id="sale-product-select"
+                                    class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    <option>Chargement des produits...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="sale-price" class="text-lg font-medium text-gray-600 block mb-2">Prix de Vente (Négocié)</label>
+                                <input type="number" id="sale-price" step="0.01"
+                                    class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Prix négocié">
+                            </div>
+                            <div>
+                                <label for="sale-quantity" class="text-lg font-medium text-gray-600 block mb-2">Quantité</label>
+                                <input type="number" id="sale-quantity" value="1" min="1"
+                                    class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <button type="submit"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                <i data-lucide="plus"></i>
+                                <span>Ajouter</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Panier -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Panier Actuel</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="border-b-2 border-gray-300">
+                                    <tr>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Produit</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Qté</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Prix U.</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Total</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cart-table-body" class="divide-y divide-gray-200">
+                                    <!-- Articles du panier chargés par JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- MODIFIÉ: Ajout de la sélection client -->
+                        <div class="mt-8 pt-6 border-t-2 border-gray-300 space-y-6">
+                            <!-- NOUVEAU: Sélection Client Crédit -->
+                            <div>
+                                <label for="sale-client-select" class="text-lg font-medium text-gray-600 block mb-2">Mettre au crédit de (Optionnel)</label>
+                                <select id="sale-client-select"
+                                    class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">-- Vente au comptant --</option>
+                                    <!-- Clients chargés par JS -->
+                                </select>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-3xl font-bold text-gray-800">Total: <span id="cart-total">0 CFA</span></span>
+                                <button id="finalize-sale-btn"
+                                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-lg text-xl transition duration-200 ease-in-out">
+                                    Finaliser la Vente
+                                </button>
+                            </div>
+                        </div>
+                        <!-- FIN MODIFICATION -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Stock -->
+            <div id="page-stock" class="page-content hidden">
+                <h1 class="text-4xl font-bold text-gray-800 mb-8">Gestion du Stock</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Formulaires d'ajout/renouvellement -->
+                    <div class="lg:col-span-1 space-y-8">
+                        <!-- Ajouter un nouveau produit -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h2 class="text-2xl font-semibold mb-6 text-gray-700">Ajouter un Nouveau Produit</h2>
+                            <form id="add-product-form" class="space-y-6">
+                                <div>
+                                    <label for="product-sku" class="text-lg font-medium text-gray-600 block mb-2">Code Produit (Optionnel)</label>
+                                    <input type="text" id="product-sku"
+                                        class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Laissez vide pour auto-générer">
+                                </div>
+                                <div>
+                                    <label for="product-name" class="text-lg font-medium text-gray-600 block mb-2">Nom Produit</label>
+                                    <input type="text" id="product-name"
+                                        class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Crème hydratante" required>
+                                </div>
+                                <div>
+                                    <label for="product-purchase-price" class="text-lg font-medium text-gray-600 block mb-2">Prix d'Achat (Optionnel)</label>
+                                    <input type="number" id="product-purchase-price" step="0.01"
+                                        class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Laissez vide ou 0 si inconnu">
+                                </div>
+                                <div>
+                                    <label for="product-sale-price" class="text-lg font-medium text-gray-600 block mb-2">Prix de Vente (Défaut)</label>
+                                    <input type="number" id="product-sale-price" step="0.01"
+                                        class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Prix de vente" required>
+                                </div>
+                                <div>
+                                    <label for="product-stock" class="text-lg font-medium text-gray-600 block mb-2">Stock Initial</label>
+                                    <input type="number" id="product-stock"
+                                        class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Quantité en stock" required>
+                                </div>
+                                <button type="submit"
+                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                    <i data-lucide="plus"></i>
+                                    <span>Ajouter Produit</span>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Renouveler le stock -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h2 class="text-2xl font-semibold mb-6 text-gray-700">Renouveler le Stock</h2>
+                            <form id="restock-form" class="space-y-6">
+                                <div>
+                                    <label for="restock-product-select" class="text-lg font-medium text-gray-600 block mb-2">Produit</label>
+                                    <select id="restock-product-select"
+                                        class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                        <option>Chargement...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="restock-quantity" class="text-lg font-medium text-gray-600 block mb-2">Quantité à Ajouter</label>
+                                    <input type="number" id="restock-quantity" value="1" min="1"
+                                        class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <button type="submit"
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                    <i data-lucide="check"></i>
+                                    <span>Renouveler</span>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- NOUVEAU: Importation en Masse -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h2 class="text-2xl font-semibold mb-6 text-gray-700">Importation en Masse (CSV)</h2>
+                            <p class="text-lg text-gray-600 mb-4">Préparez un fichier CSV avec les en-têtes (1ère ligne) :</p>
+                            <p class="text-lg font-mono text-blue-600 mb-6">Articles,Quantités,Prix d'Achat,Prix Vente</p>
+                            <div class="space-y-6">
+                                <input type="file" id="product-csv-file-input"
+                                    class="w-full text-lg text-gray-700 file:mr-4 file:py-3 file:px-5 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    accept=".csv">
+                                <button id="import-product-csv-btn"
+                                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                    <i data-lucide="upload"></i>
+                                    <span>Importer Produits</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Liste du stock -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Mon Stock Actuel</h2>
+                        <div id="stock-list-container" class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="border-b-2 border-gray-300">
+                                    <tr>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Nom</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">P. Vente</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">P. Achat</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stock-table-body" class="divide-y divide-gray-200">
+                                    <!-- Stock chargé par JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOUVELLE PAGE: CRÉDITS -->
+            <div id="page-credits" class="page-content hidden">
+                <h1 class="text-4xl font-bold text-gray-800 mb-8">Gestion des Crédits</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Formulaire d'ajout de client -->
+                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg h-fit">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Ajouter un Client</h2>
+                        <form id="add-client-form" class="space-y-6">
+                            <div>
+                                <label for="client-name" class="text-lg font-medium text-gray-600 block mb-2">Nom du Client</label>
+                                <input type="text" id="client-name"
+                                    class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Nom complet" required>
+                            </div>
+                            <div>
+                                <label for="client-phone" class="text-lg font-medium text-gray-600 block mb-2">Téléphone (Optionnel)</label>
+                                <input type="tel" id="client-phone"
+                                    class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Numéro de téléphone">
+                            </div>
+                            <button type="submit"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                <i data-lucide="user-plus"></i>
+                                <span>Ajouter Client</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Liste des clients -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Dettes Clients</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="border-b-2 border-gray-300">
+                                    <tr>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Nom</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Téléphone</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Dette Totale</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clients-table-body" class="divide-y divide-gray-200">
+                                    <!-- Clients chargés par JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Page Rapports -->
+            <div id="page-rapports" class="page-content hidden">
+                <h1 class="text-4xl font-bold text-gray-800 mb-8">Rapports des Ventes</h1>
+
+                <!-- Stats Clés -->
+                <div id="reports-stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Stats chargées par JS -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                        <p class="text-4xl font-bold text-gray-800">0 CFA</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
+                        <p class="text-4xl font-bold text-gray-800">0 CFA</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-500 mb-2">Total des Charges</h3>
+                        <p class="text-4xl font-bold text-gray-800">0 CFA</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-500 mb-2">Total des Créances</h3>
+                        <p class="text-4xl font-bold text-gray-800">0 CFA</p>
+                    </div>
+                </div>
+
+                <button id="refresh-reports-btn"
+                    class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-lg text-xl transition duration-200 ease-in-out mb-8 flex items-center justify-center gap-2">
+                    <i data-lucide="refresh-cw"></i>
+                    <span>Rafraîchir les Rapports</span>
+                </button>
+
+                <!-- NOUVEAU: Section d'Exportation -->
+                <div class="mt-6 border-t border-gray-300 pt-6 bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-700">Exporter les Données</h3>
+                    <p class="text-lg text-gray-600 mb-6">Enregistrez une copie de vos données sur votre ordinateur (format CSV).</p>
+                    <div class="flex flex-col sm:flex-row gap-6">
+                        <button id="export-products-btn"
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                            <i data-lucide="save"></i>
+                            <span>Exporter les Produits</span>
+                        </button>
+                        <button id="export-sales-btn"
+                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                            <i data-lucide="save"></i>
+                            <span>Exporter les Ventes</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- NOUVEAU: Importation Ventes Précédentes -->
+                <div class="mt-8 border-t border-gray-300 pt-6 bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-700">Importer les Ventes Précédentes</h3>
+                    <p class="text-lg text-gray-600 mb-4">Importez un CSV de vos ventes passées (n'affecte pas le stock).</p>
+                    <p class="text-lg text-gray-600 mb-4">En-têtes requis :</p>
+                    <p class="text-lg font-mono text-blue-600 mb-6">Date,Nom Produit,Quantité,Total Vente</p>
+                    <p class="text-sm text-gray-500 mb-4">Format Date: JJ-MM-AAAA (ex: 30-10-2024)</p>
+                    <div class="space-y-6">
+                        <input type="file" id="sales-csv-file-input"
+                            class="w-full text-lg text-gray-700 file:mr-4 file:py-3 file:px-5 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            accept=".csv">
+                        <button id="import-sales-csv-btn"
+                            class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                            <i data-lucide="history"></i>
+                            <span>Importer Ventes Passées</span>
+                        </button>
+                    </div>
+                </div>
+
+
+                <!-- Top 5 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 my-8">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Top 5 - Produits les Plus Vendus (par Quantité)</h2>
+                        <div id="top-sold-list" class="space-y-4">
+                            <!-- Rempli par JS -->
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Top 5 - Produits les Plus Rentables (par Bénéfice)</h2>
+                        <div id="top-profit-list" class="space-y-4">
+                            <!-- Rempli par JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historique des ventes -->
+                <div class="bg-white p-6 rounded-xl shadow-lg mt-8">
+                    <h2 class="text-2xl font-semibold mb-6 text-gray-700">Historique des Ventes</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="border-b-2 border-gray-300">
+                                <tr>
+                                    <th class="py-3 px-4 text-lg font-semibold text-gray-600">Date</th>
+                                    <th class="py-3 px-4 text-lg font-semibold text-gray-600">Produits</th>
+                                    <th class="py-3 px-4 text-lg font-semibold text-gray-600">Total</th>
+                                    <!-- NOUVEAU: Colonne Action -->
+                                    <th class="py-3 px-4 text-lg font-semibold text-gray-600">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-history-table-body" class="divide-y divide-gray-200">
+                                <!-- Historique chargé par JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOUVELLE PAGE: CHARGES -->
+            <div id="page-charges" class="page-content hidden">
+                <h1 class="text-4xl font-bold text-gray-800 mb-8">Gestion des Charges</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Formulaire d'ajout de charge -->
+                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg h-fit">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Ajouter une Dépense</h2>
+                        <form id="add-expense-form" class="space-y-6">
+                            <div>
+                                <label for="expense-date" class_alias="text-lg font-medium text-gray-600 block mb-2">Date</label>
+                                <input type="date" id="expense-date"
+                                    class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    required>
+                            </div>
+                            <div>
+                                <label for="expense-desc" class="text-lg font-medium text-gray-600 block mb-2">Description</label>
+                                <input type="text" id="expense-desc"
+                                    class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Facture d'électricité" required>
+                            </div>
+                            <div>
+                                <label for="expense-amount" class="text-lg font-medium text-gray-600 block mb-2">Montant</label>
+                                <input type="number" id="expense-amount" step="0.01"
+                                    class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="5000" required>
+                            </div>
+                            <button type="submit"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                                <i data-lucide="plus"></i>
+                                <span>Ajouter Dépense</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Liste des charges -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Historique des Dépenses</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="border-b-2 border-gray-300">
+                                    <tr>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Date</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Description</th>
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Montant</th>
+                                        <!-- NOUVEAU: Colonne Action -->
+                                        <th class="py-3 px-4 text-lg font-semibold text-gray-600">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenses-table-body" class="divide-y divide-gray-200">
+                                    <!-- Dépenses chargées par JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- NOUVEAU: Modale de Confirmation -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full">
+            <h2 id="confirm-modal-title" class="text-3xl font-bold text-gray-800 mb-4">Êtes-vous sûr ?</h2>
+            <p id="confirm-modal-text" class="text-lg text-gray-600 mb-8">Cette action est irréversible.</p>
+            <div class="flex justify-end gap-4">
+                <button id="modal-cancel-btn"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out">
+                    Annuler
+                </button>
+                <button id="modal-confirm-btn"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-200 ease-in-out">
+                    Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOUVEAU: Modale Détail Client -->
+    <div id="client-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[60]">
+        <div class="bg-gray-100 p-8 rounded-xl shadow-2xl max-w-3xl w-full h-5/6 flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="client-modal-name" class="text-3xl font-bold text-gray-800">Détail Client</h2>
+                <button id="client-modal-close-btn" class="text-gray-500 hover:text-gray-800">
+                    <i data-lucide="x" class="w-10 h-10"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-y-auto">
+                <!-- Colonne de gauche: Actions -->
+                <div class="space-y-6">
+                    <!-- Ajouter une dette -->
+                    <form id="add-debt-form" class="bg-white p-6 rounded-lg shadow">
+                        <h3 class_alias="text-xl font-semibold mb-4 text-gray-700">Ajouter un Achat à Crédit</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="debt-desc" class="text-lg font-medium text-gray-600 block mb-2">Description</label>
+                                <input type="text" id="debt-desc" class="w-full p-3 text-lg border-2 border-gray-300 rounded-lg" placeholder="Achat de produits" required>
+                            </div>
+                            <div>
+                                <label for="debt-amount" class="text-lg font-medium text-gray-600 block mb-2">Montant de la Dette</label>
+                                <input type="number" id="debt-amount" class="w-full p-3 text-lg border-2 border-gray-300 rounded-lg" placeholder="15000" required>
+                            </div>
+                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg">
+                                Ajouter Dette
+                            </button>
+                        </div>
+                    </form>
+                    <!-- Enregistrer un paiement -->
+                    <form id="add-payment-form" class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Enregistrer un Paiement</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="payment-amount" class_alias="text-lg font-medium text-gray-600 block mb-2">Montant Payé</label>
+                                <input type="number" id="payment-amount" class="w-full p-3 text-lg border-2 border-gray-300 rounded-lg" placeholder="5000" required>
+                            </div>
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg">
+                                Enregistrer Paiement
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <!-- Colonne de droite: Historique -->
+                <div class="bg-white p-6 rounded-lg shadow flex flex-col">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Historique des Mouvements</h3>
+                    <div id="client-history-container" class="flex-1 overflow-y-auto">
+                        <table class="w-full text-left">
+                            <thead class="border-b-2 border-gray-300">
+                                <tr>
+                                    <th class="py-2 px-3 text-base font-semibold text-gray-600">Date</th>
+                                    <th class="py-2 px-3 text-base font-semibold text-gray-600">Description</th>
+                                    <th class="py-2 px-3 text-base font-semibold text-gray-600">Montant</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-history-table-body" class="divide-y divide-gray-200">
+                                <!-- Historique chargé par JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Conteneur pour les Toasts (notifications) -->
+    <div id="toast-container"></div>
+
+    <!-- Firebase SDK et logique de l'application -->
+    <script type="module">
+        // Importation des services Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            signInAnonymously,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            setDoc,
+            doc,
+            collection,
+            onSnapshot,
+            updateDoc,
+            writeBatch,
+            serverTimestamp,
+            increment,
+            query,
+            setLogLevel,
+            deleteDoc,
+            where // NOUVEAU: Pour les requêtes sur les crédits
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuration Firebase (REMPLACEZ PAR LA VÔTRE)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCluRVv-olQsTuZZBPjjJns1jHq0vkhjSw",
+            authDomain: "maboutique-7891.firebaseapp.com",
+            projectId: "maboutique-7891",
+            storageBucket: "maboutique-7891.firebasestorage.app",
+            messagingSenderId: "402820959115",
+            appId: "1:402820959115:web:6fb6b2c78fc9c5fe203d8e"
+        };
+
+        // Variables globales
+        let db, auth, userId, appId;
+        let allProducts = [];
+        let allSales = [];
+        let saleCart = [];
+        let allExpenses = []; 
+        let allClients = []; // NOUVEAU: Pour les clients
+        let userRef; // Référence à la collection de l'utilisateur
+        let actionToConfirm = null; 
+        let currentClientHistoryListener = null; // NOUVEAU: Pour l'écouteur du client
+
+        // Toast (notification)
+        function showToast(message, type = "success") {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+            toast.className = `toast ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // NOUVEAU: Helper function pour formater les prix
+        function formatPrice(price) {
+            if (typeof price !== 'number') {
+                price = parseFloat(price) || 0;
+            }
+            // 'fr-FR' utilise un espace comme séparateur de milliers
+            return price.toLocaleString('fr-FR') + ' CFA';
+        }
+
+        // Fonction principale
+        async function main() {
+            // Vérifier si la config est en mode test
+            if (firebaseConfig.apiKey === "VOTRE_API_KEY") {
+                const errorMsg = "Erreur: Configurez votre 'firebaseConfig' dans le code HTML (ligne 297).";
+                console.error(errorMsg);
+                document.body.innerHTML = `<div class="p-10 text-center text-2xl text-red-600">${errorMsg}</div>`;
+                return;
+            }
+
+            try {
+                // Initialisation
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                appId = firebaseConfig.projectId;
+                setLogLevel('Debug'); // Pour voir les logs
+
+                // Authentification
+                setupAuthListener();
+            } catch (error) {
+                console.error("Erreur critique de Firebase.", error);
+                showToast("Erreur critique de Firebase. Vérifiez la console.", "error");
+            }
+        }
+
+        // Authentification
+        function setupAuthListener() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    console.log("Utilisateur connecté:", user.uid);
+                    userId = user.uid;
+                    document.getElementById('user-id-display').textContent = userId;
+                    userRef = doc(db, "artifacts", appId, "users", userId);
+
+                    // L'utilisateur est connecté, on active l'application
+                    initializeApplication();
+
+                } else {
+                    console.log("Aucun utilisateur. Tentative de connexion...");
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Erreur d'authentification:", error);
+                        showToast(`Erreur d'authentification: ${error.message}`, "error");
+                    }
+                }
+            });
+        }
+
+        // Initialisation de l'application (après connexion)
+        function initializeApplication() {
+            setupNavigation();
+            setupStockManagement();
+            setupSalesPage();
+            setupReportsPage();
+            setupExpensesPage(); 
+            setupCreditsPage(); // NOUVEAU: Activer la page des crédits
+            // Lier les boutons d'export
+            document.getElementById('export-products-btn').addEventListener('click', exportProductsToCSV);
+            document.getElementById('export-sales-btn').addEventListener('click', exportSalesToCSV);
+            // Lier les boutons d'import
+            setupProductCsvImport();
+            setupSalesCsvImport(); 
+            setupModalListeners(); 
+            setupClientModalListeners(); // NOUVEAU: Activer la modale client
+            showToast("Application connectée et prête !", "success");
+        }
+
+        // Navigation
+        function setupNavigation() {
+            const links = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page-content');
+            const icons = document.querySelectorAll('[data-lucide]');
+
+            // Remplacer les balises <i> par des SVGs Lucide
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+
+            function showPage(hash) {
+                pages.forEach(page => {
+                    if (`#${page.id.split('page-')[1]}` === hash) {
+                        page.classList.remove('hidden');
+                    } else {
+                        page.classList.add('hidden');
+                    }
+                });
+                links.forEach(link => {
+                    if (link.getAttribute('href') === hash) {
+                        link.classList.add('bg-gray-700');
+                    } else {
+                        link.classList.remove('bg-gray-700');
+                    }
+                });
+            }
+
+            links.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const hash = link.getAttribute('href');
+                    window.location.hash = hash;
+                });
+            });
+
+            window.addEventListener('hashchange', () => {
+                const hash = window.location.hash || '#dashboard';
+                showPage(hash);
+            });
+
+            // Afficher la page initiale
+            const hash = window.location.hash || '#dashboard';
+            showPage(hash);
+        }
+
+
+        // --- Gestion du Stock ---
+        function setupStockManagement() {
+            const addForm = document.getElementById('add-product-form');
+            const restockForm = document.getElementById('restock-form');
+            const stockTableBody = document.getElementById('stock-table-body');
+            const productsColRef = collection(userRef, "products");
+
+            // 1. Soumission du formulaire "Ajouter"
+            addForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const sku = document.getElementById('product-sku').value.trim();
+                const name = document.getElementById('product-name').value.trim();
+                const purchasePrice = parseFloat(document.getElementById('product-purchase-price').value) || 0;
+                const salePrice = parseFloat(document.getElementById('product-sale-price').value);
+                const stock = parseInt(document.getElementById('product-stock').value);
+
+                // Validation
+                if (!name || isNaN(salePrice) || isNaN(stock)) {
+                    showToast("Nom, Prix de Vente et Stock sont requis.", "error");
+                    return;
+                }
+
+                const finalSku = sku || `${name.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+                const productRef = doc(productsColRef, finalSku);
+
+                try {
+                    await setDoc(productRef, {
+                        sku: finalSku,
+                        name: name,
+                        purchasePrice: purchasePrice,
+                        salePrice: salePrice,
+                        stock: stock
+                    });
+                    showToast("Produit ajouté avec succès !", "success");
+                    addForm.reset();
+                } catch (error) {
+                    console.error("Erreur ajout produit:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+
+            // 2. Soumission du formulaire "Renouveler"
+            restockForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const sku = document.getElementById('restock-product-select').value;
+                const quantity = parseInt(document.getElementById('restock-quantity').value);
+
+                if (!sku || isNaN(quantity) || quantity <= 0) {
+                    showToast("Veuillez sélectionner un produit et une quantité valide.", "error");
+                    return;
+                }
+
+                const productRef = doc(productsColRef, sku);
+                try {
+                    await updateDoc(productRef, {
+                        stock: increment(quantity)
+                    });
+                    showToast("Stock renouvelé avec succès !", "success");
+                    restockForm.reset();
+                } catch (error) {
+                    console.error("Erreur renouvellement stock:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+
+            // 3. Écouteur de la collection Produits (pour affichage)
+            onSnapshot(query(productsColRef), (snapshot) => {
+                allProducts = snapshot.docs.map(doc => doc.data());
+                allProducts.sort((a, b) => a.name.localeCompare(b.name));
+                
+                renderStockList(allProducts);
+                populateProductDropdowns(allProducts);
+
+                // Mettre à jour les rapports si la liste des produits change
+                if (allSales.length > 0) {
+                    calculateAndRenderReports();
+                }
+            }, (error) => {
+                console.error("Erreur écouteur stock:", error);
+                showToast("Erreur de chargement du stock.", "error");
+            });
+        }
+
+        // --- DÉBUT DES FONCTIONS RESTAURÉES ---
+
+        // Affichage de la liste de stock
+        function renderStockList(products) {
+            const stockTableBody = document.getElementById('stock-table-body');
+            stockTableBody.innerHTML = ''; // Vider la liste
+            if (products.length === 0) {
+                stockTableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-4 text-center text-lg text-gray-500">Aucun produit en stock.</td></tr>';
+                return;
+            }
+            products.forEach(prod => {
+                const stockColor = prod.stock <= 0 ? 'text-red-600' : (prod.stock < 10 ? 'text-yellow-600' : 'text-green-600');
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-4 px-4 text-lg font-medium text-gray-800">${prod.name}</td>
+                        <td class="py-4 px-4 text-lg text-gray-600">${formatPrice(prod.salePrice)}</td>
+                        <td class="py-4 px-4 text-lg text-gray-600">${prod.purchasePrice > 0 ? formatPrice(prod.purchasePrice) : 'N/A'}</td>
+                        <td class="py-4 px-4 text-lg font-bold ${stockColor}">${prod.stock}</td>
+                    </tr>
+                `;
+                stockTableBody.innerHTML += row;
+            });
+        }
+
+        // Remplissage des listes déroulantes
+        function populateProductDropdowns(products) {
+            const saleSelect = document.getElementById('sale-product-select');
+            const restockSelect = document.getElementById('restock-product-select');
+            saleSelect.innerHTML = '<option value="">-- Choisir un produit --</option>';
+            restockSelect.innerHTML = '<option value="">-- Choisir un produit --</option>';
+
+            products.forEach(prod => {
+                const option = `<option value="${prod.sku}">${prod.name} (Stock: ${prod.stock})</option>`;
+                if (prod.stock > 0) {
+                    saleSelect.innerHTML += option;
+                }
+                restockSelect.innerHTML += option;
+            });
+        }
+
+        // --- Gestion de la Page de Vente ---
+        function setupSalesPage() {
+            const form = document.getElementById('add-to-cart-form');
+            const productSelect = document.getElementById('sale-product-select');
+            const priceInput = document.getElementById('sale-price');
+            const finalizeBtn = document.getElementById('finalize-sale-btn');
+            const clientSelect = document.getElementById('sale-client-select'); // NOUVEAU
+
+            // Remplir le prix auto quand on sélectionne un produit
+            productSelect.addEventListener('change', () => {
+                const sku = productSelect.value;
+                const product = allProducts.find(p => p.sku === sku);
+                if (product) {
+                    priceInput.value = product.salePrice.toFixed(2);
+                } else {
+                    priceInput.value = '';
+                }
+            });
+
+            // Ajout au panier
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const sku = productSelect.value;
+                const quantity = parseInt(document.getElementById('sale-quantity').value);
+                const salePrice = parseFloat(priceInput.value);
+                
+                const product = allProducts.find(p => p.sku === sku);
+                if (!product) {
+                    showToast("Veuillez sélectionner un produit.", "error");
+                    return;
+                }
+                if (isNaN(salePrice) || salePrice <= 0) {
+                    showToast("Veuillez entrer un prix de vente valide.", "error");
+                    return;
+                }
+
+                // Vérifier stock
+                const currentStock = product.stock;
+                const inCartQuantity = saleCart.filter(item => item.sku === sku).reduce((sum, item) => sum + item.quantity, 0);
+                
+                if (quantity > (currentStock - inCartQuantity)) {
+                    showToast(`Stock insuffisant. Stock: ${currentStock}, Dans panier: ${inCartQuantity}`, "error");
+                    return;
+                }
+
+                // Ajouter au panier
+                saleCart.push({
+                    sku: product.sku,
+                    name: product.name,
+                    quantity: quantity,
+                    salePrice: salePrice, // Prix négocié
+                });
+
+                renderCart();
+                form.reset();
+                priceInput.value = '';
+                productSelect.value = '';
+            });
+
+            // Finaliser la vente
+            finalizeBtn.addEventListener('click', async () => {
+                if (saleCart.length === 0) {
+                    showToast("Le panier est vide.", "error");
+                    return;
+                }
+
+                // NOUVEAU: Vérifier si c'est une vente à crédit
+                const clientId = clientSelect.value;
+                const client = allClients.find(c => c.id === clientId);
+
+                const batch = writeBatch(db);
+                let totalSale = 0;
+                const stockUpdates = {}; // Pour regrouper les décrémentations
+
+                saleCart.forEach(item => {
+                    totalSale += item.quantity * item.salePrice;
+                    stockUpdates[item.sku] = (stockUpdates[item.sku] || 0) + item.quantity;
+                });
+
+                // 1. Décrémenter le stock pour chaque produit
+                for (const sku in stockUpdates) {
+                    const productRef = doc(userRef, "products", sku);
+                    batch.update(productRef, {
+                        stock: increment(-stockUpdates[sku])
+                    });
+                }
+
+                // 2. Créer un nouvel enregistrement de vente
+                const saleRef = doc(collection(userRef, "sales"));
+                batch.set(saleRef, {
+                    items: saleCart,
+                    total: totalSale,
+                    createdAt: serverTimestamp(),
+                    status: 'completed',
+                    clientId: clientId || null // NOUVEAU: Lier le client à la vente
+                });
+
+                // NOUVEAU: 3. Si c'est à crédit, ajouter la dette
+                if (client) {
+                    // 3a. Ajouter le mouvement de crédit
+                    const moveRef = doc(collection(userRef, "credit_movements"));
+                    batch.set(moveRef, {
+                        clientId: client.id,
+                        date: serverTimestamp(),
+                        description: `Vente #${saleRef.id.substring(0, 5)}`, // Description auto
+                        amount: totalSale // Montant positif = dette
+                    });
+
+                    // 3b. Mettre à jour le total de la dette du client
+                    const clientRef = doc(userRef, "clients", client.id);
+                    batch.update(clientRef, {
+                        totalDebt: increment(totalSale)
+                    });
+                }
+                // FIN NOUVEAU
+
+                try {
+                    await batch.commit();
+                    
+                    if(client) {
+                        showToast(`Vente finalisée et ajoutée au crédit de ${client.name} !`, "success");
+                    } else {
+                        showToast("Vente finalisée avec succès !", "success");
+                    }
+
+                    saleCart = []; // Vider le panier
+                    renderCart();
+                    clientSelect.value = ""; // Réinitialiser le dropdown
+                } catch (error) {
+                    console.error("Erreur finalisation vente:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+        }
+
+        // Affichage du panier
+        function renderCart() {
+            const cartTableBody = document.getElementById('cart-table-body');
+            const cartTotalEl = document.getElementById('cart-total');
+            cartTableBody.innerHTML = '';
+            let total = 0;
+
+            if (saleCart.length === 0) {
+                cartTableBody.innerHTML = '<tr><td colspan="5" class="py-6 px-4 text-center text-lg text-gray-500">Le panier est vide.</td></tr>';
+            }
+
+            saleCart.forEach((item, index) => {
+                const itemTotal = item.quantity * item.salePrice;
+                total += itemTotal;
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-4 px-4 text-lg font-medium text-gray-800">${item.name}</td>
+                        <td class="py-4 px-4 text-lg text-gray-600">${item.quantity}</td>
+                        <td class="py-4 px-4 text-lg text-gray-600">${formatPrice(item.salePrice)}</td>
+                        <td class="py-4 px-4 text-lg text-gray-600">${formatPrice(itemTotal)}</td>
+                        <td class="py-4 px-4 text-lg text-gray-600">
+                            <button class="remove-from-cart text-red-500 hover:text-red-700" data-index="${index}">
+                                <i data-lucide="trash-2" class="w-7 h-7"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                cartTableBody.innerHTML += row;
+            });
+
+            cartTotalEl.textContent = formatPrice(total);
+            
+            // Remplacer les icônes de poubelle
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+
+            // Ajouter les écouteurs pour les boutons "supprimer"
+            document.querySelectorAll('.remove-from-cart').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.getAttribute('data-index'));
+                    saleCart.splice(index, 1); // Supprimer l'article du panier
+                    renderCart(); // Ré-afficher le panier
+                });
+            });
+        }
+
+        // --- Gestion de la Page Rapports ---
+        function setupReportsPage() {
+            const salesColRef = collection(userRef, "sales");
+            
+            document.getElementById('refresh-reports-btn').addEventListener('click', () => {
+                calculateAndRenderReports();
+                showToast("Rapports rafraîchis.", "success");
+            });
+
+            // Écouteur de la collection Ventes
+            onSnapshot(query(salesColRef), (snapshot) => {
+                // MODIFIÉ: On garde l'ID du document
+                allSales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Trier du plus récent au plus ancien
+                allSales.sort((a, b) => {
+                    const dateA = a.createdAt ? a.createdAt.seconds : 0;
+                    const dateB = b.createdAt ? b.createdAt.seconds : 0;
+                    return dateB - dateA;
+                });
+
+                calculateAndRenderReports();
+                renderSalesHistory(allSales);
+            }, (error) => {
+                console.error("Erreur écouteur ventes:", error);
+                showToast("Erreur de chargement des ventes.", "error");
+            });
+        }
+
+        // Calcul et affichage des rapports
+        function calculateAndRenderReports() {
+            // Vider les stats si pas de données
+            const resetStats = () => {
+                const statsHtml = `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                    <p class="text-4xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
+                    <p class="text-4xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Total des Charges</h3>
+                    <p class="text-4xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Total des Créances</h3>
+                    <p class="text-4xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>`;
+                document.getElementById('stats-container').innerHTML = statsHtml;
+                document.getElementById('reports-stats-container').innerHTML = statsHtml;
+            };
+
+            if (allProducts.length === 0) {
+                console.log("Produits manquants pour les rapports.");
+                resetStats();
+                return;
+            }
+
+            let totalRevenue = 0;
+            let grossProfit = 0; // Bénéfice avant charges
+            const productStats = {}; // {sku: {name, totalSold, totalProfit}}
+            let totalSalesCount = 0; // NOUVEAU: Compteur de ventes valides
+
+            const productMap = new Map(allProducts.map(p => [p.sku, p]));
+
+            allSales.forEach(sale => {
+                // NOUVEAU: Ignorer les ventes annulées dans les calculs
+                if (sale.status === 'cancelled') return;
+
+                totalRevenue += sale.total;
+                totalSalesCount++; // NOUVEAU: Compter la vente
+                (sale.items || []).forEach(item => {
+                    const product = productMap.get(item.sku);
+                    let profitPerItem = 0;
+                    if (product && product.purchasePrice > 0) {
+                        profitPerItem = item.salePrice - product.purchasePrice;
+                    }
+                    const itemProfit = profitPerItem * item.quantity;
+                    grossProfit += itemProfit;
+
+                    const sku = item.sku || 'unknown';
+                    if (!productStats[sku]) {
+                        productStats[sku] = { name: item.name, totalSold: 0, totalProfit: 0 };
+                    }
+                    productStats[sku].totalSold += item.quantity;
+                    productStats[sku].totalProfit += itemProfit;
+                });
+            });
+
+            // NOUVEAU: Calcul du Bénéfice Net
+            const totalExpenses = allExpenses.reduce((sum, ex) => sum + ex.amount, 0);
+            const netProfit = grossProfit - totalExpenses;
+            // NOUVEAU: Calcul du Total des Créances
+            const totalOwed = allClients.reduce((sum, client) => sum + (client.totalDebt || 0), 0);
+
+            // Afficher les stats
+            const statsHtml = `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                    <p class="text-4xl font-bold text-gray-800">${formatPrice(totalRevenue)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
+                    <p class="text-4xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatPrice(netProfit)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Total des Créances</h3>
+                    <p class="text-4xl font-bold text-orange-600">${formatPrice(totalOwed)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Nombre de Ventes</h3>
+                    <p class="text-4xl font-bold text-gray-800">${totalSalesCount}</p>
+                </div>`;
+            // NOUVEAU: Séparer les conteneurs de stats
+            document.getElementById('stats-container').innerHTML = statsHtml;
+            
+            // Mettre à jour les stats des rapports (avec le total des charges)
+            const reportStatsHtml = `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                    <p class="text-4xl font-bold text-gray-800">${formatPrice(totalRevenue)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
+                    <p class="text-4xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatPrice(netProfit)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Total des Charges</h3>
+                    <p class="text-4xl font-bold text-red-600">${formatPrice(totalExpenses)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">Total des Créances</h3>
+                    <p class="text-4xl font-bold text-orange-600">${formatPrice(totalOwed)}</p>
+                </div>`;
+            document.getElementById('reports-stats-container').innerHTML = reportStatsHtml;
+
+
+            // Afficher les Top 5
+            const statsList = Object.values(productStats);
+            
+            // Top Vendus
+            const topSold = [...statsList].sort((a, b) => b.totalSold - a.totalSold).slice(0, 5);
+            const topSoldList = document.getElementById('top-sold-list');
+            topSoldList.innerHTML = topSold.map(item => `
+                <div class="flex justify-between text-lg py-2 border-b">
+                    <span class="font-medium text-gray-700">${item.name}</span>
+                    <span class="font-bold text-gray-900">${item.totalSold} unités</span>
+                </div>
+            `).join('');
+
+            // Top Profit
+            const topProfit = [...statsList].sort((a, b) => b.totalProfit - a.totalProfit).slice(0, 5);
+            const topProfitList = document.getElementById('top-profit-list');
+            topProfitList.innerHTML = topProfit.map(item => `
+                <div class="flex justify-between text-lg py-2 border-b">
+                    <span class="font-medium text-gray-700">${item.name}</span>
+                    <span class="font-bold text-green-600">${formatPrice(item.totalProfit)}</span>
+                </div>
+            `).join('');
+        }
+
+        // Affichage de l'historique des ventes
+        function renderSalesHistory(sales) {
+            const historyTableBody = document.getElementById('sales-history-table-body');
+            historyTableBody.innerHTML = '';
+            if (sales.length === 0) {
+                historyTableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-4 text-center text-lg text-gray-500">Aucune vente enregistrée.</td></tr>';
+                return;
+            }
+
+            sales.forEach(sale => {
+                const date = sale.createdAt ? sale.createdAt.toDate().toLocaleString('fr-FR') : 'Date inconnue';
+                let itemsStr = (sale.items || []).map(i => `${i.name} (x${i.quantity})`).join(', ');
+
+                // NOUVEAU: Ajouter le nom du client si c'est une vente à crédit
+                if (sale.clientId) {
+                    const client = allClients.find(c => c.id === sale.clientId);
+                    if (client) {
+                        itemsStr += `<br><span class="text-sm text-blue-600">-> Crédit: ${client.name}</span>`;
+                    }
+                }
+
+                let actionCell = '';
+                let rowClass = 'hover:bg-gray-50';
+
+                if (sale.status === 'cancelled') {
+                    // Vente annulée
+                    rowClass = 'opacity-50 line-through'; // Griser et barrer
+                    const cancelDate = sale.cancelledAt ? sale.cancelledAt.toDate().toLocaleDateString('fr-FR') : '';
+                    actionCell = `<td class="py-4 px-4 text-lg text-gray-500">Annulée ${cancelDate}</td>`;
+                } else {
+                    // Vente active
+                    actionCell = `
+                        <td class="py-4 px-4 text-lg">
+                            <button class="delete-sale-btn text-red-500 hover:text-red-700" data-id="${sale.id}">
+                                <i data-lucide="trash-2" class="w-7 h-7"></i>
+                            </button>
+                        </td>`;
+                }
+
+                const row = `
+                    <tr class="${rowClass}">
+                        <td class="py-4 px-4 text-lg text-gray-600">${date}</td>
+                        <td class="py-4 px-4 text-lg font-medium text-gray-800">${itemsStr}</td>
+                        <td class="py-4 px-4 text-lg font-bold text-gray-900">${formatPrice(sale.total)}</td>
+                        ${actionCell}
+                    </tr>
+                `;
+                historyTableBody.innerHTML += row;
+            });
+
+            // Recréer les icônes
+            if (window.lucide) window.lucide.createIcons();
+
+            // Ajouter les écouteurs pour les boutons "supprimer"
+            document.querySelectorAll('.delete-sale-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const saleId = e.currentTarget.dataset.id;
+                    showConfirmModal(
+                        "Annuler cette vente ?",
+                        "La vente sera marquée comme 'Annulée' et ne comptera plus dans les rapports. Le stock ne sera PAS restauré.",
+                        () => { cancelSale(saleId); }
+                    );
+                });
+            });
+        }
+
+        // --- FIN DES FONCTIONS RESTAURÉES ---
+
+
+        // --- NOUVEAU: Gestion de l'import CSV (Produits) ---
+        function setupProductCsvImport() {
+            const importBtn = document.getElementById('import-product-csv-btn');
+            const fileInput = document.getElementById('product-csv-file-input');
+
+            importBtn.addEventListener('click', () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    showToast("Veuillez sélectionner un fichier CSV.", "error");
+                    return;
+                }
+
+                if (!window.Papa) {
+                    showToast("La librairie d'importation (PapaParse) n'est pas chargée.", "error");
+                    return;
+                }
+
+                // Désactiver le bouton pendant l'import
+                importBtn.disabled = true;
+                importBtn.innerHTML = "Importation en cours...";
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: async (results) => {
+                        try {
+                            const importedCount = await importProductsToFirestore(results.data);
+                            showToast(`Importation réussie ! ${importedCount} produits ajoutés.`, "success");
+                        } catch (error) {
+                            console.error("Erreur d'importation:", error);
+                            showToast(`Erreur d'importation: ${error.message}`, "error");
+                        } finally {
+                            // Réactiver le bouton
+                            importBtn.disabled = false;
+                            importBtn.innerHTML = '<i data-lucide="upload"></i> <span>Importer Produits</span>';
+                            if (window.lucide) window.lucide.createIcons();
+                            fileInput.value = ''; // Vider le champ
+                        }
+                    },
+                    error: (error) => {
+                        console.error("Erreur PapaParse:", error);
+                        showToast(`Erreur de lecture CSV: ${error.message}`, "error");
+                        importBtn.disabled = false;
+                        importBtn.innerHTML = '<i data-lucide="upload"></i> <span>Importer Produits</span>';
+                        if (window.lucide) window.lucide.createIcons();
+                    }
+                });
+            });
+        }
+
+        async function importProductsToFirestore(products) {
+            const productsColRef = collection(userRef, "products");
+            let batch = writeBatch(db);
+            let operations = 0;
+            let importedCount = 0;
+
+            for (const prod of products) {
+                const name = prod['Articles'] ? prod['Articles'].trim() : null;
+                const stock = parseInt(prod['Quantités']);
+                const purchasePrice = parseFloat(prod["Prix d'Achat"]) || 0;
+                const salePrice = parseFloat(prod["Prix Vente"]) || 0; // MODIFIÉ: 0 si manquant
+
+                // Validation de la ligne
+                if (!name || isNaN(stock)) { // MODIFIÉ: Retiré la validation sur salePrice
+                    console.warn("Ligne CSV ignorée (nom ou quantité manquant):", prod);
+                    continue; // Ignorer cette ligne
+                }
+                
+                // Générer une référence de document unique
+                const productRef = doc(productsColRef); 
+                const finalSku = productRef.id; // Utiliser l'ID auto-généré comme SKU
+
+                batch.set(productRef, {
+                    sku: finalSku,
+                    name: name,
+                    purchasePrice: purchasePrice,
+                    salePrice: salePrice,
+                    stock: stock
+                });
+
+                operations++;
+                importedCount++;
+
+                // Limite de Firebase (500 opérations par batch)
+                if (operations >= 499) {
+                    await batch.commit();
+                    batch = writeBatch(db);
+                    operations = 0;
+                }
+            }
+
+            // Envoyer le dernier batch s'il reste des opérations
+            if (operations > 0) {
+                await batch.commit();
+            }
+
+            return importedCount;
+        }
+
+
+        // --- NOUVEAU: Gestion de l'import CSV (Ventes Passées) ---
+        function setupSalesCsvImport() {
+            const importBtn = document.getElementById('import-sales-csv-btn');
+            const fileInput = document.getElementById('sales-csv-file-input');
+
+            importBtn.addEventListener('click', () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    showToast("Veuillez sélectionner un fichier CSV de ventes.", "error");
+                    return;
+                }
+                if (!window.Papa) {
+                    showToast("La librairie d'importation (PapaParse) n'est pas chargée.", "error");
+                    return;
+                }
+
+                importBtn.disabled = true;
+                importBtn.innerHTML = "Importation en cours...";
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: async (results) => {
+                        try {
+                            const importedCount = await importPastSalesToFirestore(results.data);
+                            showToast(`Importation réussie ! ${importedCount} ventes passées ajoutées.`, "success");
+                        } catch (error) {
+                            console.error("Erreur d'importation ventes:", error);
+                            showToast(`Erreur d'importation: ${error.message}`, "error");
+                        } finally {
+                            importBtn.disabled = false;
+                            importBtn.innerHTML = '<i data-lucide="history"></i> <span>Importer Ventes Passées</span>';
+                            if (window.lucide) window.lucide.createIcons();
+                            fileInput.value = ''; 
+                        }
+                    },
+                    error: (error) => {
+                        console.error("Erreur PapaParse:", error);
+                        showToast(`Erreur de lecture CSV: ${error.message}`, "error");
+                        importBtn.disabled = false;
+                        importBtn.innerHTML = '<i data-lucide="history"></i> <span>Importer Ventes Passées</span>';
+                        if (window.lucide) window.lucide.createIcons();
+                    }
+                });
+            });
+        }
+
+        async function importPastSalesToFirestore(salesRows) {
+            const salesColRef = collection(userRef, "sales");
+            let batch = writeBatch(db);
+            let operations = 0;
+            let importedCount = 0;
+
+            // Map des produits pour trouver le SKU (fragile mais nécessaire)
+            const productMapByName = new Map(allProducts.map(p => [p.name.toLowerCase(), p]));
+
+            for (const row of salesRows) {
+                const date = row['Date'] ? row['Date'].trim() : null;
+                const name = row['Nom Produit'] ? row['Nom Produit'].trim() : null;
+                const quantity = parseInt(row['Quantité']);
+                const totalSale = parseFloat(row['Total Vente']);
+
+                // Validation
+                if (!date || !name || isNaN(quantity) || isNaN(totalSale)) {
+                    console.warn("Ligne Vente ignorée (données manquantes):", row);
+                    continue;
+                }
+
+                // NOUVELLE GESTION DE LA DATE
+                let saleDate;
+                try {
+                    const parts = date.split('-'); // ex: ['20', '10', '2025']
+                    if (parts.length !== 3) throw new Error('Format de date incorrect (JJ-MM-AAAA attendu)');
+                    const day = parts[0];
+                    const month = parts[1];
+                    const year = parts[2];
+                    // Re-assembler en AAAA-MM-JJ que new Date() comprend
+                    const isoDateStr = `${year}-${month}-${day}`;
+                    saleDate = new Date(isoDateStr);
+                    if (isNaN(saleDate.getTime())) throw new Error('Date invalide après conversion');
+                } catch (e) {
+                    console.warn(`Ligne Vente ignorée (date invalide: ${e.message}):`, row);
+                    continue;
+                }
+                // FIN NOUVELLE GESTION DE LA DATE
+
+                const product = productMapByName.get(name.toLowerCase());
+                const salePrice = totalSale / quantity;
+
+                const saleItem = {
+                    sku: product ? product.sku : 'SKU_INCONNU',
+                    name: name,
+                    quantity: quantity,
+                    salePrice: salePrice // Prix unitaire calculé
+                };
+
+                const saleDoc = {
+                    items: [saleItem],
+                    total: totalSale,
+                    createdAt: saleDate, // Date de la vente (pas serverTimestamp)
+                    status: 'completed'
+                };
+                
+                const saleRef = doc(salesColRef);
+                batch.set(saleRef, saleDoc);
+                operations++;
+                importedCount++;
+
+                // PAS de mise à jour du stock pour les ventes passées
+
+                if (operations >= 499) {
+                    await batch.commit();
+                    batch = writeBatch(db);
+                    operations = 0;
+                }
+            }
+
+            if (operations > 0) {
+                await batch.commit();
+            }
+
+            return importedCount;
+        }
+
+
+        // --- NOUVEAU: Gestion Page des Charges ---
+        function setupExpensesPage() {
+            const addForm = document.getElementById('add-expense-form');
+            const expensesColRef = collection(userRef, "expenses");
+            
+            // 1. Ajouter une dépense
+            addForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const date = document.getElementById('expense-date').value;
+                const description = document.getElementById('expense-desc').value.trim();
+                const amount = parseFloat(document.getElementById('expense-amount').value);
+
+                if (!date || !description || isNaN(amount) || amount <= 0) {
+                    showToast("Date, description et montant valide sont requis.", "error");
+                    return;
+                }
+                
+                // Utiliser la date du sélecteur, en forçant l'heure à midi pour éviter les pbs de fuseau horaire
+                const [year, month, day] = date.split('-');
+                const expenseDate = new Date(year, month - 1, day, 12, 0, 0);
+
+                if (isNaN(expenseDate.getTime())) {
+                    showToast("Date invalide.", "error");
+                    return;
+                }
+                
+                try {
+                    const expenseRef = doc(expensesColRef);
+                    await setDoc(expenseRef, {
+                        date: expenseDate, // Utiliser l'objet Date
+                        description: description,
+                        amount: amount
+                    });
+                    showToast("Dépense ajoutée avec succès !", "success");
+                    addForm.reset();
+                } catch (error) {
+                    console.error("Erreur ajout dépense:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+
+            // 2. Écouteur de la collection Dépenses
+            onSnapshot(query(expensesColRef), (snapshot) => {
+                // NOUVEAU: Capturer l'ID
+                allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Trier du plus récent au plus ancien
+                allExpenses.sort((a, b) => {
+                    const dateA = a.date ? a.date.seconds : 0;
+                    const dateB = b.date ? b.date.seconds : 0;
+                    return dateB - dateA;
+                });
+
+                renderExpensesList(allExpenses);
+                calculateAndRenderReports(); // Recalculer le bénéfice net
+            }, (error) => {
+                console.error("Erreur écouteur dépenses:", error);
+                showToast("Erreur de chargement des dépenses.", "error");
+            });
+        }
+
+        function renderExpensesList(expenses) {
+            const tableBody = document.getElementById('expenses-table-body');
+            tableBody.innerHTML = '';
+            if (expenses.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-4 text-center text-lg text-gray-500">Aucune dépense enregistrée.</td></tr>';
+                return;
+            }
+            expenses.forEach(ex => {
+                const date = ex.date ? ex.date.toDate().toLocaleDateString('fr-FR') : 'Date inconnue';
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-4 px-4 text-lg text-gray-600">${date}</td>
+                        <td class="py-4 px-4 text-lg font-medium text-gray-800">${ex.description}</td>
+                        <td class="py-4 px-4 text-lg font-bold text-red-600">${formatPrice(ex.amount)}</td>
+                        <td class="py-4 px-4 text-lg">
+                            <button class="delete-expense-btn text-red-500 hover:text-red-700" data-id="${ex.id}">
+                                <i data-lucide="trash-2" class="w-7 h-7"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+
+            // Recréer les icônes
+            if (window.lucide) window.lucide.createIcons();
+
+            // Ajouter les écouteurs pour les boutons "supprimer"
+            document.querySelectorAll('.delete-expense-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const expenseId = e.currentTarget.dataset.id;
+                    showConfirmModal(
+                        "Supprimer cette charge ?",
+                        "Cette action est irréversible et supprimera définitivelement la dépense.",
+                        () => { deleteExpense(expenseId); }
+                    );
+                });
+            });
+        }
+
+        // --- NOUVEAU: Gestion Page des Crédits ---
+        function setupCreditsPage() {
+            const addClientForm = document.getElementById('add-client-form');
+            const clientsColRef = collection(userRef, "clients");
+
+            // 1. Ajouter un client
+            addClientForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('client-name').value.trim();
+                const phone = document.getElementById('client-phone').value.trim();
+                if (!name) {
+                    showToast("Le nom du client est requis.", "error");
+                    return;
+                }
+                try {
+                    const clientRef = doc(clientsColRef); // Laisse Firestore générer l'ID
+                    await setDoc(clientRef, {
+                        id: clientRef.id,
+                        name: name,
+                        phone: phone,
+                        totalDebt: 0
+                    });
+                    showToast("Client ajouté avec succès !", "success");
+                    addClientForm.reset();
+                } catch (error) {
+                    console.error("Erreur ajout client:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+
+            // 2. Écouteur de la collection Clients
+            onSnapshot(query(clientsColRef), (snapshot) => {
+                allClients = snapshot.docs.map(doc => doc.data());
+                allClients.sort((a, b) => a.name.localeCompare(b.name));
+                
+                renderClientList(allClients);
+                populateClientDropdown(allClients); // NOUVEAU: Mettre à jour la liste sur la page Vente
+                calculateAndRenderReports(); // Mettre à jour le total des créances
+            }, (error) => {
+                console.error("Erreur écouteur clients:", error);
+                showToast("Erreur de chargement des clients.", "error");
+            });
+        }
+
+        function renderClientList(clients) {
+            const tableBody = document.getElementById('clients-table-body');
+            tableBody.innerHTML = '';
+            if (clients.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="py-6 px-4 text-center text-lg text-gray-500">Aucun client enregistré.</td></tr>';
+                return;
+            }
+            clients.forEach(client => {
+                const debt = client.totalDebt || 0;
+                const debtColor = debt > 0 ? 'text-red-600' : 'text-green-600';
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-4 px-4 text-lg font-medium text-gray-800">${client.name}</td>
+                        <td class="py-4 px-4 text-lg text-gray-600">${client.phone || 'N/A'}</td>
+                        <td class="py-4 px-4 text-lg font-bold ${debtColor}">${formatPrice(debt)}</td>
+                        <td class="py-4 px-4 text-lg">
+                            <button class="view-client-btn text-blue-600 hover:text-blue-800" data-id="${client.id}">
+                                Gérer
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+
+            // Ajouter les écouteurs pour les boutons "Gérer"
+            document.querySelectorAll('.view-client-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const clientId = e.currentTarget.dataset.id;
+                    showClientDetailModal(clientId);
+                });
+            });
+        }
+
+        // NOUVEAU: Remplir la liste déroulante des clients sur la page Vente
+        function populateClientDropdown(clients) {
+            const clientSelect = document.getElementById('sale-client-select');
+            if (!clientSelect) return; // Au cas où
+            
+            // Garder l'option par défaut
+            clientSelect.innerHTML = '<option value="">-- Vente au comptant --</option>'; 
+
+            clients.forEach(client => {
+                const option = `<option value="${client.id}">${client.name}</option>`;
+                clientSelect.innerHTML += option;
+            });
+        }
+
+        // NOUVEAU: Fonctions de la Modale Client
+        function setupClientModalListeners() {
+            const modal = document.getElementById('client-detail-modal');
+            const addDebtForm = document.getElementById('add-debt-form');
+            const addPaymentForm = document.getElementById('add-payment-form');
+            
+            document.getElementById('client-modal-close-btn').addEventListener('click', hideClientDetailModal);
+
+            addDebtForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const clientId = e.currentTarget.dataset.clientId;
+                const description = document.getElementById('debt-desc').value.trim();
+                const amount = parseFloat(document.getElementById('debt-amount').value);
+                
+                if (clientId && description && amount > 0) {
+                    addCreditMovement(clientId, description, amount); // Montant positif = dette
+                    addDebtForm.reset();
+                } else {
+                    showToast("Description et montant valide requis.", "error");
+                }
+            });
+
+            addPaymentForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const clientId = e.currentTarget.dataset.clientId;
+                const amount = parseFloat(document.getElementById('payment-amount').value);
+                
+                if (clientId && amount > 0) {
+                    addCreditMovement(clientId, "Paiement", -amount); // Montant négatif = paiement
+                    addPaymentForm.reset();
+                } else {
+                    showToast("Montant valide requis.", "error");
+                }
+            });
+        }
+
+        function showClientDetailModal(clientId) {
+            const client = allClients.find(c => c.id === clientId);
+            if (!client) return;
+
+            // Arrêter l'ancien écouteur s'il existe
+            if (currentClientHistoryListener) {
+                currentClientHistoryListener();
+            }
+
+            document.getElementById('client-modal-name').textContent = client.name;
+            // Stocker l'ID client sur les formulaires
+            document.getElementById('add-debt-form').dataset.clientId = clientId;
+            document.getElementById('add-payment-form').dataset.clientId = clientId;
+            
+            // Écouter l'historique de ce client spécifique
+            const historyColRef = collection(userRef, "credit_movements");
+            const q = query(historyColRef, where("clientId", "==", clientId));
+
+            currentClientHistoryListener = onSnapshot(q, (snapshot) => {
+                const history = snapshot.docs.map(doc => doc.data());
+                history.sort((a, b) => (b.date ? b.date.seconds : 0) - (a.date ? a.date.seconds : 0));
+                renderClientHistory(history);
+            });
+
+            document.getElementById('client-detail-modal').classList.remove('hidden');
+            if (window.lucide) window.lucide.createIcons(); // Pour l'icône 'x'
+        }
+
+        function hideClientDetailModal() {
+            document.getElementById('client-detail-modal').classList.add('hidden');
+            // Arrêter l'écouteur d'historique
+            if (currentClientHistoryListener) {
+                currentClientHistoryListener();
+                currentClientHistoryListener = null;
+            }
+            // Vider l'historique
+            document.getElementById('client-history-table-body').innerHTML = '';
+        }
+
+        function renderClientHistory(history) {
+            const tableBody = document.getElementById('client-history-table-body');
+            tableBody.innerHTML = '';
+            if (history.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3" class="py-4 px-3 text-center text-base text-gray-500">Aucun mouvement.</td></tr>';
+                return;
+            }
+            history.forEach(mov => {
+                const date = mov.date ? mov.date.toDate().toLocaleDateString('fr-FR') : 'N/A';
+                const isDebt = mov.amount > 0;
+                const color = isDebt ? 'text-red-600' : 'text-green-600';
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 px-3 text-base text-gray-600">${date}</td>
+                        <td class="py-3 px-3 text-base font-medium text-gray-800">${mov.description}</td>
+                        <td class="py-3 px-3 text-base font-bold ${color}">${formatPrice(mov.amount)}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        async function addCreditMovement(clientId, description, amount) {
+            const batch = writeBatch(db);
+
+            // 1. Ajouter le mouvement
+            const moveRef = doc(collection(userRef, "credit_movements"));
+            batch.set(moveRef, {
+                clientId: clientId,
+                date: serverTimestamp(),
+                description: description,
+                amount: amount // peut être positif (dette) ou négatif (paiement)
+            });
+
+            // 2. Mettre à jour le total de la dette du client
+            const clientRef = doc(userRef, "clients", clientId);
+            batch.update(clientRef, {
+                totalDebt: increment(amount)
+            });
+
+            try {
+                await batch.commit();
+                const action = amount > 0 ? "Dette ajoutée" : "Paiement enregistré";
+                showToast(`${action} avec succès.`, "success");
+            } catch (error) {
+                console.error("Erreur mouvement crédit:", error);
+                showToast(`Erreur: ${error.message}`, "error");
+            }
+        }
+
+
+        // --- NOUVEAU: Fonctions de Modale ---
+        function setupModalListeners() {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('modal-cancel-btn').addEventListener('click', hideConfirmModal);
+            document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+                if (typeof actionToConfirm === 'function') {
+                    actionToConfirm();
+                }
+                hideConfirmModal();
+            });
+        }
+
+        function showConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-text').textContent = message;
+            actionToConfirm = onConfirm;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function hideConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            actionToConfirm = null;
+        }
+
+        // NOUVEAU: Action d'annulation de Vente
+        async function cancelSale(saleId) {
+            const saleRef = doc(userRef, "sales", saleId);
+            try {
+                // On ne supprime pas, on met à jour le statut
+                await updateDoc(saleRef, {
+                    status: 'cancelled',
+                    cancelledAt: serverTimestamp()
+                });
+                showToast('Vente annulée avec succès.', 'success');
+            } catch (error) {
+                console.error("Erreur annulation vente:", error);
+                showToast(`Erreur: ${error.message}`, "error");
+            }
+        }
+
+        // NOUVEAU: Action de suppression de Charge
+        async function deleteExpense(expenseId) {
+            const expenseRef = doc(userRef, "expenses", expenseId);
+            try {
+                // Ici, on supprime vraiment
+                await deleteDoc(expenseRef);
+                showToast('Charge supprimée avec succès.', 'success');
+            } catch (error) {
+                console.error("Erreur suppression charge:", error);
+                showToast(`Erreur: ${error.message}`, "error");
+            }
+        }
+
+
+        // --- NOUVEAU: Fonctions d'Exportation CSV ---
+
+        // Helper pour télécharger le contenu
+        function downloadCSV(csvContent, fileName) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // Exportation des Produits
+        function exportProductsToCSV() {
+            if (allProducts.length === 0) {
+                showToast("Aucun produit à exporter.", "error");
+                return;
+            }
+            
+            const headers = ['sku', 'name', 'purchasePrice', 'salePrice', 'stock'];
+            let csvContent = headers.join(',') + '\n';
+
+            allProducts.forEach(prod => {
+                const row = headers.map(header => {
+                    let val = prod[header];
+                    if (typeof val === 'string') {
+                        // Échapper les guillemets en les doublant et envelopper dans des guillemets
+                        val = `"${val.replace(/"/g, '""')}"`;
+                    }
+                    return val;
+                });
+                csvContent += row.join(',') + '\n';
+            });
+
+            downloadCSV(csvContent, 'sauvegarde_produits.csv');
+            showToast("Exportation des produits terminée.", "success");
+        }
+
+        // Exportation des Ventes (détaillée)
+        function exportSalesToCSV() {
+            if (allSales.length === 0) {
+                showToast("Aucune vente à exporter.", "error");
+                return;
+            }
+            
+            const headers = ['ID_Vente', 'DateVente', 'SKU_Produit', 'NomProduit', 'QuantiteVendue', 'PrixVenteNegocie', 'TotalLigne', 'ID_Client_Credit'];
+            let csvContent = headers.join(',') + '\n';
+
+            allSales.forEach(sale => {
+                // NOUVEAU: Ignorer les ventes annulées de l'export
+                if (sale.status === 'cancelled') return;
+
+                const saleId = sale.id;
+                const saleDate = sale.createdAt ? `"${sale.createdAt.toDate().toLocaleString('fr-FR')}"` : '""';
+                const clientId = sale.clientId ? `"${sale.clientId}"` : '""';
+
+                sale.items.forEach(item => {
+                    const itemTotal = (item.quantity * item.salePrice).toFixed(2);
+                    const row = [
+                        `"${saleId}"`,
+                        saleDate,
+                        `"${item.sku}"`,
+                        `"${item.name.replace(/"/g, '""')}"`, // Échapper les guillemets
+                        item.quantity,
+                        item.salePrice,
+                        itemTotal,
+                        clientId // NOUVEAU
+                    ];
+                    csvContent += row.join(',') + '\n';
+                });
+            });
+
+            downloadCSV(csvContent, 'sauvegarde_ventes_detaillees.csv');
+            showToast("Exportation des ventes terminée.", "success");
+        }
+
+
+        // Démarrage
+        main();
+
+    </script>
+</body>
+
+</html>
+
