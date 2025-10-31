@@ -80,58 +80,53 @@
     <div id="app-container" class="flex h-screen bg-gray-200 hidden">
 
         <!-- Barre de navigation latérale (plus petite sur mobile) -->
-        <!-- MODIFIÉ: w-16 sur mobile, w-64 sur desktop -->
-        <div class="w-16 md:w-64 bg-gray-800 text-white flex flex-col fixed h-full">
-            <div class="text-lg md:text-xl font-bold p-4 md:p-6 text-center text-white hidden md:block">Boutique</div>
-            <div class="text-lg md:text-xl font-bold p-4 text-center text-white block md:hidden">
-                <i data-lucide="store" class="w-6 h-6 mx-auto"></i>
-            </div>
+        <div class="w-20 md:w-64 bg-gray-800 text-white flex flex-col fixed h-full">
+            <div class="text-lg md:text-xl font-bold p-4 md:p-6 text-center text-white">Boutique</div>
             <nav class="flex-1 mt-4 md:mt-10">
-                <!-- MODIFIÉ: Liens avec flex-col sur mobile et texte en dessous -->
+                <!-- Polices et icônes réduites -->
                 <a href="#dashboard"
-                    class="nav-link flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white md:flex-row md:justify-start md:gap-4 py-3 md:py-4 px-2 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
-                    <span class="text-[10px] md:text-base">Dashboard</span>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="layout-dashboard" class="w-6 h-6 md:w-7 md:h-7"></i>
+                    <span class="hidden md:inline">Dashboard</span>
                 </a>
                 <a href="#ventes"
-                    class="nav-link flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white md:flex-row md:justify-start md:gap-4 py-3 md:py-4 px-2 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
-                    <span class="text-[10px] md:text-base">Vente</span>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="shopping-cart" class="w-6 h-6 md:w-7 md:h-7"></i>
+                    <span class="hidden md:inline">Vente</span>
                 </a>
                 <a href="#stock"
-                    class="nav-link flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white md:flex-row md:justify-start md:gap-4 py-3 md:py-4 px-2 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="package" class="w-6 h-6"></i>
-                    <span class="text-[10px] md:text-base">Stock</span>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="package" class="w-6 h-6 md:w-7 md:h-7"></i>
+                    <span class="hidden md:inline">Stock</span>
                 </a>
                 <a href="#credits"
-                    class="nav-link flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white md:flex-row md:justify-start md:gap-4 py-3 md:py-4 px-2 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="users" class="w-6 h-6"></i>
-                    <span class="text-[10px] md:text-base">Crédits</span>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="users" class="w-6 h-6 md:w-7 md:h-7"></i>
+                    <span class="hidden md:inline">Crédits</span>
                 </a>
                 <a href="#rapports"
-                    class="nav-link flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white md:flex-row md:justify-start md:gap-4 py-3 md:py-4 px-2 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
-                    <span class="text-[10px] md:text-base">Rapports</span>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="bar-chart-3" class="w-6 h-6 md:w-7 md:h-7"></i>
+                    <span class="hidden md:inline">Rapports</span>
                 </a>
                 <a href="#charges"
-                    class="nav-link flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white md:flex-row md:justify-start md:gap-4 py-3 md:py-4 px-2 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
-                    <i data-lucide="credit-card" class="w-6 h-6"></i>
-                    <span class="text-[10px] md:text-base">Charges</span>
+                    class="nav-link flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 hover:bg-gray-700 transition duration-200 ease-in-out">
+                    <i data-lucide="credit-card" class="w-6 h-6 md:w-7 md:h-7"></i>
+                    <span class="hidden md:inline">Charges</span>
                 </a>
             </nav>
-            <button id="logout-btn" class="flex flex-col items-center justify-center gap-1 md:flex-row md:justify-start md:gap-4 py-3 md:py-4 px-2 md:px-6 text-red-400 hover:bg-red-700 hover:text-white transition duration-200 ease-in-out">
-                <i data-lucide="log-out" class="w-6 h-6"></i>
-                <span class="text-[10px] md:text-base">Déconnexion</span>
+            <button id="logout-btn" class="flex items-center justify-center md:justify-start gap-3 md:gap-4 text-lg md:text-base py-4 px-3 md:px-6 text-red-400 hover:bg-red-700 hover:text-white transition duration-200 ease-in-out">
+                <i data-lucide="log-out" class="w-6 h-6 md:w-7 md:h-7"></i>
+                <span class="hidden md:inline">Se Déconnecter</span>
             </button>
-            <div class="p-2 md:p-4 text-center text-gray-500 text-xs hidden md:block">
+            <div class="p-2 md:p-4 text-center text-gray-500 text-xs">
                 <p class="mb-1 md:mb-2 hidden md:block">Utilisateur:</p>
                 <p id="user-id-display" class="font-mono break-all text-[10px] md:text-xs">Chargement...</p>
             </div>
         </div>
 
         <!-- Contenu principal (marge de gauche ajustée) -->
-        <!-- MODIFIÉ: ml-16 sur mobile, ml-64 sur desktop -->
-        <main class="flex-1 ml-16 md:ml-64 p-4 md:p-8 overflow-y-auto">
+        <main class="flex-1 ml-20 md:ml-64 p-4 md:p-8 overflow-y-auto">
 
             <!-- Page Dashboard -->
             <div id="page-dashboard" class="page-content">
@@ -151,8 +146,8 @@
                         <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
                     </div>
                     <div class="bg-white p-4 rounded-xl shadow-lg">
-                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Nombre de Ventes</h3>
-                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0</p>
+                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
                     </div>
                 </div>
             </div>
@@ -406,18 +401,6 @@
                     <!-- Stats (polices réduites) -->
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
                         <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
-                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
-                    </div>
-                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
-                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
-                    </div>
-                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
-                        <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
-                    </div>
-                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                        <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
                         <p class="text-2xl md:text-3xl font-bold text-gray-800">0 CFA</p>
                     </div>
                 </div>
@@ -854,12 +837,8 @@
                 links.forEach(link => {
                     if (link.getAttribute('href') === hash) {
                         link.classList.add('bg-gray-700');
-                        link.classList.add('text-white');
-                        link.classList.remove('text-gray-400');
                     } else {
                         link.classList.remove('bg-gray-700');
-                        link.classList.remove('text-white');
-                        link.classList.add('text-gray-400');
                     }
                 });
             }
@@ -1219,7 +1198,14 @@
                     <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
                 </div>`;
                 document.getElementById('stats-container').innerHTML = statsHtml;
-                document.getElementById('reports-stats-container').innerHTML = statsHtml;
+                
+                // MODIFIÉ: Pour les rapports, garder seulement Chiffre d'Affaires
+                const reportStatsHtml = `
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>`;
+                document.getElementById('reports-stats-container').innerHTML = reportStatsHtml;
             };
 
             if (allProducts.length === 0) {
@@ -1262,6 +1248,7 @@
             const netProfit = grossProfit - totalExpenses;
             const totalOwed = allClients.reduce((sum, client) => sum + (client.totalDebt || 0), 0);
 
+            // MODIFIÉ: Dashboard avec Total des Charges
             const statsHtml = `
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
                     <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
@@ -1276,27 +1263,16 @@
                     <p class="text-2xl md:text-3xl font-bold text-orange-600">${formatPrice(totalOwed)}</p>
                 </div>
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Nombre de Ventes</h3>
-                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${totalSalesCount}</p>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
+                    <p class="text-2xl md:text-3xl font-bold text-red-600">${formatPrice(totalExpenses)}</p>
                 </div>`;
             document.getElementById('stats-container').innerHTML = statsHtml;
             
+            // MODIFIÉ: Rapports - garder seulement Chiffre d'Affaires
             const reportStatsHtml = `
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
                     <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Chiffre d'Affaires</h3>
                     <p class="text-2xl md:text-3xl font-bold text-gray-800">${formatPrice(totalRevenue)}</p>
-                </div>
-                <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Bénéfice Net</h3>
-                    <p class="text-2xl md:text-3xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatPrice(netProfit)}</p>
-                </div>
-                <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Charges</h3>
-                    <p class="text-2xl md:text-3xl font-bold text-red-600">${formatPrice(totalExpenses)}</p>
-                </div>
-                <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-sm md:text-base font-semibold text-gray-500 mb-2">Total des Créances</h3>
-                    <p class="text-2xl md:text-3xl font-bold text-orange-600">${formatPrice(totalOwed)}</p>
                 </div>`;
             document.getElementById('reports-stats-container').innerHTML = reportStatsHtml;
 
@@ -2030,4 +2006,3 @@
 </body>
 
 </html>
-
