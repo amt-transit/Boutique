@@ -157,7 +157,8 @@
 
             <!-- Page Dashboard -->
             <div id="page-dashboard" class="page-content">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Dashboard</h1>
+                <!-- MODIFIÉ: Ajout d'un span pour le nom de l'utilisateur -->
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Dashboard <span id="dashboard-user-name" class="font-normal text-lg text-blue-600"></span></h1>
                 <!-- MODIFIÉ: Grille 2x3 sur desktop -->
                 <div id="stats-container" class="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     <!-- Stats (polices réduites) -->
@@ -879,6 +880,8 @@
                     console.log("Utilisateur connecté:", user.uid);
                     userId = user.uid;
                     userRef = doc(db, "artifacts", appId, "users", userId);
+                    // NOUVEAU: Afficher l'email sur le dashboard
+                    document.getElementById('dashboard-user-name').textContent = `(${user.email})`; 
 
                     // Afficher l'application, cacher la connexion
                     appContainer.classList.remove('hidden');
@@ -897,6 +900,9 @@
                     bottomNavBar.classList.add('hidden');
                     authContainer.classList.remove('hidden');
                     
+                    // NOUVEAU: Cacher l'email sur le dashboard
+                    document.getElementById('dashboard-user-name').textContent = '';
+
                     // Nettoyer les données (si nécessaire)
                     allProducts = [];
                     allSales = [];
