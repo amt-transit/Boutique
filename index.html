@@ -883,6 +883,15 @@
                     // NOUVEAU: Afficher l'email sur le dashboard
                     document.getElementById('dashboard-user-name').textContent = `(${user.email})`; 
 
+                    // MODIFIÉ: Ajouter l'email au document utilisateur pour identification
+                    try {
+                        await setDoc(userRef, { userEmail: user.email }, { merge: true });
+                        console.log("Email de l'utilisateur enregistré dans Firestore.");
+                    } catch (e) {
+                        console.error("Erreur lors de l'enregistrement de l'email:", e);
+                    }
+                    // FIN MODIFIÉ
+
                     // Afficher l'application, cacher la connexion
                     appContainer.classList.remove('hidden');
                     bottomNavBar.classList.remove('hidden');
