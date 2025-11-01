@@ -1211,14 +1211,28 @@
                 }
             });
 
-            // NOUVEAU: Partager sur WhatsApp
+            // NOUVEAU: Partager sur WhatsApp (MODIFIÉ)
             shareBtn.addEventListener('click', () => {
                 if (saleCart.length === 0) {
                     showToast("Le panier est vide. Ajoutez des produits.", "error");
                     return;
                 }
 
-                let message = "*Facture*\n\n";
+                // --- MODIFICATION ---
+                const clientSelect = document.getElementById('sale-client-select');
+                const clientId = clientSelect.value;
+                const client = allClients.find(c => c.id === clientId);
+                
+                let factureTitle = "";
+                if (client) {
+                    factureTitle = `*Facture ${client.name}*`;
+                } else {
+                    factureTitle = `*Facture*`;
+                }
+
+                let message = `${factureTitle}\n\n`;
+                // --- FIN MODIFICATION ---
+
                 let total = 0;
 
                 saleCart.forEach(item => {
@@ -2235,5 +2249,4 @@
 </body>
 
 </html>
-
 
