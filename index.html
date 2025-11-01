@@ -1374,15 +1374,16 @@
                 document.getElementById('reports-stats-container').innerHTML = reportStatsHtml;
             };
 
-            if (allProducts.length === 0) {
-                console.log("Produits manquants pour les rapports.");
-                resetStats();
-                return;
-            }
+            // MODIFIÉ: Ne pas réinitialiser si les produits sont chargés
+            // if (allProducts.length === 0) {
+            //     console.log("Produits manquants pour les rapports.");
+            //     resetStats();
+            //     return;
+            // }
 
             let totalRevenue = 0;
             let grossProfit = 0; 
-            let potentialGrossProfit = 0; // NOUVEAU
+            let potentialGrossProfit = 0; 
             const productStats = {}; 
             let totalSalesCount = 0; 
             let totalStockValue = 0;
@@ -1400,35 +1401,38 @@
                 totalSalesCount++; 
                 (sale.items || []).forEach(item => {
                     const product = productMap.get(item.sku);
-                    let profitPerItem = 0;
-                    let potentialProfitPerItem = 0; // NOUVEAU
-
-                    if (product && product.purchasePrice > 0) {
-                        // Bénéfice réel (basé sur le prix négocié)
-                        profitPerItem = item.salePrice - product.purchasePrice;
-                        // Bénéfice potentiel (basé sur le prix de vente par défaut)
-                        potentialProfitPerItem = product.salePrice - product.purchasePrice;
+                    
+                    // --- NOUVELLE LOGIQUE BÉNÉFICE ---
+                    // Bénéfice "Réel" (brut) = Total des ventes négociées
+                    grossProfit += item.salePrice * item.quantity;
+                    
+                    // Bénéfice "Potentiel" (brut) = Total des ventes au prix par défaut
+                    if (product) {
+                        potentialGrossProfit += (product.salePrice || 0) * item.quantity;
+                    } else {
+                        // Si le produit n'existe plus, on ne peut pas calculer le potentiel
+                        // On utilise le prix de vente négocié comme fallback
+                        potentialGrossProfit += item.salePrice * item.quantity;
                     }
-                    
-                    const itemProfit = profitPerItem * item.quantity;
-                    const potentialItemProfit = potentialProfitPerItem * item.quantity; // NOUVEAU
-                    
-                    grossProfit += itemProfit;
-                    potentialGrossProfit += potentialItemProfit; // NOUVEAU
+                    // --- FIN NOUVELLE LOGIQUE ---
 
                     const sku = item.sku || 'unknown';
                     if (!productStats[sku]) {
                         productStats[sku] = { name: item.name, totalSold: 0, totalProfit: 0 };
                     }
                     productStats[sku].totalSold += item.quantity;
-                    productStats[sku].totalProfit += itemProfit;
+                    // Mettre à jour le "profit" du produit pour refléter les ventes réelles
+                    productStats[sku].totalProfit += item.salePrice * item.quantity;
                 });
             });
 
             // MODIFIÉ: Utiliser filteredExpenses
             const totalExpenses = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
-            const netProfit = grossProfit - totalExpenses;
-            const potentialNetProfit = potentialGrossProfit - totalExpenses; // NOUVEAU
+            
+            // --- NOUVEAUX CALCULS NETS ---
+            const netProfit = grossProfit - totalExpenses; // Bénéfice Réel Net
+            const potentialNetProfit = potentialGrossProfit - totalExpenses; // Bénéfice Potentiel Net
+            // --- FIN NOUVEAUX CALCULS NETS ---
             
             // Le total des créances et la valeur du stock ne sont PAS filtrés par date
             const totalOwed = allClients.reduce((sum, client) => sum + (client.totalDebt || 0), 0);
@@ -1480,6 +1484,7 @@
                 </div>
             `).join('');
 
+            // MODIFIÉ: "Rentable" signifie maintenant "Chiffre d'affaires le plus élevé"
             const topProfit = [...statsList].sort((a, b) => b.totalProfit - a.totalProfit).slice(0, 5);
             const topProfitList = document.getElementById('top-profit-list');
             topProfitList.innerHTML = topProfit.map(item => `
