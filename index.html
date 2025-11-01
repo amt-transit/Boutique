@@ -566,26 +566,34 @@
     </div>
 
     <!-- Onglets en bas de page -->
-    <div class="bottom-tabs">
+    <div id="bottom-nav-bar" class="bottom-tabs hidden">
         <button class="tab active" onclick="switchTab('dashboard')">
-            <div class="tab-icon">📊</div>
+            <i data-lucide="layout-dashboard" class="w-5 h-5 mb-1"></i>
             <div>Dashboard</div>
         </button>
         <button class="tab" onclick="switchTab('ventes')">
-            <div class="tab-icon">💰</div>
+            <i data-lucide="shopping-cart" class="w-5 h-5 mb-1"></i>
             <div>Vente</div>
         </button>
         <button class="tab" onclick="switchTab('stock')">
-            <div class="tab-icon">📦</div>
+            <i data-lucide="package" class="w-5 h-5 mb-1"></i>
             <div>Stock</div>
         </button>
         <button class="tab" onclick="switchTab('credits')">
-            <div class="tab-icon">💳</div>
+            <i data-lucide="users" class="w-5 h-5 mb-1"></i>
             <div>Crédits</div>
         </button>
         <button class="tab" onclick="switchTab('rapports')">
-            <div class="tab-icon">📋</div>
+            <i data-lucide="bar-chart-3" class="w-5 h-5 mb-1"></i>
             <div>Rapports</div>
+        </button>
+        <button class="tab" onclick="switchTab('charges')">
+            <i data-lucide="credit-card" class="w-5 h-5 mb-1"></i>
+            <div>Charges</div>
+        </button>
+        <button class="tab" id="bottom-logout-btn">
+            <i data-lucide="log-out" class="w-5 h-5 mb-1 text-red-400"></i>
+            <div class="text-red-400">Sortir</div>
         </button>
     </div>
 
@@ -685,13 +693,21 @@
             });
             
             // Afficher la page sélectionnée
-            document.getElementById(`page-${tabName}`).classList.remove('hidden');
+            const page = document.getElementById(`page-${tabName}`);
+            if (page) {
+                page.classList.remove('hidden');
+            }
             
             // Mettre à jour l'état actif des onglets
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            event.currentTarget.classList.add('active');
+            
+            // Trouver le bon bouton à activer
+            const activeTab = document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
             
             // Mettre à jour l'URL hash
             window.location.hash = tabName;
@@ -703,15 +719,15 @@
             const targetTab = document.querySelector(`.tab[onclick="switchTab('${hash}')"]`);
             if (targetTab) {
                 targetTab.click();
+            } else {
+                // Fallback au dashboard si hash invalide
+                document.querySelector(`.tab[onclick="switchTab('dashboard')"]`).click();
             }
         });
     </script>
 
     <!-- Firebase SDK et logique de l'application -->
     <script type="module">
-        // [Tout le code JavaScript Firebase reste identique...]
-        // Seule la navigation a été modifiée pour utiliser les onglets du bas
-
         // Importation des services Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import {
@@ -761,8 +777,9 @@
         // Éléments DOM pour l'authentification et l'application
         const authContainer = document.getElementById('auth-container');
         const appContainer = document.getElementById('app-container');
+        const bottomNavBar = document.getElementById('bottom-nav-bar');
         const loginForm = document.getElementById('login-form');
-        const logoutBtn = document.getElementById('logout-btn');
+        const logoutBtn = document.getElementById('bottom-logout-btn');
 
         // Toast (notification)
         function showToast(message, type = "success") {
@@ -803,12 +820,1249 @@
             }
         }
 
-        // [Le reste du code JavaScript Firebase reste inchangé...]
-        // ... (environ 1500 lignes de code Firebase)
+        // Gestion du formulaire de connexion
+        function setupLoginForm() {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showToast("Connexion réussie !", "success");
+                } catch (error) {
+                    console.error("Erreur de connexion:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+        }
+
+        // Gestion de l'état de connexion
+        function setupAuthListener() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // L'utilisateur est connecté
+                    console.log("Utilisateur connecté:", user.uid);
+                    userId = user.uid;
+                    userRef = doc(db, "artifacts", appId, "users", userId);
+
+                    // Afficher l'application, cacher la connexion
+                    appContainer.classList.remove('hidden');
+                    bottomNavBar.classList.remove('hidden');
+                    authContainer.classList.add('hidden');
+
+                    // L'utilisateur est connecté, on active l'application
+                    initializeApplication();
+
+                } else {
+                    // L'utilisateur est déconnecté
+                    console.log("Aucun utilisateur.");
+                    
+                    // Cacher l'application, afficher la connexion
+                    appContainer.classList.add('hidden');
+                    bottomNavBar.classList.add('hidden');
+                    authContainer.classList.remove('hidden');
+                    
+                    // Nettoyer les données (si nécessaire)
+                    allProducts = [];
+                    allSales = [];
+                    allClients = [];
+                    allExpenses = [];
+                    saleCart = [];
+                }
+            });
+        }
+
+        // Initialisation de l'application (appelée après connexion)
+        function initializeApplication() {
+            // setupNavigation(); // <-- Plus nécessaire, géré par switchTab()
+            setupStockManagement();
+            setupSalesPage();
+            setupReportsPage();
+            setupExpensesPage(); 
+            setupCreditsPage(); 
+            setupLogout();
+            
+            // Lier les boutons d'export
+            document.getElementById('export-products-btn').addEventListener('click', exportProductsToCSV);
+            document.getElementById('export-sales-btn').addEventListener('click', exportSalesToCSV);
+            
+            // Lier les boutons d'import
+            setupProductCsvImport();
+            setupSalesCsvImport(); 
+            
+            setupModalListeners(); 
+            setupClientModalListeners(); 
+
+            // Initialiser les icônes
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+            
+            showToast("Application connectée et prête !", "success");
+        }
+        
+        // Gestion de la déconnexion
+        function setupLogout() {
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    showToast("Vous avez été déconnecté.", "success");
+                    // onAuthStateChanged s'occupera de cacher l'application
+                } catch (error) {
+                    console.error("Erreur de déconnexion:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+        }
+
+        // --- Gestion du Stock ---
+        function setupStockManagement() {
+            const addForm = document.getElementById('add-product-form');
+            const restockForm = document.getElementById('restock-form');
+            const productsColRef = collection(userRef, "products");
+
+            // 1. Soumission du formulaire "Ajouter"
+            addForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('product-name').value.trim();
+                const purchasePrice = parseFloat(document.getElementById('product-purchase-price').value) || 0;
+                const salePrice = parseFloat(document.getElementById('product-sale-price').value);
+                const stock = parseInt(document.getElementById('product-stock').value);
+
+                if (!name || isNaN(salePrice) || isNaN(stock)) {
+                    showToast("Nom, Prix de Vente et Stock sont requis.", "error");
+                    return;
+                }
+
+                const finalSku = `${name.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+                const productRef = doc(productsColRef, finalSku); // Utilise le SKU comme ID
+
+                try {
+                    await setDoc(productRef, {
+                        sku: finalSku,
+                        name: name,
+                        purchasePrice: purchasePrice,
+                        salePrice: salePrice,
+                        stock: stock
+                    });
+                    showToast("Produit ajouté avec succès !", "success");
+                    addForm.reset();
+                } catch (error) {
+                    console.error("Erreur ajout produit:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+
+            // 2. Soumission du formulaire "Renouveler"
+            restockForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const sku = document.getElementById('restock-product-select').value;
+                const quantity = parseInt(document.getElementById('restock-quantity').value);
+
+                if (!sku || isNaN(quantity) || quantity <= 0) {
+                    showToast("Veuillez sélectionner un produit et une quantité valide.", "error");
+                    return;
+                }
+
+                const productRef = doc(productsColRef, sku);
+                try {
+                    await updateDoc(productRef, {
+                        stock: increment(quantity)
+                    });
+                    showToast("Stock renouvelé avec succès !", "success");
+                    restockForm.reset();
+                } catch (error) {
+                    console.error("Erreur renouvellement stock:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+
+            // 3. Écouteur de la collection Produits (pour affichage)
+            onSnapshot(query(productsColRef), (snapshot) => {
+                allProducts = snapshot.docs.map(doc => doc.data());
+                allProducts.sort((a, b) => a.name.localeCompare(b.name));
+                
+                renderStockList(allProducts);
+                populateProductDropdowns(allProducts);
+
+                if (allSales.length > 0) {
+                    calculateAndRenderReports();
+                }
+            }, (error) => {
+                console.error("Erreur écouteur stock:", error);
+                showToast("Erreur de chargement du stock.", "error");
+            });
+        }
+
+        // Affichage de la liste de stock
+        function renderStockList(products) {
+            const stockTableBody = document.getElementById('stock-table-body');
+            stockTableBody.innerHTML = ''; 
+            if (products.length === 0) {
+                stockTableBody.innerHTML = '<tr><td colspan="4" class="py-4 px-2 text-center text-sm text-gray-500">Aucun produit en stock.</td></tr>';
+                return;
+            }
+            products.forEach(prod => {
+                const stockColor = prod.stock <= 0 ? 'text-red-600' : (prod.stock < 10 ? 'text-yellow-600' : 'text-green-600');
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 px-1 text-sm font-medium text-gray-800">${prod.name}</td>
+                        <td class="py-3 px-1 text-sm text-gray-600">${formatPrice(prod.salePrice)}</td>
+                        <td class="py-3 px-1 text-sm text-gray-600">${prod.purchasePrice > 0 ? formatPrice(prod.purchasePrice) : 'N/A'}</td>
+                        <td class="py-3 px-1 text-sm font-bold ${stockColor}">${prod.stock}</td>
+                    </tr>
+                `;
+                stockTableBody.innerHTML += row;
+            });
+        }
+
+        // Remplissage des listes déroulantes
+        function populateProductDropdowns(products) {
+            const saleSelect = document.getElementById('sale-product-select');
+            const restockSelect = document.getElementById('restock-product-select');
+            saleSelect.innerHTML = '<option value="">-- Choisir un produit --</option>';
+            restockSelect.innerHTML = '<option value="">-- Choisir un produit --</option>';
+
+            products.forEach(prod => {
+                const option = `<option value="${prod.sku}">${prod.name} (Stock: ${prod.stock})</option>`;
+                if (prod.stock > 0) {
+                    saleSelect.innerHTML += option;
+                }
+                restockSelect.innerHTML += option;
+            });
+        }
+
+        // --- Gestion de la Page de Vente ---
+        function setupSalesPage() {
+            const form = document.getElementById('add-to-cart-form');
+            const productSelect = document.getElementById('sale-product-select');
+            const priceInput = document.getElementById('sale-price');
+            const finalizeBtn = document.getElementById('finalize-sale-btn');
+            const clientSelect = document.getElementById('sale-client-select'); 
+
+            // Remplir le prix auto quand on sélectionne un produit
+            productSelect.addEventListener('change', () => {
+                const sku = productSelect.value;
+                const product = allProducts.find(p => p.sku === sku);
+                if (product) {
+                    priceInput.value = product.salePrice.toFixed(2);
+                } else {
+                    priceInput.value = '';
+                }
+            });
+
+            // Ajout au panier
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const sku = productSelect.value;
+                const quantity = parseInt(document.getElementById('sale-quantity').value);
+                const salePrice = parseFloat(priceInput.value);
+                
+                const product = allProducts.find(p => p.sku === sku);
+                if (!product) {
+                    showToast("Veuillez sélectionner un produit.", "error");
+                    return;
+                }
+                if (isNaN(salePrice) || salePrice <= 0) {
+                    showToast("Veuillez entrer un prix de vente valide.", "error");
+                    return;
+                }
+
+                const currentStock = product.stock;
+                const inCartQuantity = saleCart.filter(item => item.sku === sku).reduce((sum, item) => sum + item.quantity, 0);
+                
+                if (quantity > (currentStock - inCartQuantity)) {
+                    showToast(`Stock insuffisant. Stock: ${currentStock}, Dans panier: ${inCartQuantity}`, "error");
+                    return;
+                }
+
+                saleCart.push({
+                    sku: product.sku,
+                    name: product.name,
+                    quantity: quantity,
+                    salePrice: salePrice, 
+                });
+
+                renderCart();
+                form.reset();
+                priceInput.value = '';
+                productSelect.value = '';
+            });
+
+            // Finaliser la vente
+            finalizeBtn.addEventListener('click', async () => {
+                if (saleCart.length === 0) {
+                    showToast("Le panier est vide.", "error");
+                    return;
+                }
+
+                const clientId = clientSelect.value;
+                const client = allClients.find(c => c.id === clientId);
+
+                const batch = writeBatch(db);
+                let totalSale = 0;
+                const stockUpdates = {}; 
+
+                saleCart.forEach(item => {
+                    totalSale += item.quantity * item.salePrice;
+                    stockUpdates[item.sku] = (stockUpdates[item.sku] || 0) + item.quantity;
+                });
+
+                for (const sku in stockUpdates) {
+                    const productRef = doc(userRef, "products", sku);
+                    batch.update(productRef, {
+                        stock: increment(-stockUpdates[sku])
+                    });
+                }
+
+                const saleRef = doc(collection(userRef, "sales"));
+                batch.set(saleRef, {
+                    items: saleCart,
+                    total: totalSale,
+                    createdAt: serverTimestamp(),
+                    status: 'completed',
+                    clientId: clientId || null 
+                });
+
+                if (client) {
+                    const moveRef = doc(collection(userRef, "credit_movements"));
+                    batch.set(moveRef, {
+                        clientId: client.id,
+                        date: serverTimestamp(),
+                        description: `Vente #${saleRef.id.substring(0, 5)}`, 
+                        amount: totalSale 
+                    });
+
+                    const clientRef = doc(userRef, "clients", client.id);
+                    batch.update(clientRef, {
+                        totalDebt: increment(totalSale)
+                    });
+                }
+
+                try {
+                    await batch.commit();
+                    
+                    if(client) {
+                        showToast(`Vente finalisée et ajoutée au crédit de ${client.name} !`, "success");
+                    } else {
+                        showToast("Vente finalisée avec succès !", "success");
+                    }
+
+                    saleCart = []; 
+                    renderCart();
+                    clientSelect.value = ""; 
+                } catch (error) {
+                    console.error("Erreur finalisation vente:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+        }
+
+        // Affichage du panier
+        function renderCart() {
+            const cartTableBody = document.getElementById('cart-table-body');
+            const cartTotalEl = document.getElementById('cart-total');
+            cartTableBody.innerHTML = '';
+            let total = 0;
+
+            if (saleCart.length === 0) {
+                cartTableBody.innerHTML = '<tr><td colspan="5" class="py-4 px-2 text-center text-sm text-gray-500">Le panier est vide.</td></tr>';
+            }
+
+            saleCart.forEach((item, index) => {
+                const itemTotal = item.quantity * item.salePrice;
+                total += itemTotal;
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 px-1 text-sm font-medium text-gray-800">${item.name}</td>
+                        <td class="py-3 px-1 text-sm text-gray-600">${item.quantity}</td>
+                        <td class="py-3 px-1 text-sm text-gray-600">${formatPrice(item.salePrice)}</td>
+                        <td class="py-3 px-1 text-sm text-gray-600">${formatPrice(itemTotal)}</td>
+                        <td class="py-3 px-1 text-sm text-gray-600">
+                            <button class="remove-from-cart text-red-500 hover:text-red-700" data-index="${index}">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                cartTableBody.innerHTML += row;
+            });
+
+            cartTotalEl.textContent = formatPrice(total);
+            
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+
+            document.querySelectorAll('.remove-from-cart').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.getAttribute('data-index'));
+                    saleCart.splice(index, 1); 
+                    renderCart(); 
+                });
+            });
+        }
+
+        // --- Gestion de la Page Rapports ---
+        function setupReportsPage() {
+            const salesColRef = collection(userRef, "sales");
+            
+            document.getElementById('refresh-reports-btn').addEventListener('click', () => {
+                calculateAndRenderReports();
+                showToast("Rapports rafraîchis.", "success");
+            });
+
+            onSnapshot(query(salesColRef), (snapshot) => {
+                allSales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allSales.sort((a, b) => {
+                    const dateA = a.createdAt ? a.createdAt.seconds : 0;
+                    const dateB = b.createdAt ? b.createdAt.seconds : 0;
+                    return dateB - dateA;
+                });
+
+                calculateAndRenderReports();
+                renderSalesHistory(allSales);
+            }, (error) => {
+                console.error("Erreur écouteur ventes:", error);
+                showToast("Erreur de chargement des ventes.", "error");
+            });
+        }
+
+        // Calcul et affichage des rapports
+        function calculateAndRenderReports() {
+            const resetStats = () => {
+                const statsHtml = `
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Chiffre d'Affaires</h3>
+                    <p class="text-lg md:text-xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Bénéfice Net</h3>
+                    <p class="text-lg md:text-xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Total des Créances</h3>
+                    <p class="text-lg md:text-xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Total des Charges</h3>
+                    <p class="text-lg md:text-xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Valeur du Stock</h3>
+                    <p class="text-lg md:text-xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>`;
+                document.getElementById('stats-container').innerHTML = statsHtml;
+                
+                const reportStatsHtml = `
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Chiffre d'Affaires</h3>
+                    <p class="text-lg md:text-xl font-bold text-gray-800">${formatPrice(0)}</p>
+                </div>`;
+                document.getElementById('reports-stats-container').innerHTML = reportStatsHtml;
+            };
+
+            if (allProducts.length === 0) {
+                console.log("Produits manquants pour les rapports.");
+                resetStats();
+                return;
+            }
+
+            let totalRevenue = 0;
+            let grossProfit = 0; 
+            const productStats = {}; 
+            let totalSalesCount = 0; 
+            let totalStockValue = 0;
+
+            const productMap = new Map(allProducts.map(p => {
+                totalStockValue += (p.purchasePrice || 0) * (p.stock || 0);
+                return [p.sku, p];
+            }));
+
+            allSales.forEach(sale => {
+                if (sale.status === 'cancelled') return;
+
+                totalRevenue += sale.total;
+                totalSalesCount++; 
+                (sale.items || []).forEach(item => {
+                    const product = productMap.get(item.sku);
+                    let profitPerItem = 0;
+                    if (product && product.purchasePrice > 0) {
+                        profitPerItem = item.salePrice - product.purchasePrice;
+                    }
+                    const itemProfit = profitPerItem * item.quantity;
+                    grossProfit += itemProfit;
+
+                    const sku = item.sku || 'unknown';
+                    if (!productStats[sku]) {
+                        productStats[sku] = { name: item.name, totalSold: 0, totalProfit: 0 };
+                    }
+                    productStats[sku].totalSold += item.quantity;
+                    productStats[sku].totalProfit += itemProfit;
+                });
+            });
+
+            const totalExpenses = allExpenses.reduce((sum, ex) => sum + ex.amount, 0);
+            const netProfit = grossProfit - totalExpenses;
+            const totalOwed = allClients.reduce((sum, client) => sum + (client.totalDebt || 0), 0);
+
+            const statsHtml = `
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Chiffre d'Affaires</h3>
+                    <p class="text-lg md:text-xl font-bold text-gray-800">${formatPrice(totalRevenue)}</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Bénéfice Net</h3>
+                    <p class="text-lg md:text-xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatPrice(netProfit)}</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Total des Créances</h3>
+                    <p class="text-lg md:text-xl font-bold text-orange-600">${formatPrice(totalOwed)}</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Total des Charges</h3>
+                    <p class="text-lg md:text-xl font-bold text-red-600">${formatPrice(totalExpenses)}</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Valeur du Stock</h3>
+                    <p class="text-lg md:text-xl font-bold text-blue-600">${formatPrice(totalStockValue)}</p>
+                </div>`;
+            document.getElementById('stats-container').innerHTML = statsHtml;
+            
+            const reportStatsHtml = `
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h3 class="text-xs md:text-sm font-semibold text-gray-500 mb-1">Chiffre d'Affaires</h3>
+                    <p class="text-lg md:text-xl font-bold text-gray-800">${formatPrice(totalRevenue)}</p>
+                </div>`;
+            document.getElementById('reports-stats-container').innerHTML = reportStatsHtml;
+
+            const statsList = Object.values(productStats);
+            
+            const topSold = [...statsList].sort((a, b) => b.totalSold - a.totalSold).slice(0, 5);
+            const topSoldList = document.getElementById('top-sold-list');
+            topSoldList.innerHTML = topSold.map(item => `
+                <div class="flex justify-between text-sm py-1 border-b">
+                    <span class="font-medium text-gray-700">${item.name}</span>
+                    <span class="font-bold text-gray-900">${item.totalSold} unités</span>
+                </div>
+            `).join('');
+
+            const topProfit = [...statsList].sort((a, b) => b.totalProfit - a.totalProfit).slice(0, 5);
+            const topProfitList = document.getElementById('top-profit-list');
+            topProfitList.innerHTML = topProfit.map(item => `
+                <div class="flex justify-between text-sm py-1 border-b">
+                    <span class="font-medium text-gray-700">${item.name}</span>
+                    <span class="font-bold text-green-600">${formatPrice(item.totalProfit)}</span>
+                </div>
+            `).join('');
+        }
+
+        // Affichage de l'historique des ventes
+        function renderSalesHistory(sales) {
+            const historyTableBody = document.getElementById('sales-history-table-body');
+            historyTableBody.innerHTML = '';
+            if (sales.length === 0) {
+                historyTableBody.innerHTML = '<tr><td colspan="4" class="py-4 px-2 text-center text-sm text-gray-500">Aucune vente enregistrée.</td></tr>';
+                return;
+            }
+
+            sales.forEach(sale => {
+                const date = sale.createdAt ? sale.createdAt.toDate().toLocaleString('fr-FR') : 'Date inconnue';
+                let itemsStr = (sale.items || []).map(i => `${i.name} (x${i.quantity})`).join(', ');
+
+                if (sale.clientId) {
+                    const client = allClients.find(c => c.id === sale.clientId);
+                    if (client) {
+                        itemsStr += `<br><span class="text-xs text-blue-600">-> Crédit: ${client.name}</span>`;
+                    }
+                }
+
+                let actionCell = '';
+                let rowClass = 'hover:bg-gray-50';
+
+                if (sale.status === 'cancelled') {
+                    rowClass = 'opacity-50 line-through'; 
+                    const cancelDate = sale.cancelledAt ? sale.cancelledAt.toDate().toLocaleDateString('fr-FR') : '';
+                    actionCell = `<td class="py-3 px-1 text-sm text-gray-500">Annulée ${cancelDate}</td>`;
+                } else {
+                    actionCell = `
+                        <td class="py-3 px-1 text-sm">
+                            <button class="delete-sale-btn text-red-500 hover:text-red-700" data-id="${sale.id}">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>`;
+                }
+
+                const row = `
+                    <tr class="${rowClass}">
+                        <td class="py-3 px-1 text-sm text-gray-600">${date}</td>
+                        <td class="py-3 px-1 text-sm font-medium text-gray-800">${itemsStr}</td>
+                        <td class="py-3 px-1 text-sm font-bold text-gray-900">${formatPrice(sale.total)}</td>
+                        ${actionCell}
+                    </tr>
+                `;
+                historyTableBody.innerHTML += row;
+            });
+
+            if (window.lucide) window.lucide.createIcons();
+
+            document.querySelectorAll('.delete-sale-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const saleId = e.currentTarget.dataset.id;
+                    showConfirmModal(
+                        "Annuler cette vente ?",
+                        "La vente sera marquée comme 'Annulée' et ne comptera plus dans les rapports. Le stock ne sera PAS restauré.",
+                        () => { cancelSale(saleId); }
+                    );
+                });
+            });
+        }
+
+        // --- Gestion de l'import CSV (Produits) ---
+        function setupProductCsvImport() {
+            const importBtn = document.getElementById('import-product-csv-btn');
+            const fileInput = document.getElementById('product-csv-file-input');
+
+            importBtn.addEventListener('click', () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    showToast("Veuillez sélectionner un fichier CSV.", "error");
+                    return;
+                }
+
+                if (!window.Papa) {
+                    showToast("La librairie d'importation (PapaParse) n'est pas chargée.", "error");
+                    return;
+                }
+
+                importBtn.disabled = true;
+                importBtn.innerHTML = "Importation en cours...";
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: async (results) => {
+                        try {
+                            const importedCount = await importProductsToFirestore(results.data);
+                            showToast(`Importation réussie ! ${importedCount} produits ajoutés.`, "success");
+                        } catch (error) {
+                            console.error("Erreur d'importation:", error);
+                            showToast(`Erreur d'importation: ${error.message}`, "error");
+                        } finally {
+                            importBtn.disabled = false;
+                            importBtn.innerHTML = '<i data-lucide="upload"></i> <span>Importer Produits</span>';
+                            if (window.lucide) window.lucide.createIcons();
+                            fileInput.value = ''; 
+                        }
+                    },
+                    error: (error) => {
+                        console.error("Erreur PapaParse:", error);
+                        showToast(`Erreur de lecture CSV: ${error.message}`, "error");
+                        importBtn.disabled = false;
+                        importBtn.innerHTML = '<i data-lucide="upload"></i> <span>Importer Produits</span>';
+                        if (window.lucide) window.lucide.createIcons();
+                    }
+                });
+            });
+        }
+
+        async function importProductsToFirestore(products) {
+            const productsColRef = collection(userRef, "products");
+            let batch = writeBatch(db);
+            let operations = 0;
+            let importedCount = 0;
+
+            for (const prod of products) {
+                const name = prod['Articles'] ? prod['Articles'].trim() : null;
+                const stock = parseInt(prod['Quantités']);
+                const purchasePrice = parseFloat(prod["Prix d'Achat"]) || 0;
+                const salePrice = parseFloat(prod["Prix Vente"]) || 0; 
+
+                if (!name || isNaN(stock)) { 
+                    console.warn("Ligne CSV ignorée (nom ou quantité manquant):", prod);
+                    continue; 
+                }
+                
+                const productRef = doc(productsColRef); 
+                const finalSku = productRef.id; 
+
+                batch.set(productRef, {
+                    sku: finalSku,
+                    name: name,
+                    purchasePrice: purchasePrice,
+                    salePrice: salePrice,
+                    stock: stock
+                });
+
+                operations++;
+                importedCount++;
+
+                if (operations >= 499) {
+                    await batch.commit();
+                    batch = writeBatch(db);
+                    operations = 0;
+                }
+            }
+
+            if (operations > 0) {
+                await batch.commit();
+            }
+
+            return importedCount;
+        }
+
+
+        // --- Gestion de l'import CSV (Ventes Passées) ---
+        function setupSalesCsvImport() {
+            const importBtn = document.getElementById('import-sales-csv-btn');
+            const fileInput = document.getElementById('sales-csv-file-input');
+
+            importBtn.addEventListener('click', () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    showToast("Veuillez sélectionner un fichier CSV de ventes.", "error");
+                    return;
+                }
+                if (!window.Papa) {
+                    showToast("La librairie d'importation (PapaParse) n'est pas chargée.", "error");
+                    return;
+                }
+
+                importBtn.disabled = true;
+                importBtn.innerHTML = "Importation en cours...";
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: async (results) => {
+                        try {
+                            const importedCount = await importPastSalesToFirestore(results.data);
+                            showToast(`Importation réussie ! ${importedCount} ventes passées ajoutées.`, "success");
+                        } catch (error) {
+                            console.error("Erreur d'importation ventes:", error);
+                            showToast(`Erreur d'importation: ${error.message}`, "error");
+                        } finally {
+                            importBtn.disabled = false;
+                            importBtn.innerHTML = '<i data-lucide="history"></i> <span>Importer Ventes Passées</span>';
+                            if (window.lucide) window.lucide.createIcons();
+                            fileInput.value = ''; 
+                        }
+                    },
+                    error: (error) => {
+                        console.error("Erreur PapaParse:", error);
+                        showToast(`Erreur de lecture CSV: ${error.message}`, "error");
+                        importBtn.disabled = false;
+                        importBtn.innerHTML = '<i data-lucide="history"></i> <span>Importer Ventes Passées</span>';
+                        if (window.lucide) window.lucide.createIcons();
+                    }
+                });
+            });
+        }
+
+        async function importPastSalesToFirestore(salesRows) {
+            const salesColRef = collection(userRef, "sales");
+            let batch = writeBatch(db);
+            let operations = 0;
+            let importedCount = 0;
+
+            const productMapByName = new Map(allProducts.map(p => [p.name.toLowerCase(), p]));
+
+            for (const row of salesRows) {
+                const date = row['Date'] ? row['Date'].trim() : null;
+                const name = row['Nom Produit'] ? row['Nom Produit'].trim() : null;
+                const quantity = parseInt(row['Quantité']);
+                const totalSale = parseFloat(row['Total Vente']);
+
+                if (!date || !name || isNaN(quantity) || isNaN(totalSale)) {
+                    console.warn("Ligne Vente ignorée (données manquantes):", row);
+                    continue;
+                }
+
+                let saleDate;
+                try {
+                    const parts = date.split('-'); 
+                    if (parts.length !== 3) throw new Error('Format de date incorrect (JJ-MM-AAAA attendu)');
+                    const day = parts[0];
+                    const month = parts[1];
+                    const year = parts[2];
+                    const isoDateStr = `${year}-${month}-${day}`;
+                    saleDate = new Date(isoDateStr);
+                    if (isNaN(saleDate.getTime())) throw new Error('Date invalide après conversion');
+                } catch (e) {
+                    console.warn(`Ligne Vente ignorée (date invalide: ${e.message}):`, row);
+                    continue;
+                }
+
+                const product = productMapByName.get(name.toLowerCase());
+                const salePrice = totalSale / quantity;
+
+                const saleItem = {
+                    sku: product ? product.sku : 'SKU_INCONNU',
+                    name: name,
+                    quantity: quantity,
+                    salePrice: salePrice 
+                };
+
+                const saleDoc = {
+                    items: [saleItem],
+                    total: totalSale,
+                    createdAt: saleDate, 
+                    status: 'completed'
+                };
+                
+                const saleRef = doc(salesColRef);
+                batch.set(saleRef, saleDoc);
+                operations++;
+                importedCount++;
+
+                if (operations >= 499) {
+                    await batch.commit();
+                    batch = writeBatch(db);
+                    operations = 0;
+                }
+            }
+
+            if (operations > 0) {
+                await batch.commit();
+            }
+
+            return importedCount;
+        }
+
+
+        // --- Gestion Page des Charges ---
+        function setupExpensesPage() {
+            const addForm = document.getElementById('add-expense-form');
+            const expensesColRef = collection(userRef, "expenses");
+            
+            addForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const date = document.getElementById('expense-date').value;
+                const description = document.getElementById('expense-desc').value.trim();
+                const amount = parseFloat(document.getElementById('expense-amount').value);
+
+                if (!date || !description || isNaN(amount) || amount <= 0) {
+                    showToast("Date, description et montant valide sont requis.", "error");
+                    return;
+                }
+                
+                const [year, month, day] = date.split('-');
+                const expenseDate = new Date(year, month - 1, day, 12, 0, 0);
+
+                if (isNaN(expenseDate.getTime())) {
+                    showToast("Date invalide.", "error");
+                    return;
+                }
+                
+                try {
+                    const expenseRef = doc(expensesColRef);
+                    await setDoc(expenseRef, {
+                        date: expenseDate, 
+                        description: description,
+                        amount: amount
+                    });
+                    showToast("Dépense ajoutée avec succès !", "success");
+                    addForm.reset();
+                } catch (error) {
+                    console.error("Erreur ajout dépense:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+
+            onSnapshot(query(expensesColRef), (snapshot) => {
+                allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allExpenses.sort((a, b) => {
+                    const dateA = a.date ? a.date.seconds : 0;
+                    const dateB = b.date ? b.date.seconds : 0;
+                    return dateB - dateA;
+                });
+
+                renderExpensesList(allExpenses);
+                calculateAndRenderReports(); 
+            }, (error) => {
+                console.error("Erreur écouteur dépenses:", error);
+                showToast("Erreur de chargement des dépenses.", "error");
+            });
+        }
+
+        function renderExpensesList(expenses) {
+            const tableBody = document.getElementById('expenses-table-body');
+            tableBody.innerHTML = '';
+            if (expenses.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="py-4 px-2 text-center text-sm text-gray-500">Aucune dépense enregistrée.</td></tr>';
+                return;
+            }
+            expenses.forEach(ex => {
+                const date = ex.date ? ex.date.toDate().toLocaleDateString('fr-FR') : 'Date inconnue';
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 px-1 text-sm text-gray-600">${date}</td>
+                        <td class="py-3 px-1 text-sm font-medium text-gray-800">${ex.description}</td>
+                        <td class="py-3 px-1 text-sm font-bold text-red-600">${formatPrice(ex.amount)}</td>
+                        <td class="py-3 px-1 text-sm">
+                            <button class="delete-expense-btn text-red-500 hover:text-red-700" data-id="${ex.id}">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+
+            if (window.lucide) window.lucide.createIcons();
+
+            document.querySelectorAll('.delete-expense-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const expenseId = e.currentTarget.dataset.id;
+                    showConfirmModal(
+                        "Supprimer cette charge ?",
+                        "Cette action est irréversible et supprimera définitivedement la dépense.",
+                        () => { deleteExpense(expenseId); }
+                    );
+                });
+            });
+        }
+
+        // --- Gestion Page des Crédits ---
+        function setupCreditsPage() {
+            const addClientForm = document.getElementById('add-client-form');
+            const clientsColRef = collection(userRef, "clients");
+
+            addClientForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('client-name').value.trim();
+                const phone = document.getElementById('client-phone').value.trim();
+                if (!name) {
+                    showToast("Le nom du client est requis.", "error");
+                    return;
+                }
+                try {
+                    const clientRef = doc(clientsColRef); 
+                    await setDoc(clientRef, {
+                        id: clientRef.id,
+                        name: name,
+                        phone: phone,
+                        totalDebt: 0
+                    });
+                    showToast("Client ajouté avec succès !", "success");
+                    addClientForm.reset();
+                } catch (error) {
+                    console.error("Erreur ajout client:", error);
+                    showToast(`Erreur: ${error.message}`, "error");
+                }
+            });
+
+            onSnapshot(query(clientsColRef), (snapshot) => {
+                allClients = snapshot.docs.map(doc => doc.data());
+                allClients.sort((a, b) => a.name.localeCompare(b.name));
+                
+                renderClientList(allClients);
+                populateClientDropdown(allClients); 
+                calculateAndRenderReports(); 
+            }, (error) => {
+                console.error("Erreur écouteur clients:", error);
+                showToast("Erreur de chargement des clients.", "error");
+            });
+        }
+
+        function renderClientList(clients) {
+            const tableBody = document.getElementById('clients-table-body');
+            tableBody.innerHTML = '';
+            if (clients.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="py-4 px-2 text-center text-sm text-gray-500">Aucun client enregistré.</td></tr>';
+                return;
+            }
+            clients.forEach(client => {
+                const debt = client.totalDebt || 0;
+                const debtColor = debt > 0 ? 'text-red-600' : 'text-green-600';
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 px-1 text-sm font-medium text-gray-800">${client.name}</td>
+                        <td class="py-3 px-1 text-sm text-gray-600">${client.phone || 'N/A'}</td>
+                        <td class="py-3 px-1 text-sm font-bold ${debtColor}">${formatPrice(debt)}</td>
+                        <td class="py-3 px-1 text-sm">
+                            <button class="view-client-btn text-blue-600 hover:text-blue-800" data-id="${client.id}">
+                                Gérer
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+
+            document.querySelectorAll('.view-client-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const clientId = e.currentTarget.dataset.id;
+                    showClientDetailModal(clientId);
+                });
+            });
+        }
+
+        // Remplir la liste déroulante des clients sur la page Vente
+        function populateClientDropdown(clients) {
+            const clientSelect = document.getElementById('sale-client-select');
+            if (!clientSelect) return; 
+            
+            clientSelect.innerHTML = '<option value="">-- Vente au comptant --</option>'; 
+
+            clients.forEach(client => {
+                const option = `<option value="${client.id}">${client.name}</option>`;
+                clientSelect.innerHTML += option;
+            });
+        }
+
+        // --- Fonctions de la Modale Client ---
+        function setupClientModalListeners() {
+            const modal = document.getElementById('client-detail-modal');
+            const addDebtForm = document.getElementById('add-debt-form');
+            const addPaymentForm = document.getElementById('add-payment-form');
+            
+            document.getElementById('client-modal-close-btn').addEventListener('click', hideClientDetailModal);
+
+            addDebtForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const clientId = e.currentTarget.dataset.clientId;
+                const description = document.getElementById('debt-desc').value.trim();
+                const amount = parseFloat(document.getElementById('debt-amount').value);
+                
+                if (clientId && description && amount > 0) {
+                    addCreditMovement(clientId, description, amount); 
+                    addDebtForm.reset();
+                } else {
+                    showToast("Description et montant valide requis.", "error");
+                }
+            });
+
+            addPaymentForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const clientId = e.currentTarget.dataset.clientId;
+                const amount = parseFloat(document.getElementById('payment-amount').value);
+                
+                if (clientId && amount > 0) {
+                    addCreditMovement(clientId, "Paiement", -amount); 
+                    addPaymentForm.reset();
+                } else {
+                    showToast("Montant valide requis.", "error");
+                }
+            });
+        }
+
+        function showClientDetailModal(clientId) {
+            const client = allClients.find(c => c.id === clientId);
+            if (!client) return;
+
+            if (currentClientHistoryListener) {
+                currentClientHistoryListener();
+            }
+
+            document.getElementById('client-modal-name').textContent = client.name;
+            document.getElementById('add-debt-form').dataset.clientId = clientId;
+            document.getElementById('add-payment-form').dataset.clientId = clientId;
+            
+            const historyColRef = collection(userRef, "credit_movements");
+            const q = query(historyColRef, where("clientId", "==", clientId));
+
+            currentClientHistoryListener = onSnapshot(q, (snapshot) => {
+                const history = snapshot.docs.map(doc => doc.data());
+                history.sort((a, b) => (b.date ? b.date.seconds : 0) - (a.date ? a.date.seconds : 0));
+                renderClientHistory(history);
+            });
+
+            document.getElementById('client-detail-modal').classList.remove('hidden');
+            if (window.lucide) window.lucide.createIcons(); 
+        }
+
+        function hideClientDetailModal() {
+            document.getElementById('client-detail-modal').classList.add('hidden');
+            if (currentClientHistoryListener) {
+                currentClientHistoryListener();
+                currentClientHistoryListener = null;
+            }
+            document.getElementById('client-history-table-body').innerHTML = '';
+        }
+
+        function renderClientHistory(history) {
+            const tableBody = document.getElementById('client-history-table-body');
+            tableBody.innerHTML = '';
+            if (history.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3" class="py-3 px-2 text-center text-xs text-gray-500">Aucun mouvement.</td></tr>';
+                return;
+            }
+            history.forEach(mov => {
+                const date = mov.date ? mov.date.toDate().toLocaleDateString('fr-FR') : 'N/A';
+                const isDebt = mov.amount > 0;
+                const color = isDebt ? 'text-red-600' : 'text-green-600';
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-2 px-1 text-xs text-gray-600">${date}</td>
+                        <td class="py-2 px-1 text-xs font-medium text-gray-800">${mov.description}</td>
+                        <td class="py-2 px-1 text-xs font-bold ${color}">${formatPrice(mov.amount)}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        async function addCreditMovement(clientId, description, amount) {
+            const batch = writeBatch(db);
+
+            const moveRef = doc(collection(userRef, "credit_movements"));
+            batch.set(moveRef, {
+                clientId: clientId,
+                date: serverTimestamp(),
+                description: description,
+                amount: amount 
+            });
+
+            const clientRef = doc(userRef, "clients", clientId);
+            batch.update(clientRef, {
+                totalDebt: increment(amount)
+            });
+
+            try {
+                await batch.commit();
+                const action = amount > 0 ? "Dette ajoutée" : "Paiement enregistré";
+                showToast(`${action} avec succès.`, "success");
+            } catch (error) {
+                console.error("Erreur mouvement crédit:", error);
+                showToast(`Erreur: ${error.message}`, "error");
+            }
+        }
+
+
+        // --- Fonctions de Modale de Confirmation ---
+        function setupModalListeners() {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('modal-cancel-btn').addEventListener('click', hideConfirmModal);
+            document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+                if (typeof actionToConfirm === 'function') {
+                    actionToConfirm();
+                }
+                hideConfirmModal();
+            });
+        }
+
+        function showConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-text').textContent = message;
+            actionToConfirm = onConfirm;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function hideConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            actionToConfirm = null;
+        }
+
+        // Action d'annulation de Vente
+        async function cancelSale(saleId) {
+            const saleRef = doc(userRef, "sales", saleId);
+            try {
+                await updateDoc(saleRef, {
+                    status: 'cancelled',
+                    cancelledAt: serverTimestamp()
+                });
+                showToast('Vente annulée avec succès.', 'success');
+            } catch (error) {
+                console.error("Erreur annulation vente:", error);
+                showToast(`Erreur: ${error.message}`, "error");
+            }
+        }
+
+        // Action de suppression de Charge
+        async function deleteExpense(expenseId) {
+            const expenseRef = doc(userRef, "expenses", expenseId);
+            try {
+                await deleteDoc(expenseRef);
+                showToast('Charge supprimée avec succès.', 'success');
+            } catch (error) {
+                console.error("Erreur suppression charge:", error);
+                showToast(`Erreur: ${error.message}`, "error");
+            }
+        }
+
+
+        // --- Fonctions d'Exportation CSV ---
+
+        function downloadCSV(csvContent, fileName) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportProductsToCSV() {
+            if (allProducts.length === 0) {
+                showToast("Aucun produit à exporter.", "error");
+                return;
+            }
+            
+            const headers = ['sku', 'name', 'purchasePrice', 'salePrice', 'stock'];
+            let csvContent = headers.join(',') + '\n';
+
+            allProducts.forEach(prod => {
+                const row = headers.map(header => {
+                    let val = prod[header];
+                    if (typeof val === 'string') {
+                        val = `"${val.replace(/"/g, '""')}"`;
+                    }
+                    return val;
+                });
+                csvContent += row.join(',') + '\n';
+            });
+
+            downloadCSV(csvContent, 'sauvegarde_produits.csv');
+            showToast("Exportation des produits terminée.", "success");
+        }
+
+        function exportSalesToCSV() {
+            if (allSales.length === 0) {
+                showToast("Aucune vente à exporter.", "error");
+                return;
+            }
+            
+            const headers = ['ID_Vente', 'DateVente', 'SKU_Produit', 'NomProduit', 'QuantiteVendue', 'PrixVenteNegocie', 'TotalLigne', 'ID_Client_Credit'];
+            let csvContent = headers.join(',') + '\n';
+
+            allSales.forEach(sale => {
+                if (sale.status === 'cancelled') return;
+
+                const saleId = sale.id;
+                const saleDate = sale.createdAt ? `"${sale.createdAt.toDate().toLocaleString('fr-FR')}"` : '""';
+                const clientId = sale.clientId ? `"${sale.clientId}"` : '""';
+
+                sale.items.forEach(item => {
+                    const itemTotal = (item.quantity * item.salePrice).toFixed(2);
+                    const row = [
+                        `"${saleId}"`,
+                        saleDate,
+                        `"${item.sku}"`,
+                        `"${item.name.replace(/"/g, '""')}"`, 
+                        item.quantity,
+                        item.salePrice,
+                        itemTotal,
+                        clientId 
+                    ];
+                    csvContent += row.join(',') + '\n';
+                });
+            });
+
+            downloadCSV(csvContent, 'sauvegarde_ventes_detaillees.csv');
+            showToast("Exportation des ventes terminée.", "success");
+        }
+
 
         // Démarrage
         main();
 
     </script>
 </body>
+
 </html>
+
