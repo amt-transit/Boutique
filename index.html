@@ -327,22 +327,7 @@
                             </form>
                         </div>
 
-                        <!-- Importation en Masse -->
-                        <div class="bg-white p-4 rounded-xl shadow-lg">
-                            <h2 class="text-base md:text-lg font-semibold mb-4 text-gray-700">Importation en Masse (CSV)</h2>
-                            <p class="text-xs md:text-sm text-gray-600 mb-3">En-têtes requis :</p>
-                            <p class="text-xs font-mono text-blue-600 mb-3">Articles,Quantités,Prix d'Achat,Prix Vente</p>
-                            <div class="space-y-3">
-                                <input type="file" id="product-csv-file-input"
-                                    class="w-full text-xs text-gray-700 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                    accept=".csv">
-                                <button id="import-product-csv-btn"
-                                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-200 ease-in-out flex items-center justify-center gap-1">
-                                    <i data-lucide="upload" class="w-4 h-4"></i>
-                                    <span>Importer Produits</span>
-                                </button>
-                            </div>
-                        </div>
+                        <!-- Importation en Masse (DÉPLACÉ) -->
                     </div>
 
                     <!-- Liste du stock -->
@@ -362,6 +347,23 @@
                                     <!-- Stock chargé par JS -->
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Importation en Masse (NOUVEL EMPLACEMENT) -->
+                        <div class="bg-white p-4 rounded-xl shadow-lg mt-4">
+                            <h2 class="text-base md:text-lg font-semibold mb-4 text-gray-700">Importation en Masse (CSV)</h2>
+                            <p class="text-xs md:text-sm text-gray-600 mb-3">En-têtes requis :</p>
+                            <p class="text-xs font-mono text-blue-600 mb-3">Articles,Quantités,Prix d'Achat,Prix Vente</p>
+                            <div class="space-y-3">
+                                <input type="file" id="product-csv-file-input"
+                                    class="w-full text-xs text-gray-700 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    accept=".csv">
+                                <button id="import-product-csv-btn"
+                                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-200 ease-in-out flex items-center justify-center gap-1">
+                                    <i data-lucide="upload" class="w-4 h-4"></i>
+                                    <span>Importer Produits</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -980,7 +982,8 @@
             // 3. Écouteur de la collection Produits (pour affichage)
             onSnapshot(query(productsColRef), (snapshot) => {
                 allProducts = snapshot.docs.map(doc => doc.data());
-                allProducts.sort((a, b) => a.name.localeCompare(b.name));
+                // NOUVEAU: Tri par stock croissant
+                allProducts.sort((a, b) => (a.stock || 0) - (b.stock || 0));
                 
                 renderStockList(allProducts);
                 populateProductDropdowns(allProducts);
@@ -1023,7 +1026,10 @@
             saleSelect.innerHTML = '<option value="">-- Choisir un produit --</option>';
             restockSelect.innerHTML = '<option value="">-- Choisir un produit --</option>';
 
-            products.forEach(prod => {
+            // Trier les produits par nom pour les listes déroulantes
+            const sortedByName = [...products].sort((a, b) => a.name.localeCompare(b.name));
+
+            sortedByName.forEach(prod => {
                 const option = `<option value="${prod.sku}">${prod.name} (Stock: ${prod.stock})</option>`;
                 if (prod.stock > 0) {
                     saleSelect.innerHTML += option;
