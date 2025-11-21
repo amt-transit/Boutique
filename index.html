@@ -6,104 +6,83 @@
     <title>Gestion de Boutique</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100 font-sans text-gray-800">
 
     <div id="auth-container" class="fixed inset-0 bg-gray-200 flex items-center justify-center z-[100] p-4">
         <div class="w-full max-w-md p-6 md:p-8 bg-white rounded-xl shadow-2xl">
-            <h1 class="text-xl md:text-2xl font-bold text-center text-gray-800 mb-6">Ma Boutique</h1>
+            <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Ma Boutique</h1>
             
             <form id="login-form" class="space-y-4">
-                <h2 class="text-base md:text-lg font-semibold text-gray-700">Se ConnectER</h2>
+                <h2 class="text-lg font-semibold text-gray-700">Se Connecter</h2>
                 
                 <div class="boutique-selector">
                     <label for="login-boutique">Boutique</label>
-                    <select id="login-boutique" required>
-                        <option value="">Sélectionnez une boutique</option>
-                        </select>
+                    <select id="login-boutique" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg bg-gray-50">
+                        <option value="">Chargement des boutiques...</option>
+                    </select>
                 </div>
                 
                 <div>
-                    <label for="login-email" class="text-xs md:text-sm font-medium text-gray-600 block mb-2">Email</label>
+                    <label class="text-sm font-medium text-gray-600 block mb-2">Email</label>
                     <input type="email" id="login-email" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
                 </div>
                 <div>
-                    <label for="login-password" class="text-xs md:text-sm font-medium text-gray-600 block mb-2">Mot de passe</label>
+                    <label class="text-sm font-medium text-gray-600 block mb-2">Mot de passe</label>
                     <input type="password" id="login-password" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm transition shadow-md">
                     Connexion
                 </button>
             </form>
-
         </div>
     </div>
 
     <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[110]">
         <div class="bg-white p-6 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">Administration - Gestion des Boutiques</h2>
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-bold text-gray-800">Administration - Créer une Boutique</h2>
                 <button id="admin-modal-close-btn" class="text-gray-500 hover:text-gray-800">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">Créer une nouvelle boutique</h3>
-                <form id="create-boutique-form" class="space-y-4">
-                    <div>
-                        <label for="new-boutique-name" class="text-sm font-medium text-gray-600 block mb-1">Nom de la boutique</label>
-                        <input type="text" id="new-boutique-name" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" placeholder="Ex: Ma Boutique A" required>
+            <form id="create-boutique-form" class="space-y-4">
+                <div>
+                    <label class="text-sm font-medium text-gray-600 block mb-1">Nom de la boutique</label>
+                    <input type="text" id="new-boutique-name" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" placeholder="Ex: Ma Boutique Abidjan" required>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <h4 class="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2"><i data-lucide="user-check" class="w-4 h-4"></i> Propriétaire</h4>
+                        <input type="email" id="admin-email" class="w-full p-2 text-sm border border-gray-300 rounded mb-2" placeholder="Email Propriétaire" required>
+                        <input type="password" id="admin-password" class="w-full p-2 text-sm border border-gray-300 rounded" placeholder="Mot de passe" required>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-600 mb-2">Compte Administrateur</h4>
-                            <div class="space-y-2">
-                                <input type="email" id="admin-email" class="w-full p-2 text-sm border-2 border-gray-300 rounded-lg" placeholder="Email admin" required>
-                                <input type="password" id="admin-password" class="w-full p-2 text-sm border-2 border-gray-300 rounded-lg" placeholder="Mot de passe" required>
-                            </div>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-600 mb-2">Compte Vendeur</h4>
-                            <div class="space-y-2">
-                                <input type="email" id="seller-email" class="w-full p-2 text-sm border-2 border-gray-300 rounded-lg" placeholder="Email vendeur" required>
-                                <input type="password" id="seller-password" class="w-full p-2 text-sm border-2 border-gray-300 rounded-lg" placeholder="Mot de passe" required>
-                            </div>
-                        </div>
+                    <div class="p-4 bg-green-50 rounded-lg border border-green-100">
+                        <h4 class="text-sm font-bold text-green-800 mb-2 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4"></i> Vendeur</h4>
+                        <input type="email" id="seller-email" class="w-full p-2 text-sm border border-gray-300 rounded mb-2" placeholder="Email Vendeur" required>
+                        <input type="password" id="seller-password" class="w-full p-2 text-sm border border-gray-300 rounded" placeholder="Mot de passe" required>
                     </div>
-                    
-                    <div class="flex gap-3">
-                        <button type="button" id="cancel-create-boutique" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-4 rounded-lg text-sm">
-                            Annuler
-                        </button>
-                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-sm">
-                            Créer la Boutique
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div>
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">Boutiques existantes</h3>
-                <div id="boutiques-list" class="space-y-2">
-                    </div>
-            </div>
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-sm shadow">
+                    Créer la Boutique et les Comptes
+                </button>
+            </form>
         </div>
     </div>
 
-    <div id="app-container" class="flex h-screen bg-gray-200 hidden flex-col">
+    <div id="app-container" class="flex h-screen bg-gray-100 hidden flex-col">
 
-        <div id="top-nav-bar" class="top-tabs hidden">
+        <div id="top-nav-bar" class="top-tabs hidden bg-white shadow-sm z-10">
             <button class="tab active" onclick="switchTab('dashboard')">
                 <i data-lucide="layout-dashboard" class="w-5 h-5 mb-1"></i>
                 <div>Dashboard</div>
@@ -116,99 +95,292 @@
                 <i data-lucide="package" class="w-5 h-5 mb-1"></i>
                 <div>Stock</div>
             </button>
-            <button class="tab" onclick="switchTab('caisse')">
-                <i data-lucide="wallet" class="w-5 h-5 mb-1"></i>
-                <div>Caisse</div>
-            </button>
             <button class="tab" onclick="switchTab('credits')">
                 <i data-lucide="users" class="w-5 h-5 mb-1"></i>
                 <div>Crédits</div>
-            </button>
-            <button class="tab" onclick="switchTab('rapports')">
-                <i data-lucide="bar-chart-3" class="w-5 h-5 mb-1"></i>
-                <div>Rapports</div>
             </button>
             <button class="tab" onclick="switchTab('charges')">
                 <i data-lucide="credit-card" class="w-5 h-5 mb-1"></i>
                 <div>Charges</div>
             </button>
-            
-            <button class="tab hidden" id="admin-tab-btn" onclick="switchTab('admin')">
-                <i data-lucide="settings" class="w-5 h-5 mb-1"></i>
-                <div>Admin</div>
+            <button class="tab" onclick="switchTab('rapports')">
+                <i data-lucide="bar-chart-3" class="w-5 h-5 mb-1"></i>
+                <div>Rapports</div>
             </button>
             
-            <button class="tab" id="bottom-logout-btn">
+            <button class="tab hidden bg-red-50 hover:bg-red-100" id="admin-tab-btn" onclick="switchTab('admin')">
+                <i data-lucide="settings" class="w-5 h-5 mb-1 text-red-600"></i>
+                <div class="text-red-600 font-bold">Admin</div>
+            </button>
+            
+            <div class="flex-1"></div> <button class="tab" id="bottom-logout-btn">
                 <i data-lucide="log-out" class="w-5 h-5 mb-1 text-red-400"></i>
                 <div class="text-red-400">Sortir</div>
             </button>
         </div>
 
-        <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full">
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto w-full max-w-7xl mx-auto">
 
             <div id="page-dashboard" class="page-content">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">
-                    Dashboard 
-                    <span id="dashboard-user-name" class="font-normal text-lg text-blue-600"></span>
-                    <span id="admin-badge" class="admin-badge hidden">ADMIN</span>
+                <h1 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    Tableau de Bord
+                    <span id="dashboard-user-name" class="ml-3 text-sm font-normal text-gray-500 bg-gray-200 px-3 py-1 rounded-full"></span>
+                    <span id="admin-badge" class="admin-badge hidden ml-2">SUPER ADMIN</span>
                 </h1>
                 
-                <div id="stats-container" class="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100 hover:shadow-md transition">
+                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Chiffre d'Affaires</div>
+                        <div id="dash-total-sales" class="text-2xl font-bold text-blue-600">0 CFA</div>
                     </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-green-100 hover:shadow-md transition">
+                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Bénéfice Estimé</div>
+                        <div id="dash-total-profit" class="text-2xl font-bold text-green-600">0 CFA</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-orange-100 hover:shadow-md transition">
+                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Crédits Clients</div>
+                        <div id="dash-total-credits" class="text-2xl font-bold text-orange-600">0 CFA</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-red-100 hover:shadow-md transition">
+                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Dépenses</div>
+                        <div id="dash-total-expenses" class="text-2xl font-bold text-red-600">0 CFA</div>
+                    </div>
+                </div>
 
-                <div id="dashboard-alerts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6">
-                    <div id="dashboard-top-sold-alert"></div>
-                    <div id="dashboard-top-profit-alert"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="text-orange-500 w-5 h-5"></i> Alertes Stock Faible
+                        </h3>
+                        <div id="dash-low-stock" class="space-y-2 max-h-60 overflow-y-auto">
+                            <p class="text-sm text-gray-400 italic">Chargement...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                            <i data-lucide="history" class="text-blue-500 w-5 h-5"></i> Dernières Ventes
+                        </h3>
+                        <div id="dash-recent-sales" class="space-y-3 text-sm max-h-60 overflow-y-auto">
+                            <p class="text-sm text-gray-400 italic">Aucune vente récente.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div id="page-ventes" class="page-content hidden">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Enregistrer une Vente</h1>
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Nouvelle Vente</h1>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <div class="mb-6 relative z-50">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ajouter un produit</label>
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                                <input type="text" id="sale-search" placeholder="Tapez le nom..." 
+                                       class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" autocomplete="off">
+                            </div>
+                            <div id="sale-search-results" class="search-results hidden absolute w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto"></div>
+                        </div>
+                        
+                        <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                            <i data-lucide="shopping-basket" class="w-5 h-5"></i> Panier
+                        </h3>
+                        <div class="overflow-x-auto min-h-[200px]">
+                            <table class="w-full">
+                                <thead class="bg-gray-50 text-gray-600 text-sm">
+                                    <tr>
+                                        <th class="p-3 text-left rounded-l-lg">Produit</th>
+                                        <th class="p-3 text-center">Qté</th>
+                                        <th class="p-3 text-right">Total</th>
+                                        <th class="p-3 rounded-r-lg"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cart-table-body" class="text-sm">
+                                    <tr><td colspan="4" class="p-4 text-center text-gray-400">Panier vide</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 h-fit">
+                        <div class="text-center mb-8 pb-6 border-b border-gray-100">
+                            <p class="text-gray-500 font-medium mb-1">Total à Payer</p>
+                            <h2 id="cart-total-display" class="text-4xl font-extrabold text-blue-600">0 CFA</h2>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <button id="btn-validate-sale" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 flex justify-center items-center gap-2">
+                                <i data-lucide="check-circle" class="w-6 h-6"></i> Encaisser (Cash)
+                            </button>
+                            <button onclick="saleCart=[]; renderCart();" class="w-full text-gray-500 hover:text-red-500 py-2 text-sm font-medium">
+                                Vider le panier
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
             <div id="page-stock" class="page-content hidden">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Gestion du Stock</h1>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h1 class="text-2xl font-bold text-gray-800">Gestion du Stock</h1>
+                    <button onclick="document.getElementById('add-product-form').classList.toggle('hidden')" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i> Nouveau Produit
+                    </button>
                 </div>
 
-            <div id="page-caisse" class="page-content hidden">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Gestion de la Caisse</h1>
+                <div id="add-product-form" class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8 hidden">
+                    <h3 class="font-bold text-lg mb-4 text-gray-700">Ajouter / Modifier</h3>
+                    <form id="form-stock" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div class="lg:col-span-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Nom</label>
+                            <input type="text" id="prod-nom" placeholder="Ex: Chemise XL" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Prix Vente</label>
+                            <input type="number" id="prod-prix" placeholder="0" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Prix Achat</label>
+                            <input type="number" id="prod-achat" placeholder="0" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Stock</label>
+                            <input type="number" id="prod-qte" placeholder="0" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2">
+                            <button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-bold">Enregistrer</button>
+                        </div>
+                    </form>
                 </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Produit</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">P. Vente</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">P. Achat</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Stock</th>
+                                    <th class="p-4 text-right"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="stock-table-body" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
             <div id="page-credits" class="page-content hidden">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Gestion des Crédits</h1>
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Gestion des Crédits</h1>
+                    <button onclick="document.getElementById('add-client-modal').classList.remove('hidden')" 
+                            class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow">
+                        <i data-lucide="user-plus"></i> Nouveau Client
+                    </button>
                 </div>
 
-            <div id="page-rapports" class="page-content hidden">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Rapports des Ventes</h1>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 border-b">
+                            <tr>
+                                <th class="p-4 font-semibold text-gray-600">Client</th>
+                                <th class="p-4 font-semibold text-gray-600">Téléphone</th>
+                                <th class="p-4 font-semibold text-gray-600">Dette</th>
+                                <th class="p-4 font-semibold text-gray-600 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="credits-table-body"></tbody>
+                    </table>
                 </div>
+
+                <div id="add-client-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[120]">
+                    <div class="bg-white p-6 rounded-xl w-full max-w-sm shadow-2xl">
+                        <h3 class="font-bold text-lg mb-4">Ajouter un Client</h3>
+                        <form id="form-client" class="space-y-4">
+                            <input type="text" id="client-nom" placeholder="Nom du client" class="w-full border p-2 rounded" required>
+                            <input type="tel" id="client-tel" placeholder="Téléphone" class="w-full border p-2 rounded">
+                            <div class="flex justify-end gap-2">
+                                <button type="button" onclick="document.getElementById('add-client-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600">Annuler</button>
+                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Enregistrer</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
             <div id="page-charges" class="page-content hidden">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Gestion des Charges</h1>
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Dépenses & Charges</h1>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit">
+                        <h3 class="font-bold text-gray-700 mb-4">Nouvelle Dépense</h3>
+                        <form id="form-expense" class="space-y-4">
+                            <div>
+                                <label class="text-xs font-bold text-gray-500">Motif</label>
+                                <input type="text" id="exp-motif" placeholder="Ex: Électricité" class="w-full border p-2 rounded mt-1" required>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500">Montant</label>
+                                <input type="number" id="exp-montant" placeholder="0" class="w-full border p-2 rounded mt-1" required>
+                            </div>
+                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded font-bold shadow">
+                                Ajouter la dépense
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 border-b">
+                                <tr>
+                                    <th class="p-4 text-sm font-semibold">Date</th>
+                                    <th class="p-4 text-sm font-semibold">Motif</th>
+                                    <th class="p-4 text-sm font-semibold text-right">Montant</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenses-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
+            </div>
+
+            <div id="page-rapports" class="page-content hidden">
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Rapports Financiers</h1>
+                <div class="bg-white p-8 rounded-xl shadow text-center">
+                    <i data-lucide="bar-chart" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <p class="text-gray-500">Module de rapports avancés en cours de développement.</p>
+                    <p class="text-sm text-gray-400">Pour l'instant, utilisez le Dashboard pour voir le CA et les bénéfices.</p>
+                </div>
+            </div>
 
             <div id="page-admin" class="page-content hidden">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">
-                    Administration 
-                    <span class="admin-badge">SUPER ADMIN</span>
+                <h1 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">
+                    Administration Plateforme
+                    <span class="ml-2 text-xs bg-red-600 text-white px-2 py-1 rounded">SUPER ADMIN ONLY</span>
                 </h1>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h2 class="text-lg font-semibold mb-4 text-gray-700">Gestion des Boutiques</h2>
-                        <button id="open-admin-modal" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-sm mb-4">
-                            Gérer les Boutiques
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-lg font-bold mb-4 text-gray-700 flex items-center gap-2">
+                            <i data-lucide="store" class="text-blue-600"></i> Gestion des Boutiques
+                        </h2>
+                        <button id="open-admin-modal" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-sm mb-6 flex justify-center items-center gap-2">
+                            <i data-lucide="plus"></i> Créer une nouvelle boutique
                         </button>
-                        <div id="admin-boutiques-list" class="space-y-3">
-                            </div>
+                        
+                        <div class="mb-2 text-sm text-gray-500 font-semibold uppercase">Liste des boutiques actives :</div>
+                        <div id="admin-boutiques-list" class="space-y-3"></div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h2 class="text-lg font-semibold mb-4 text-gray-700">Vue Globale</h2>
-                        <div id="global-stats" class="space-y-3">
-                            <div class="text-center p-4 border border-gray-200 rounded-lg">
-                                <p class="text-sm text-gray-600">Total des Boutiques</p>
-                                <p class="text-2xl font-bold text-gray-800" id="total-boutiques">0</p>
-                            </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-lg font-bold mb-4 text-gray-700">Vue Globale</h2>
+                        <div class="text-center p-6 border border-gray-100 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500 uppercase font-bold">Total des Boutiques</p>
+                            <p class="text-4xl font-bold text-blue-600 mt-2" id="total-boutiques">0</p>
                         </div>
                     </div>
                 </div>
@@ -217,17 +389,13 @@
         </main>
     </div>
 
-    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white p-4 md:p-6 rounded-xl shadow-2xl max-w-md w-full">
-            <h2 id="confirm-modal-title" class="text-lg md:text-xl font-bold text-gray-800 mb-3">Êtes-vous sûr ?</h2>
-            <p id="confirm-modal-text" class="text-xs md:text-sm text-gray-600 mb-6">Cette action est irréversible.</p>
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[150]">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h2 id="confirm-modal-title" class="text-lg font-bold text-gray-800 mb-2">Êtes-vous sûr ?</h2>
+            <p id="confirm-modal-text" class="text-sm text-gray-600 mb-6">Cette action est irréversible.</p>
             <div class="flex justify-end gap-3">
-                <button id="modal-cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-lg text-xs md:text-sm">
-                    Annuler
-                </button>
-                <button id="modal-confirm-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-xs md:text-sm">
-                    Confirmer
-                </button>
+                <button id="modal-cancel-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm">Annuler</button>
+                <button id="modal-confirm-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm">Confirmer</button>
             </div>
         </div>
     </div>
@@ -235,6 +403,5 @@
     <div id="toast-container"></div>
 
     <script type="module" src="script.js"></script>
-    
 </body>
 </html>
