@@ -1,37 +1,3 @@
-/* Fonts */
-body {
-    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: #f3f4f6; /* Gris très léger pour le fond global */
-}
-
-/* Animations */
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Toasts */
-#toast-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.toast {
-    animation: slideUp 0.3s ease-out;
-    padding: 12px 20px;
-    border-radius: 12px; /* Plus arrondi */
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: white;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    min-width: 200px;
-}
-
 /* =========================================
    NAVIGATION (Sidebar & Bottom Bar)
    ========================================= */
@@ -39,14 +5,12 @@ body {
 .top-tabs {
     background: #ffffff;
     display: flex;
-    /* Par défaut (Mobile) : Barre en bas ou en haut */
     flex-direction: row;
     overflow-x: auto;
-    padding: 0 8px;
+    /* Réduction du padding global */
+    padding: 0 4px; 
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     z-index: 50;
-    
-    /* Scrollbar hidden */
     scrollbar-width: none; 
     -ms-overflow-style: none; 
 }
@@ -55,28 +19,29 @@ body {
     display: none; 
 }
 
-/* Styles des boutons de navigation */
 .tab {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px;
-    margin: 4px;
-    border-radius: 12px; /* Boutons arrondis */
+    /* CONDENSÉ : Padding réduit */
+    padding: 8px 10px; 
+    /* CONDENSÉ : Marges réduites */
+    margin: 2px; 
+    border-radius: 8px; /* Un peu moins arrondi pour gagner de la place */
     cursor: pointer;
-    transition: all 0.3s ease;
-    color: #64748b; /* Gris doux */
-    font-size: 0.7rem;
+    transition: all 0.2s ease;
+    color: #64748b;
+    font-size: 0.75rem; /* Texte un peu plus lisible */
     font-weight: 500;
-    min-width: 65px;
-    border: none; /* On retire la bordure du bas de l'ancien design */
+    min-width: 60px;
+    border: none;
 }
 
 .tab i {
-    width: 20px;
-    height: 20px;
-    margin-bottom: 4px;
+    width: 18px; /* Icônes légèrement plus petites */
+    height: 18px;
+    margin-bottom: 2px;
     transition: transform 0.2s;
 }
 
@@ -87,19 +52,19 @@ body {
 }
 
 .tab:hover i {
-    transform: scale(1.1);
+    transform: scale(1.05);
 }
 
-/* Active State (Style "Intranet.ai") */
+/* Active State */
 .tab.active {
-    background-color: #2563eb; /* Bleu principal */
+    background-color: #2563eb;
     color: white;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); /* Ombre bleue douce */
+    /* Ombre plus subtile */
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25); 
 }
 
-/* Bouton Sortir spécifique */
 #bottom-logout-btn {
-    margin-top: auto; /* Pousse le bouton vers le bas sur Desktop */
+    margin-top: auto;
 }
 
 #bottom-logout-btn:hover {
@@ -114,31 +79,34 @@ body {
 /* Pour les écrans larges (Desktop > 768px) */
 @media (min-width: 768px) {
     .top-tabs {
-        flex-direction: column; /* Devient vertical */
-        width: 240px; /* Largeur fixe */
-        height: 100vh; /* Pleine hauteur */
-        padding: 24px 16px;
+        flex-direction: column;
+        /* CONDENSÉ : Largeur réduite de 240px à 200px */
+        width: 200px; 
+        height: 100vh;
+        /* CONDENSÉ : Padding interne réduit */
+        padding: 16px 8px; 
         border-right: 1px solid #e5e7eb;
-        position: relative; /* Reste dans le flux flex */
-        box-shadow: none; /* On retire l'ombre globale pour un look plus plat */
+        position: relative;
+        box-shadow: none;
     }
 
     .tab {
-        flex-direction: row; /* Icône à gauche, texte à droite */
+        flex-direction: row;
         justify-content: flex-start;
         align-items: center;
-        padding: 12px 16px;
-        width: 100%; /* Pleine largeur du menu */
-        margin-bottom: 8px;
-        font-size: 0.9rem; /* Texte plus grand */
+        /* CONDENSÉ : Boutons moins hauts */
+        padding: 10px 12px; 
+        width: 100%;
+        /* CONDENSÉ : Espace entre les boutons réduit */
+        margin-bottom: 4px; 
+        font-size: 0.85rem;
     }
 
     .tab i {
         margin-bottom: 0;
-        margin-right: 12px; /* Espace entre icone et texte */
+        margin-right: 10px;
     }
 
-    /* Le spacer (flex-1) sert à pousser le logout en bas */
     .top-tabs .flex-1 {
         display: block;
         flex-grow: 1;
@@ -147,93 +115,73 @@ body {
 
 /* Pour les petits écrans (Mobile) */
 @media (max-width: 767px) {
-    /* Barre de navigation fixée en bas (Style App Mobile) */
     .top-tabs {
         position: fixed;
         bottom: 0;
         left: 0;
         width: 100%;
+        height: 60px; /* Hauteur fixe compacte */
         border-top: 1px solid #e5e7eb;
-        justify-content: space-around; /* Espacement égal */
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px); /* Effet de flou iPhone */
+        justify-content: space-between;
+        padding: 0 10px;
+        background: rgba(255, 255, 255, 0.98);
     }
 
-    /* Ajustement pour le contenu principal afin qu'il ne soit pas caché par la barre du bas */
     main {
-        padding-bottom: 80px !important; 
+        padding-bottom: 70px !important; 
+        padding-top: 10px !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
     }
     
-    /* Cacher le texte 'Admin' ou 'Logout' si trop long sur mobile */
     .tab div {
-        font-size: 0.65rem;
+        font-size: 0.6rem; /* Texte plus petit sur mobile */
+        display: none; /* OPTIONNEL : Décommentez pour cacher le texte sur mobile et gagner de la place */
     }
     
-    /* Le spacer ne sert à rien en mode horizontal */
     .top-tabs .flex-1 {
         display: none;
     }
 }
 
 /* =========================================
-   STYLE DES CARTES & CONTENU
+   OVERRIDES POUR CONDENSER L'AFFICHAGE
    ========================================= */
 
-/* Titres */
-h1, h2, h3 {
-    font-family: 'Roboto', sans-serif;
-    color: #1e293b; /* Gris foncé bleuté */
-}
+/* Réduire l'espace entre les éléments de la grille (gap) */
+.gap-4 { gap: 0.75rem !important; } /* 12px au lieu de 16px */
+.gap-6 { gap: 1rem !important; }    /* 16px au lieu de 24px */
 
-/* Scrollbar personnalisée fine */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-/* Badge Admin */
-.admin-badge {
-    background-color: #ec4899; /* Rose (style Intranet.ai) pour le contraste */
-    color: white;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    box-shadow: 0 2px 6px rgba(236, 72, 153, 0.4);
-}
-
-/* Styles génériques pour les cartes blanches dans l'app */
+/* Réduire le padding intérieur des cartes */
 .bg-white {
-    border-radius: 16px; /* Coins très arrondis comme l'image */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(226, 232, 240, 0.8); /* Bordure très légère */
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 1rem !important; /* 16px au lieu de 20px ou 24px */
+    border-radius: 12px;      /* Coins un peu moins ronds pour s'emboiter mieux */
 }
 
-/* Effet de survol sur les cartes interactives (KPIs, produits) */
-.bg-white:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+/* Réduire la taille des titres */
+h1.text-2xl {
+    font-size: 1.25rem !important; /* Plus petit */
+    margin-bottom: 1rem !important;
 }
 
-/* Inputs et Selects */
-input, select {
-    border-radius: 10px !important; /* Inputs arrondis */
-    border-color: #e2e8f0 !important;
-    background-color: #f8fafc !important;
+h2.text-4xl {
+    font-size: 1.8rem !important; /* Chiffres clés plus compacts */
 }
 
-input:focus, select:focus {
-    background-color: #ffffff !important;
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+/* Condenser les tableaux */
+td, th {
+    padding: 8px 12px !important; /* Cellules de tableau moins hautes */
 }
 
-/* Boutons d'action */
-button {
-    border-radius: 10px !important;
-    transition: all 0.2s ease !important;
+/* Input plus compacts */
+input, select, button {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    font-size: 0.9rem !important;
 }
+
+/* Ajustement du container principal */
+main {
+    padding: 1rem !important; /* Marges extérieures réduites */
+}
+
