@@ -260,23 +260,118 @@ function setupSalesPage() {
     });
 }
 
+// REMPLACEZ LA FONCTION processSale EXISTANTE PAR CELLE-CI :
+
 async function processSale(type, clientId, clientName) {
     try {
         const batch = writeBatch(db);
         const saleRef = doc(collection(db, "boutiques", currentBoutiqueId, "ventes"));
+        
         let total = 0, profit = 0;
+        // On garde une copie des items pour la facture avant de vider le panier
+        const itemsForInvoice = JSON.parse(JSON.stringify(saleCart)); 
+
+        // 1. Calculs et Stock
         for (const item of saleCart) {
-            total += item.prixVente * item.qty;
-            profit += (item.prixVente - (item.prixAchat || 0)) * item.qty;
-            batch.update(doc(db, "boutiques", currentBoutiqueId, "products", item.id), { stock: increment(-item.qty) });
+            const lineTotal = item.prixVente * item.qty;
+            const lineProfit = (item.prixVente - (item.prixAchat || 0)) * item.qty;
+            total += lineTotal;
+            profit += lineProfit;
+
+            const pRef = doc(db, "boutiques", currentBoutiqueId, "products", item.id);
+            batch.update(pRef, { stock: increment(-item.qty) });
         }
+
+        // 2. Crédit
         if (type === 'credit' && clientId) {
-            batch.update(doc(db, "boutiques", currentBoutiqueId, "clients", clientId), { dette: increment(total) });
+            const clientRef = doc(db, "boutiques", currentBoutiqueId, "clients", clientId);
+            batch.update(clientRef, { dette: increment(total) });
         }
-        batch.set(saleRef, { items: saleCart, total, profit, date: serverTimestamp(), vendeurId: userId, type, clientId: clientId || null, clientName: clientName || null });
+
+        // 3. Enregistrement
+        const saleData = {
+            items: saleCart,
+            total: total,
+            profit: profit,
+            date: serverTimestamp(),
+            vendeurId: userId,
+            type: type,
+            clientId: clientId || null,
+            clientName: clientName || null
+        };
+
+        batch.set(saleRef, saleData);
         await batch.commit();
-        saleCart = []; renderCart(); showToast(`Vente validée !`, "success");
-    } catch (err) { console.error(err); showToast("Erreur lors de la vente", "error"); }
+        
+        // 4. SUCCÈS : On lance la facture WhatsApp AVANT de vider le panier visuellement
+        showInvoiceModal(itemsForInvoice, total, type, clientName);
+
+        // On vide le panier logique
+        saleCart = [];
+        renderCart();
+        // showToast supprimé car la modale confirme déjà
+
+    } catch (err) {
+        console.error(err);
+        showToast("Erreur lors de la vente", "error");
+    }
+}
+
+// AJOUTEZ CETTE NOUVELLE FONCTION JUSTE APRÈS processSale :
+
+function showInvoiceModal(items, total, type, clientName) {
+    const modal = document.getElementById('invoice-modal');
+    const amountEl = document.getElementById('invoice-amount');
+    const previewEl = document.getElementById('invoice-preview');
+    const whatsappBtn = document.getElementById('btn-whatsapp-share');
+    
+    // 1. Affichage Montant
+    amountEl.textContent = formatPrice(total);
+    
+    // 2. Génération du texte pour WhatsApp
+    // On récupère le nom de la boutique depuis le dashboard
+    const shopName = document.getElementById('dashboard-user-name').textContent.trim();
+    const dateStr = new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+    
+    let receiptText = `🧾 *REÇU DE PAIEMENT*\n`;
+    receiptText += `🏪 ${shopName}\n`;
+    receiptText += `📅 ${dateStr}\n`;
+    if(clientName) receiptText += `👤 Client: ${clientName}\n`;
+    receiptText += `------------------------\n`;
+    
+    let previewHtml = "";
+
+    items.forEach(item => {
+        const lineTotal = item.prixVente * item.qty;
+        // Texte WhatsApp
+        receiptText += `${item.qty}x ${item.nomDisplay} : ${formatPrice(lineTotal)}\n`;
+        // Aperçu HTML
+        previewHtml += `<div class="flex justify-between"><span>${item.qty}x ${item.nomDisplay}</span><span>${formatPrice(lineTotal)}</span></div>`;
+    });
+
+    receiptText += `------------------------\n`;
+    receiptText += `💰 *TOTAL: ${formatPrice(total)}*\n`;
+    
+    if(type === 'credit') {
+        receiptText += `📝 *VENTE À CRÉDIT - NON PAYÉ*\n`;
+    } else {
+        receiptText += `✅ *PAYÉ EN ESPÈCES*\n`;
+    }
+    
+    receiptText += `\nMerci de votre visite ! 🙏`;
+
+    // 3. Mise à jour UI
+    previewEl.innerHTML = previewHtml;
+    
+    // 4. Création du lien WhatsApp (encodage URL)
+    const encodedText = encodeURIComponent(receiptText);
+    whatsappBtn.href = `https://wa.me/?text=${encodedText}`;
+    
+    // 5. Afficher la modale
+    modal.classList.remove('hidden');
+    
+    // Recréer les icônes Lucide dans la modale
+    if (window.lucide) window.lucide.createIcons();
 }
 
 window.addToCart = (p) => {

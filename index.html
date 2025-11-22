@@ -357,6 +357,37 @@
             </div>
         </div>
     </div>
+    <div id="invoice-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[200] backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform transition-all scale-100">
+            <div class="text-center mb-6">
+                <div class="mx-auto bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-3">
+                    <i data-lucide="check" class="text-green-600 w-6 h-6"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800">Vente Réussie !</h2>
+                <p class="text-gray-500 text-sm">Le stock et la caisse ont été mis à jour.</p>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 text-sm font-mono">
+                <div class="flex justify-between border-b border-gray-200 pb-2 mb-2">
+                    <span class="font-bold">Total payé</span>
+                    <span class="font-bold text-blue-600" id="invoice-amount">0 CFA</span>
+                </div>
+                <div class="text-xs text-gray-500" id="invoice-preview">
+                    </div>
+            </div>
+
+            <div class="space-y-3">
+                <a id="btn-whatsapp-share" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-xl font-bold shadow-lg flex justify-center items-center gap-2 transition-transform hover:scale-105">
+                    <i data-lucide="message-circle" class="w-5 h-5 fill-current"></i>
+                    Envoyer Facture WhatsApp
+                </a>
+                
+                <button onclick="document.getElementById('invoice-modal').classList.add('hidden')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold">
+                    Fermer et Nouvelle Vente
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div id="toast-container"></div>
     <script type="module" src="script.js"></script>
