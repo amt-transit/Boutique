@@ -3,8 +3,31 @@
 // ===============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, setDoc, doc, collection, onSnapshot, updateDoc, writeBatch, serverTimestamp, increment, deleteDoc, getDocs, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { 
+    getAuth, 
+    onAuthStateChanged, 
+    signInWithEmailAndPassword, 
+    signOut,
+    createUserWithEmailAndPassword  // <--- C'EST CETTE LIGNE QUI MANQUAIT
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+import { 
+    getFirestore, 
+    setDoc, 
+    doc, 
+    collection, 
+    onSnapshot, 
+    updateDoc, 
+    writeBatch, 
+    serverTimestamp, 
+    increment, 
+    deleteDoc, 
+    getDocs, 
+    getDoc, 
+    setLogLevel 
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// ... Le reste du code ne change pas ...
 
 const firebaseConfig = {
     apiKey: "AIzaSyCluRVv-olQsTuZZBPjjJns1jHq0vkhjSw",
