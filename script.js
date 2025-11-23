@@ -721,22 +721,102 @@ function setupExpenses() {
     window.deleteExp = (id) => { if(confirm("Supprimer ?")) deleteDoc(doc(db, "boutiques", currentBoutiqueId, "expenses", id)); };
 }
 
+// ================= GESTION CREATION COMPTES (SUPER ADMIN) =================
+
 function setupAdminFeatures() {
     const form = document.getElementById('create-boutique-form');
+    // Gestion ouverture/fermeture modale
     document.getElementById('open-admin-modal')?.addEventListener('click', () => document.getElementById('admin-modal').classList.remove('hidden'));
+    document.getElementById('admin-modal-close-btn')?.addEventListener('click', () => document.getElementById('admin-modal').classList.add('hidden'));
+
     if(form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const nom = document.getElementById('new-boutique-name').value;
+            
+            // Récupération des valeurs
+            const nomBoutique = document.getElementById('new-boutique-name').value;
+            const adminEmail = document.getElementById('admin-email').value;
+            const adminPass = document.getElementById('admin-password').value;
+            const sellerEmail = document.getElementById('seller-email').value;
+            const sellerPass = document.getElementById('seller-password').value;
+
+            // Validation simple
+            if(adminPass.length < 6 || sellerPass.length < 6) {
+                return showToast("Les mots de passe doivent faire 6 caractères min.", "error");
+            }
+
+            showToast("Création en cours... Patientez...", "warning");
+
             try {
-                const ref = doc(collection(db, "boutiques"));
-                await setDoc(ref, { nom, createdAt: serverTimestamp(), createdBy: userId });
-                showToast(`Boutique ${nom} créée ! Créez les utilisateurs manuellement.`, "success");
+                // 1. CRÉER UNE INSTANCE SECONDAIRE DE FIREBASE
+                // Cela permet de créer des users sans déconnecter le Super Admin
+                const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+                const secondaryAuth = getAuth(secondaryApp);
+
+                // 2. Créer la boutique dans Firestore
+                const boutiqueRef = doc(collection(db, "boutiques"));
+                const boutiqueId = boutiqueRef.id;
+                
+                await setDoc(boutiqueRef, { 
+                    nom: nomBoutique, 
+                    createdAt: serverTimestamp(), 
+                    createdBy: userId 
+                });
+
+                // 3. Créer le compte PROPRIÉTAIRE (Auth + Firestore)
+                try {
+                    // Création Auth (sur l'instance secondaire)
+                    const ownerCred = await createUserWithEmailAndPassword(secondaryAuth, adminEmail, adminPass);
+                    const ownerUid = ownerCred.user.uid;
+                    
+                    // Création fiche User (sur la base principale 'db')
+                    await setDoc(doc(db, "users", ownerUid), {
+                        email: adminEmail,
+                        role: 'admin',
+                        boutiqueId: boutiqueId,
+                        boutiqueName: nomBoutique,
+                        createdAt: serverTimestamp()
+                    });
+                    
+                    // On déconnecte l'instance secondaire pour passer au suivant
+                    await signOut(secondaryAuth);
+                    
+                } catch (err) {
+                    throw new Error("Erreur création Propriétaire: " + err.message);
+                }
+
+                // 4. Créer le compte VENDEUR (Auth + Firestore)
+                try {
+                    const sellerCred = await createUserWithEmailAndPassword(secondaryAuth, sellerEmail, sellerPass);
+                    const sellerUid = sellerCred.user.uid;
+                    
+                    await setDoc(doc(db, "users", sellerUid), {
+                        email: sellerEmail,
+                        role: 'seller',
+                        boutiqueId: boutiqueId,
+                        boutiqueName: nomBoutique,
+                        createdAt: serverTimestamp()
+                    });
+                    
+                    await signOut(secondaryAuth);
+
+                } catch (err) {
+                    throw new Error("Erreur création Vendeur: " + err.message);
+                }
+
+                // 5. Succès total
+                showToast(`Boutique "${nomBoutique}" et comptes créés avec succès !`, "success");
                 form.reset();
                 document.getElementById('admin-modal').classList.add('hidden');
                 loadBoutiquesList();
-                loadShopsForImport(); // Mise à jour de la liste d'import
-            } catch (err) { console.error(err); showToast("Erreur", "error"); }
+                loadShopsForImport();
+
+            } catch (err) {
+                console.error(err);
+                let msg = err.message;
+                if(msg.includes("email-already-in-use")) msg = "Cet email est déjà utilisé !";
+                showToast(msg, "error");
+            }
         });
     }
 }
