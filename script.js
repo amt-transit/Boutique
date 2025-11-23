@@ -1,5 +1,5 @@
 // ===============================================
-// SCRIPT: VERSION FINALE
+// SCRIPT: GESTION BOUTIQUE V3 (CORRIGÉ)
 // ===============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -19,6 +19,8 @@ let db, auth, userId;
 let allProducts = [], saleCart = []; 
 let currentBoutiqueId = null, userRole = null;
 let actionToConfirm = null; 
+
+// ================= INIT & AUTH =================
 
 async function main() {
     const app = initializeApp(firebaseConfig);
@@ -69,9 +71,13 @@ function setupAuthListener() {
         if (user) {
             userId = user.uid;
             try {
+                // Check Super Admin
                 const superAdminDoc = await getDoc(doc(db, "super_admins", userId));
-                if (superAdminDoc.exists()) { showSuperAdminInterface(); return; }
-
+                if (superAdminDoc.exists()) {
+                    showSuperAdminInterface();
+                    return;
+                }
+                // Check User Boutique
                 const userDoc = await getDoc(doc(db, "users", userId));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
@@ -114,10 +120,14 @@ function showSuperAdminInterface() {
     document.getElementById('top-nav-bar').classList.remove('hidden');
     document.getElementById('dashboard-user-name').textContent = "SUPER ADMIN";
     document.getElementById('admin-tab-btn').classList.remove('hidden');
+    
     ['dashboard','ventes','stock','caisse','credits','rapports','charges'].forEach(hideTab);
     showTab('admin');
     switchTab('admin');
+    
     loadBoutiquesList();
+    loadShopsForImport(); // <--- CORRECTION ICI : On charge la liste pour l'import
+    
     if (window.lucide) window.lucide.createIcons();
 }
 
@@ -132,7 +142,139 @@ function initializeApplication() {
     if (window.lucide) window.lucide.createIcons();
 }
 
-// ================= DASHBOARD =================
+// ================= LOGIQUE IMPORT CSV =================
+
+// 1. Charger la liste pour le select
+async function loadShopsForImport() {
+    const select = document.getElementById('import-target-shop');
+    if(!select) return;
+    
+    const boutiques = await getAvailableBoutiques();
+    select.innerHTML = '<option value="">-- Choisir la boutique cible --</option>';
+    boutiques.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = b.nom;
+        select.appendChild(opt);
+    });
+}
+
+// 2. Fonction globale attachée au bouton (window scope)
+window.processImport = async function(collectionName) {
+    const shopId = document.getElementById('import-target-shop').value;
+    if (!shopId) return showToast("Veuillez sélectionner une boutique cible !", "error");
+
+    let inputId = "";
+    if (collectionName === 'products') inputId = 'csv-stock';
+    else if (collectionName === 'clients') inputId = 'csv-clients';
+    else if (collectionName === 'expenses') inputId = 'csv-expenses';
+    else if (collectionName === 'ventes') inputId = 'csv-sales';
+
+    const fileInput = document.getElementById(inputId);
+    const file = fileInput.files[0];
+
+    if (!file) return showToast("Veuillez choisir un fichier CSV.", "error");
+
+    Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+            if (results.errors.length > 0) {
+                return showToast("Erreur de lecture CSV. Vérifiez le format.", "error");
+            }
+            const data = results.data;
+            if (confirm(`Importer ${data.length} éléments dans "${collectionName}" ?`)) {
+                await uploadBatchData(shopId, collectionName, data);
+            }
+        }
+    });
+};
+
+async function uploadBatchData(shopId, collectionName, data) {
+    const batchSize = 450; 
+    let batches = [];
+    let currentBatch = writeBatch(db);
+    let count = 0;
+
+    showToast("Import en cours...", "warning");
+
+    for (const row of data) {
+        const docRef = doc(collection(db, "boutiques", shopId, collectionName));
+        let cleanData = {};
+
+        try {
+            if (collectionName === 'products') {
+                cleanData = {
+                    nom: row.Nom ? row.Nom.toString().toLowerCase() : 'inconnu',
+                    nomDisplay: row.Nom || 'Inconnu',
+                    prixVente: parseFloat(row.PrixVente) || 0,
+                    prixAchat: parseFloat(row.PrixAchat) || 0,
+                    stock: parseInt(row.Quantite) || 0,
+                    createdAt: serverTimestamp()
+                };
+            } 
+            else if (collectionName === 'clients') {
+                cleanData = {
+                    nom: row.Nom || 'Client Inconnu',
+                    telephone: row.Telephone || '',
+                    dette: parseFloat(row.Dette) || 0,
+                    createdAt: serverTimestamp()
+                };
+            }
+            else if (collectionName === 'expenses') {
+                cleanData = {
+                    date: row.Date ? new Date(row.Date) : serverTimestamp(),
+                    motif: row.Motif || 'Charge importée',
+                    montant: parseFloat(row.Montant) || 0,
+                    user: userId 
+                };
+            }
+            else if (collectionName === 'ventes') {
+                // Création d'un item fictif pour que le dashboard comprenne
+                const fakeItem = {
+                    id: 'imp_' + Math.random().toString(36).substr(2, 5),
+                    nom: row.Produit ? row.Produit.toLowerCase() : 'art. import',
+                    nomDisplay: row.Produit || 'Article Importé',
+                    qty: parseInt(row.Quantite) || 1,
+                    prixVente: parseFloat(row.Total) || 0, // Approximation si pas de PU
+                    prixAchat: 0
+                };
+
+                cleanData = {
+                    date: row.Date ? new Date(row.Date) : serverTimestamp(),
+                    total: parseFloat(row.Total) || 0,
+                    profit: parseFloat(row.Profit) || 0,
+                    items: [fakeItem], // IMPORTANT pour le Top 10
+                    type: 'cash_import',
+                    vendeurId: 'import'
+                };
+            }
+
+            currentBatch.set(docRef, cleanData);
+            count++;
+
+            if (count % batchSize === 0) {
+                batches.push(currentBatch.commit());
+                currentBatch = writeBatch(db);
+            }
+
+        } catch (e) { console.warn("Ligne ignorée:", row); }
+    }
+
+    if (count % batchSize !== 0) batches.push(currentBatch.commit());
+
+    try {
+        await Promise.all(batches);
+        showToast(`Import terminé ! ${count} éléments.`, "success");
+        document.querySelectorAll('input[type="file"]').forEach(i => i.value = '');
+    } catch (error) {
+        console.error(error);
+        showToast("Erreur écriture base.", "error");
+    }
+}
+
+// ================= DASHBOARD & RAPPORTS =================
+
 function setupDashboard() {
     onSnapshot(collection(db, "boutiques", currentBoutiqueId, "ventes"), (snap) => {
         let totalCA = 0, totalProfit = 0;
@@ -151,8 +293,12 @@ function setupDashboard() {
                 s.items.forEach(item => {
                     if (!productStats[item.id]) productStats[item.id] = { name: item.nomDisplay || item.nom, qty: 0, profit: 0 };
                     productStats[item.id].qty += (item.qty || 0);
-                    const itemProfit = (item.prixVente - (item.prixAchat || 0)) * item.qty;
-                    productStats[item.id].profit += itemProfit;
+                    // Si importé, item.prixVente est le total, sinon c'est unitaire. Adaptation simple :
+                    let gain = 0;
+                    if(s.type === 'cash_import') gain = s.profit; // Si import, on prend le profit global de la ligne
+                    else gain = (item.prixVente - (item.prixAchat || 0)) * item.qty;
+                    
+                    productStats[item.id].profit += gain;
                 });
             }
         });
@@ -193,6 +339,103 @@ function setupDashboard() {
             lowDiv.innerHTML = '<p class="text-gray-400 italic">Stock OK.</p>';
         }
     }, 3000);
+}
+
+function setupReports() {
+    const btnFilter = document.getElementById('btn-filter-reports');
+    const dateStart = document.getElementById('report-date-start');
+    const dateEnd = document.getElementById('report-date-end');
+
+    if(!btnFilter) return;
+
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    dateStart.valueAsDate = firstDay;
+    dateEnd.valueAsDate = now;
+
+    const loadData = async () => {
+        const tbody = document.getElementById('reports-table-body');
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Chargement...</td></tr>';
+
+        try {
+            const salesSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "ventes"));
+            const expSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "expenses"));
+
+            let transactions = [];
+
+            salesSnap.forEach(doc => {
+                const s = doc.data();
+                const desc = s.items ? s.items.map(i => `${i.nomDisplay || i.nom} (x${i.qty})`).join(', ') : 'Vente';
+                transactions.push({
+                    date: s.date?.toDate ? s.date.toDate() : new Date(),
+                    desc: desc,
+                    type: 'VENTE',
+                    credit: s.type === 'credit',
+                    amount: s.total || 0,
+                    isExpense: false
+                });
+            });
+
+            expSnap.forEach(doc => {
+                const e = doc.data();
+                transactions.push({
+                    date: e.date?.toDate ? e.date.toDate() : new Date(),
+                    desc: e.motif || 'Dépense',
+                    type: 'SORTIE',
+                    credit: false,
+                    amount: e.montant || 0,
+                    isExpense: true
+                });
+            });
+
+            const start = new Date(dateStart.value); start.setHours(0,0,0,0);
+            const end = new Date(dateEnd.value); end.setHours(23,59,59,999);
+
+            transactions = transactions.filter(t => t.date >= start && t.date <= end);
+            transactions.sort((a, b) => b.date - a.date);
+
+            tbody.innerHTML = '';
+            let totalVente = 0;
+            let totalDepense = 0;
+
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Aucun mouvement.</td></tr>';
+            }
+
+            transactions.forEach(t => {
+                const row = document.createElement('tr');
+                const classVente = t.isExpense ? 'text-gray-300' : 'text-green-600 font-bold';
+                const classDepense = t.isExpense ? 'text-red-600 font-bold' : 'text-gray-300';
+                const descClass = t.isExpense ? 'text-red-500 font-medium' : 'text-gray-700';
+                
+                if(t.isExpense) totalDepense += t.amount;
+                else totalVente += t.amount;
+
+                row.className = "border-b hover:bg-gray-50 transition";
+                row.innerHTML = `
+                    <td class="p-3 text-gray-500 text-xs whitespace-nowrap">${t.date.toLocaleDateString()} <br> <span class="text-gray-300">${t.date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></td>
+                    <td class="p-3 text-sm ${descClass}">${t.desc} ${t.credit ? '<span class="ml-2 bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs">Crédit</span>' : ''}</td>
+                    <td class="p-3 text-center text-xs font-bold text-gray-400">${t.isExpense ? 'DÉPENSE' : 'VENTE'}</td>
+                    <td class="p-3 text-right text-sm ${classVente}">${!t.isExpense ? formatPrice(t.amount) : '-'}</td>
+                    <td class="p-3 text-right text-sm ${classDepense}">${t.isExpense ? formatPrice(t.amount) : '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('report-total-sales').textContent = formatPrice(totalVente);
+            document.getElementById('report-total-expenses').textContent = formatPrice(totalDepense);
+            document.getElementById('report-balance').textContent = formatPrice(totalVente - totalDepense);
+
+        } catch (error) { console.error(error); }
+    };
+
+    btnFilter.addEventListener('click', loadData);
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (!mutation.target.classList.contains('hidden')) loadData();
+        });
+    });
+    observer.observe(document.getElementById('page-rapports'), { attributes: true, attributeFilter: ['class'] });
 }
 
 // ================= VENTES =================
@@ -260,64 +503,36 @@ function setupSalesPage() {
     });
 }
 
-// REMPLACEZ LA FONCTION processSale EXISTANTE PAR CELLE-CI :
-
 async function processSale(type, clientId, clientName) {
     try {
         const batch = writeBatch(db);
         const saleRef = doc(collection(db, "boutiques", currentBoutiqueId, "ventes"));
         
         let total = 0, profit = 0;
-        // On garde une copie des items pour la facture avant de vider le panier
         const itemsForInvoice = JSON.parse(JSON.stringify(saleCart)); 
 
-        // 1. Calculs et Stock
         for (const item of saleCart) {
             const lineTotal = item.prixVente * item.qty;
             const lineProfit = (item.prixVente - (item.prixAchat || 0)) * item.qty;
             total += lineTotal;
             profit += lineProfit;
-
             const pRef = doc(db, "boutiques", currentBoutiqueId, "products", item.id);
             batch.update(pRef, { stock: increment(-item.qty) });
         }
 
-        // 2. Crédit
         if (type === 'credit' && clientId) {
             const clientRef = doc(db, "boutiques", currentBoutiqueId, "clients", clientId);
             batch.update(clientRef, { dette: increment(total) });
         }
 
-        // 3. Enregistrement
-        const saleData = {
-            items: saleCart,
-            total: total,
-            profit: profit,
-            date: serverTimestamp(),
-            vendeurId: userId,
-            type: type,
-            clientId: clientId || null,
-            clientName: clientName || null
-        };
-
-        batch.set(saleRef, saleData);
+        batch.set(saleRef, { items: saleCart, total, profit, date: serverTimestamp(), vendeurId: userId, type, clientId: clientId || null, clientName: clientName || null });
         await batch.commit();
         
-        // 4. SUCCÈS : On lance la facture WhatsApp AVANT de vider le panier visuellement
         showInvoiceModal(itemsForInvoice, total, type, clientName);
+        saleCart = []; renderCart();
 
-        // On vide le panier logique
-        saleCart = [];
-        renderCart();
-        // showToast supprimé car la modale confirme déjà
-
-    } catch (err) {
-        console.error(err);
-        showToast("Erreur lors de la vente", "error");
-    }
+    } catch (err) { console.error(err); showToast("Erreur lors de la vente", "error"); }
 }
-
-// AJOUTEZ CETTE NOUVELLE FONCTION JUSTE APRÈS processSale :
 
 function showInvoiceModal(items, total, type, clientName) {
     const modal = document.getElementById('invoice-modal');
@@ -325,52 +540,29 @@ function showInvoiceModal(items, total, type, clientName) {
     const previewEl = document.getElementById('invoice-preview');
     const whatsappBtn = document.getElementById('btn-whatsapp-share');
     
-    // 1. Affichage Montant
     amountEl.textContent = formatPrice(total);
     
-    // 2. Génération du texte pour WhatsApp
-    // On récupère le nom de la boutique depuis le dashboard
     const shopName = document.getElementById('dashboard-user-name').textContent.trim();
     const dateStr = new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
     
-    let receiptText = `🧾 *REÇU DE PAIEMENT*\n`;
-    receiptText += `🏪 ${shopName}\n`;
-    receiptText += `📅 ${dateStr}\n`;
+    let receiptText = `🧾 *REÇU DE PAIEMENT*\n🏪 ${shopName}\n📅 ${dateStr}\n`;
     if(clientName) receiptText += `👤 Client: ${clientName}\n`;
     receiptText += `------------------------\n`;
     
     let previewHtml = "";
-
     items.forEach(item => {
         const lineTotal = item.prixVente * item.qty;
-        // Texte WhatsApp
         receiptText += `${item.qty}x ${item.nomDisplay} : ${formatPrice(lineTotal)}\n`;
-        // Aperçu HTML
         previewHtml += `<div class="flex justify-between"><span>${item.qty}x ${item.nomDisplay}</span><span>${formatPrice(lineTotal)}</span></div>`;
     });
 
-    receiptText += `------------------------\n`;
-    receiptText += `💰 *TOTAL: ${formatPrice(total)}*\n`;
-    
-    if(type === 'credit') {
-        receiptText += `📝 *VENTE À CRÉDIT - NON PAYÉ*\n`;
-    } else {
-        receiptText += `✅ *PAYÉ EN ESPÈCES*\n`;
-    }
-    
+    receiptText += `------------------------\n💰 *TOTAL: ${formatPrice(total)}*\n`;
+    receiptText += type === 'credit' ? `📝 *VENTE À CRÉDIT*\n` : `✅ *PAYÉ EN ESPÈCES*\n`;
     receiptText += `\nMerci de votre visite ! 🙏`;
 
-    // 3. Mise à jour UI
     previewEl.innerHTML = previewHtml;
-    
-    // 4. Création du lien WhatsApp (encodage URL)
-    const encodedText = encodeURIComponent(receiptText);
-    whatsappBtn.href = `https://wa.me/?text=${encodedText}`;
-    
-    // 5. Afficher la modale
+    whatsappBtn.href = `https://wa.me/?text=${encodeURIComponent(receiptText)}`;
     modal.classList.remove('hidden');
-    
-    // Recréer les icônes Lucide dans la modale
     if (window.lucide) window.lucide.createIcons();
 }
 
@@ -381,7 +573,6 @@ window.addToCart = (p) => {
         if(exist.qty >= p.stock) return showToast("Stock max atteint", "error");
         exist.qty++; 
     } else { 
-        // AJOUT DE LA DATE ICI
         saleCart.push({ ...p, qty: 1, addedAt: new Date() }); 
     }
     document.getElementById('sale-search').value = '';
@@ -403,10 +594,7 @@ window.renderCart = () => {
 
     saleCart.forEach((item, idx) => {
         total += item.prixVente * item.qty;
-        
-        // FORMATAGE DE LA DATE (HEURE SEULEMENT)
         const timeStr = item.addedAt ? new Date(item.addedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
-
         tbody.innerHTML += `
             <tr class="border-b last:border-0 border-gray-50">
                 <td class="p-3 text-gray-400 text-xs">${timeStr}</td>
@@ -434,7 +622,7 @@ window.updateQty = (idx, delta) => {
     renderCart();
 };
 
-// ================= AUTRES (STOCK, CREDITS, ADMIN...) =================
+// ================= AUTRES FONCTIONS =================
 
 function setupStockManagement() {
     const stockForm = document.getElementById('form-stock');
@@ -533,141 +721,6 @@ function setupExpenses() {
     window.deleteExp = (id) => { if(confirm("Supprimer ?")) deleteDoc(doc(db, "boutiques", currentBoutiqueId, "expenses", id)); };
 }
 
-// ================= HISTORIQUE / RAPPORTS =================
-
-function setupReports() {
-    const btnFilter = document.getElementById('btn-filter-reports');
-    const dateStart = document.getElementById('report-date-start');
-    const dateEnd = document.getElementById('report-date-end');
-
-    // Initialiser les dates (ce mois-ci par défaut)
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    dateStart.valueAsDate = firstDay;
-    dateEnd.valueAsDate = now;
-
-    // Fonction principale de chargement
-    const loadData = async () => {
-        const tbody = document.getElementById('reports-table-body');
-        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Chargement...</td></tr>';
-
-        try {
-            // 1. Récupérer Ventes et Dépenses
-            const salesSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "ventes"));
-            const expSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "expenses"));
-
-            let transactions = [];
-
-            // 2. Traiter les Ventes
-            salesSnap.forEach(doc => {
-                const s = doc.data();
-                // Créer une description des articles (ex: "Savon x1, Parfum x2")
-                const desc = s.items ? s.items.map(i => `${i.nomDisplay || i.nom} (x${i.qty})`).join(', ') : 'Vente divers';
-                
-                transactions.push({
-                    date: s.date?.toDate ? s.date.toDate() : new Date(),
-                    desc: desc,
-                    type: 'VENTE',
-                    credit: s.type === 'credit', // Si c'est une vente à crédit
-                    amount: s.total || 0,
-                    isExpense: false
-                });
-            });
-
-            // 3. Traiter les Dépenses
-            expSnap.forEach(doc => {
-                const e = doc.data();
-                transactions.push({
-                    date: e.date?.toDate ? e.date.toDate() : new Date(),
-                    desc: e.motif || 'Dépense',
-                    type: 'SORTIE',
-                    credit: false,
-                    amount: e.montant || 0,
-                    isExpense: true
-                });
-            });
-
-            // 4. Filtrer par Date
-            const start = new Date(dateStart.value); start.setHours(0,0,0,0);
-            const end = new Date(dateEnd.value); end.setHours(23,59,59,999);
-
-            transactions = transactions.filter(t => t.date >= start && t.date <= end);
-
-            // 5. Trier (Du plus récent au plus ancien)
-            transactions.sort((a, b) => b.date - a.date);
-
-            // 6. Afficher et Calculer Totaux
-            tbody.innerHTML = '';
-            let totalVente = 0;
-            let totalDepense = 0;
-
-            if (transactions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Aucun mouvement sur cette période.</td></tr>';
-            }
-
-            transactions.forEach(t => {
-                const row = document.createElement('tr');
-                
-                // Styles conditionnels
-                const classVente = t.isExpense ? 'text-gray-300' : 'text-green-600 font-bold';
-                const classDepense = t.isExpense ? 'text-red-600 font-bold' : 'text-gray-300';
-                
-                // Colonne Articles : Si c'est une dépense en rouge (comme l'image), sinon noir
-                const descClass = t.isExpense ? 'text-red-500 font-medium' : 'text-gray-700';
-                
-                // Calculs
-                if(t.isExpense) totalDepense += t.amount;
-                else totalVente += t.amount;
-
-                row.className = "border-b hover:bg-gray-50 transition";
-                row.innerHTML = `
-                    <td class="p-3 text-gray-500 text-xs whitespace-nowrap">
-                        ${t.date.toLocaleDateString()} <br> 
-                        <span class="text-gray-300">${t.date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                    </td>
-                    <td class="p-3 text-sm ${descClass}">
-                        ${t.desc}
-                        ${t.credit ? '<span class="ml-2 bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs">Crédit</span>' : ''}
-                    </td>
-                    <td class="p-3 text-center text-xs font-bold text-gray-400">
-                        ${t.isExpense ? 'DÉPENSE' : 'VENTE'}
-                    </td>
-                    <td class="p-3 text-right text-sm ${classVente}">
-                        ${!t.isExpense ? formatPrice(t.amount) : '-'}
-                    </td>
-                    <td class="p-3 text-right text-sm ${classDepense}">
-                        ${t.isExpense ? formatPrice(t.amount) : '-'}
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-
-            // Mise à jour des cartes du haut
-            document.getElementById('report-total-sales').textContent = formatPrice(totalVente);
-            document.getElementById('report-total-expenses').textContent = formatPrice(totalDepense);
-            document.getElementById('report-balance').textContent = formatPrice(totalVente - totalDepense);
-
-        } catch (error) {
-            console.error(error);
-            showToast("Erreur chargement historique", "error");
-        }
-    };
-
-    // Ecouteurs
-    btnFilter.addEventListener('click', loadData);
-    
-    // Chargement initial automatique quand on clique sur l'onglet
-    // On ajoute un petit hack pour recharger quand l'onglet devient visible
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (!mutation.target.classList.contains('hidden')) {
-                loadData();
-            }
-        });
-    });
-    observer.observe(document.getElementById('page-rapports'), { attributes: true, attributeFilter: ['class'] });
-}
-
 function setupAdminFeatures() {
     const form = document.getElementById('create-boutique-form');
     document.getElementById('open-admin-modal')?.addEventListener('click', () => document.getElementById('admin-modal').classList.remove('hidden'));
@@ -682,6 +735,7 @@ function setupAdminFeatures() {
                 form.reset();
                 document.getElementById('admin-modal').classList.add('hidden');
                 loadBoutiquesList();
+                loadShopsForImport(); // Mise à jour de la liste d'import
             } catch (err) { console.error(err); showToast("Erreur", "error"); }
         });
     }
