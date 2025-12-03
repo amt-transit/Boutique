@@ -17,39 +17,16 @@
         <div class="w-full max-w-md p-6 md:p-8 bg-white rounded-xl shadow-2xl">
             <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Ma Boutique</h1>
             <form id="login-form" class="space-y-4">
-                
                 <h2 class="text-lg font-semibold text-gray-700">Se Connecter</h2>
-                
                 <div class="boutique-selector">
                     <label for="login-boutique">Boutique</label>
                     <select id="login-boutique" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg bg-gray-50">
                         <option value="">Chargement...</option>
                     </select>
                 </div>
-                
-                <div>
-                    <label class="text-sm font-medium text-gray-600 block mb-2">Email</label>
-                    <input type="email" id="login-email" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
-                </div>
-
-                <div>
-                    <label class="text-sm font-medium text-gray-600 block mb-2">Mot de passe</label>
-                    <input type="password" id="login-password" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
-                    
-                    <div class="text-right mt-1">
-                        <a href="#" id="forgot-password-link" class="text-xs text-blue-600 hover:text-blue-800 hover:underline">
-                            Mot de passe oublié ?
-                        </a>
-                    </div>
-                </div>
-                <div id="login-error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                    <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
-                    <span id="login-error-text">Une erreur est survenue.</span>
-                </div>
-
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm transition shadow-md">
-                    Connexion
-                </button>
+                <input type="email" id="login-email" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required placeholder="Email">
+                <input type="password" id="login-password" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required placeholder="Mot de passe">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm transition shadow-md">Connexion</button>
             </form>
         </div>
     </div>
@@ -117,13 +94,17 @@
                     <span id="dashboard-user-name" class="text-sm bg-white px-3 py-1 rounded-full shadow-sm text-gray-500"></span>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Caisse Initiale</div>
+                        <div id="dash-caisse-initiale" class="text-2xl font-bold text-gray-700">0 CFA</div>
+                    </div>
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100">
-                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Chiffre d'Affaires</div>
+                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Total Ventes</div>
                         <div id="dash-total-sales" class="text-2xl font-bold text-blue-600">0 CFA</div>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-green-100">
-                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Bénéfice Estimé</div>
+                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Solde (Bénéfice)</div>
                         <div id="dash-total-profit" class="text-2xl font-bold text-green-600">0 CFA</div>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-orange-100">
@@ -154,18 +135,23 @@
                         </h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-gray-500 uppercase bg-gray-50"><tr><th class="p-2">Produit</th><th class="p-2 text-right">Marge</th></tr></thead>
+                                <thead class="text-xs text-gray-500 uppercase bg-gray-50">
+                                    <tr><th class="p-2">Produit</th><th class="p-2 text-right">Montant Total</th></tr>
+                                </thead>
                                 <tbody id="dash-top-profit-body"></tbody>
                             </table>
                         </div>
                     </div>
+                    
                     <div class="bg-white p-5 rounded-xl shadow-sm">
                         <h3 class="font-bold text-gray-700 mb-4 text-blue-700 flex items-center gap-2">
-                            <i data-lucide="package-check" class="w-4 h-4"></i> Top 10 Quantités
+                            <i data-lucide="package-check" class="w-4 h-4"></i> Top 10 Quantités Vendues
                         </h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-gray-500 uppercase bg-gray-50"><tr><th class="p-2">Produit</th><th class="p-2 text-right">Qté</th></tr></thead>
+                                <thead class="text-xs text-gray-500 uppercase bg-gray-50">
+                                    <tr><th class="p-2">Produit</th><th class="p-2 text-right">Unités</th></tr>
+                                </thead>
                                 <tbody id="dash-top-qty-body"></tbody>
                             </table>
                         </div>
@@ -180,7 +166,6 @@
                         <i data-lucide="calendar" class="w-4 h-4"></i> <span id="current-date-display"></span>
                     </div>
                 </div>
-                
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm">
                         <div class="mb-4 relative z-30">
@@ -191,7 +176,6 @@
                             </div>
                             <div id="sale-search-results" class="hidden absolute w-full bg-white border rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto"></div>
                         </div>
-                        
                         <div class="overflow-x-auto min-h-[250px]">
                             <table class="w-full">
                                 <thead class="bg-gray-50 text-gray-600 text-sm">
@@ -208,7 +192,6 @@
                             </table>
                         </div>
                     </div>
-
                     <div class="bg-white p-6 rounded-xl shadow-lg h-fit border border-gray-100">
                         <div class="text-center mb-6 pb-6 border-b border-gray-100">
                             <p class="text-gray-500 font-medium mb-1 text-sm">Net à Payer</p>
@@ -221,8 +204,9 @@
                             <button id="btn-open-credit-modal" class="w-full bg-orange-50 hover:bg-orange-100 text-orange-700 py-3 rounded-xl font-bold border border-orange-200 flex justify-center items-center gap-2">
                                 <i data-lucide="user-plus" class="w-5 h-5"></i> Vente à Crédit
                             </button>
-                            <button onclick="saleCart=[]; renderCart();" class="w-full text-gray-400 hover:text-red-500 py-2 text-xs font-medium">
+                            <button onclick="clearCart()" class="w-full text-gray-400 hover:text-red-500 py-2 text-xs font-medium">
                                 Vider le panier
+                            </button>
                             </button>
                         </div>
                     </div>
@@ -232,219 +216,123 @@
             <div id="page-stock" class="page-content hidden">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h1 class="text-2xl font-bold text-gray-800">Gestion du Stock</h1>
-                    <button onclick="document.getElementById('add-product-form').classList.toggle('hidden')" 
-                            class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
-                        <i data-lucide="plus-circle" class="w-5 h-5"></i> Nouveau Produit
-                    </button>
+                    <button onclick="document.getElementById('add-product-form').classList.toggle('hidden')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition"><i data-lucide="plus-circle" class="w-5 h-5"></i> Nouveau Produit</button>
                 </div>
-
                 <div id="add-product-form" class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8 hidden">
                     <h3 class="font-bold text-lg mb-4 text-gray-700">Ajouter / Modifier</h3>
                     <form id="form-stock" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                        <div class="lg:col-span-2">
-                            <label class="text-xs font-bold text-gray-500 uppercase">Nom</label>
-                            <input type="text" id="prod-nom" placeholder="Ex: Chemise XL" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required>
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Prix Achat</label>
-                            <input type="number" id="prod-achat" placeholder="0" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Prix Vente</label>
-                            <input type="number" id="prod-prix" placeholder="0" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Stock</label>
-                            <input type="number" id="prod-qte" placeholder="0" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required>
-                        </div>
-                        <div class="md:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2">
-                            <button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-bold">Enregistrer</button>
-                        </div>
+                        <div class="lg:col-span-2"><label class="text-xs font-bold text-gray-500 uppercase">Nom</label><input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded" required></div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">Prix Achat</label><input type="number" id="prod-achat" class="w-full mt-1 border p-2 rounded"></div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">Prix Vente</label><input type="number" id="prod-prix" class="w-full mt-1 border p-2 rounded"></div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">Stock</label><input type="number" id="prod-qte" class="w-full mt-1 border p-2 rounded" required></div>
+                        <div class="md:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2"><button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-bold">Enregistrer</button></div>
                     </form>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    <div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i><input type="text" id="stock-search-input" placeholder="Rechercher..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg"></div>
+                    <div class="w-full md:w-64"><select id="stock-sort-select" class="w-full p-2.5 border border-gray-300 rounded-lg"><option value="name_asc">Nom (A-Z)</option><option value="price_asc">Prix Achat (Croissant)</option><option value="price_desc">Prix Achat (Décroissant)</option><option value="stock_asc">Stock (Croissant)</option><option value="stock_desc">Stock (Décroissant)</option></select></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="bg-gray-50 border-b border-gray-200"><tr><th class="p-4 font-semibold text-gray-600 text-sm">Produit</th><th class="p-4 font-semibold text-gray-600 text-sm">Prix Achat</th><th class="p-4 font-semibold text-gray-600 text-sm">Prix Vente</th><th class="p-4 font-semibold text-gray-600 text-sm">Stock</th><th class="p-4 font-semibold text-gray-600 text-sm text-right">Actions</th></tr></thead><tbody id="stock-table-body" class="divide-y divide-gray-100"></tbody></table></div></div>
+            </div>
+
+            <div id="page-credits" class="page-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Gestion des Crédits</h1>
+                    <button onclick="document.getElementById('add-client-modal').classList.remove('hidden')" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg gap-2 flex shadow">
+                        <i data-lucide="user-plus"></i> Nouveau Client
+                    </button>
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-4 mb-4">
                     <div class="relative flex-1">
                         <i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
-                        <input type="text" id="stock-search-input" placeholder="Rechercher un produit..." 
-                               class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        <input type="text" id="credits-search" placeholder="Chercher un client ou un numéro..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
                     </div>
-                    
                     <div class="w-full md:w-64">
-                        <select id="stock-sort-select" class="w-full p-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <select id="credits-sort" class="w-full p-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-orange-500 outline-none">
                             <option value="name_asc">Nom (A-Z)</option>
-                            <option value="price_asc">Prix Achat (Croissant)</option>
-                            <option value="price_desc">Prix Achat (Décroissant)</option>
-                            <option value="stock_asc">Stock (Croissant)</option>
-                            <option value="stock_desc">Stock (Décroissant)</option>
+                            <option value="dette_desc">Plus grosse dette d'abord</option>
+                            <option value="dette_asc">Plus petite dette d'abord</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Produit</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Prix Achat</th> <th class="p-4 font-semibold text-gray-600 text-sm">Prix Vente</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Stock</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stock-table-body" class="divide-y divide-gray-100">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-credits" class="page-content hidden">
-                 <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800">Crédits</h1>
-                    <button onclick="document.getElementById('add-client-modal').classList.remove('hidden')" class="bg-orange-600 text-white px-4 py-2 rounded-lg gap-2 flex"><i data-lucide="user-plus"></i> Client</button>
-                </div>
                 <div class="bg-white rounded-xl shadow overflow-hidden">
                     <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-50"><tr><th class="p-4">Client</th><th class="p-4">Tel</th><th class="p-4">Dette</th><th class="p-4 text-right">Actions</th></tr></thead>
+                        <thead class="bg-gray-50">
+                            <tr><th class="p-4">Client</th><th class="p-4">Téléphone</th><th class="p-4">Dette Actuelle</th><th class="p-4 text-right">Actions</th></tr>
+                        </thead>
                         <tbody id="credits-table-body"></tbody>
                     </table>
                 </div>
             </div>
 
             <div id="page-charges" class="page-content hidden">
-                <h1 class="text-2xl font-bold mb-6">Charges</h1>
+                <h1 class="text-2xl font-bold mb-6">Dépenses & Charges</h1>
+                
                 <div class="grid md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-xl shadow h-fit">
+                    <div class="bg-white p-6 rounded-xl shadow h-fit border border-gray-200">
+                        <h3 class="font-bold text-gray-700 mb-4">Nouvelle Dépense</h3>
                         <form id="form-expense" class="space-y-4">
-                            <input type="text" id="exp-motif" placeholder="Motif" class="w-full p-2 border rounded" required>
-                            <input type="number" id="exp-montant" placeholder="Montant" class="w-full p-2 border rounded" required>
-                            <button type="submit" class="w-full bg-red-600 text-white py-2 rounded">Ajouter</button>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Motif</label>
+                                <input type="text" id="exp-motif" placeholder="Ex: Facture CIE" class="w-full p-2 border rounded mt-1" required>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Montant</label>
+                                <input type="number" id="exp-montant" placeholder="0" class="w-full p-2 border rounded mt-1" required>
+                            </div>
+                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded font-bold shadow">Ajouter</button>
                         </form>
                     </div>
-                    <div class="md:col-span-2 bg-white rounded-xl shadow overflow-hidden">
-                         <table class="w-full text-left text-sm">
-                            <thead class="bg-gray-50"><tr><th class="p-4">Date</th><th class="p-4">Motif</th><th class="p-4 text-right">Montant</th><th></th></tr></thead>
-                            <tbody id="expenses-table-body"></tbody>
-                        </table>
+
+                    <div class="md:col-span-2">
+                        <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                            <div class="relative flex-1">
+                                <i data-lucide="search" class="absolute left-3 top-2.5 text-gray-400 w-4 h-4"></i>
+                                <input type="text" id="expenses-search" placeholder="Rechercher un motif..." class="w-full pl-9 p-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <select id="expenses-sort" class="p-2 border border-gray-300 rounded-lg text-sm bg-white">
+                                <option value="date_desc">Date (Récent)</option>
+                                <option value="date_asc">Date (Ancien)</option>
+                                <option value="amount_desc">Montant (Élevé)</option>
+                            </select>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr><th class="p-4">Date</th><th class="p-4">Motif</th><th class="p-4 text-right">Montant</th><th></th></tr>
+                                </thead>
+                                <tbody id="expenses-table-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div id="page-rapports" class="page-content hidden">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                    <h1 class="text-2xl font-bold text-gray-800">Historique des Mouvements</h1>
-                    
-                    <div class="flex gap-2 bg-white p-2 rounded-lg shadow-sm">
-                        <input type="date" id="report-date-start" class="border-none bg-gray-50 rounded px-2 text-sm focus:ring-0">
-                        <span class="text-gray-400 self-center">à</span>
-                        <input type="date" id="report-date-end" class="border-none bg-gray-50 rounded px-2 text-sm focus:ring-0">
-                        <button id="btn-filter-reports" class="bg-blue-600 text-white px-3 py-1 rounded text-sm font-bold">Filtrer</button>
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4"><h1 class="text-2xl font-bold text-gray-800">Historique & Trésorerie</h1><div class="flex gap-2 bg-white p-2 rounded-lg shadow-sm"><input type="date" id="report-date-start" class="border-none bg-gray-50 rounded px-2 text-sm"><span class="text-gray-400 self-center">à</span><input type="date" id="report-date-end" class="border-none bg-gray-50 rounded px-2 text-sm"><button id="btn-filter-reports" class="bg-blue-600 text-white px-3 py-1 rounded text-sm font-bold">Filtrer</button></div></div>
+                <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-6 flex items-center gap-4"><div class="flex-1"><label class="block text-xs font-bold text-blue-800 uppercase mb-1">Caisse Initiale</label><p class="text-xs text-blue-600">Argent disponible au début.</p></div><div class="flex items-center gap-2"><input type="number" id="caisse-initiale-input" value="0" class="text-right font-bold text-xl w-40 p-2 rounded border border-blue-300 focus:ring-2 focus:ring-blue-500 outline-none"><span class="font-bold text-blue-800">CFA</span><button id="btn-save-caisse" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"><i data-lucide="save" class="w-5 h-5"></i></button></div></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500"><div class="text-gray-500 text-xs font-bold uppercase">Total Disponible (Caisse + Ventes)</div><div id="report-total-dispo" class="text-xl font-bold text-green-600">0 CFA</div><div class="text-xs text-gray-400 mt-1">Dont Ventes: <span id="report-only-sales">0</span></div></div><div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500"><div class="text-gray-500 text-xs font-bold uppercase">Total Sorties (Charges & Achats)</div><div id="report-total-expenses" class="text-xl font-bold text-red-600">0 CFA</div></div><div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-800"><div class="text-gray-500 text-xs font-bold uppercase">Solde Théorique (Bénéfice)</div><div id="report-balance" class="text-2xl font-bold text-blue-800">0 CFA</div></div></div>
+                <div class="flex flex-col sm:flex-row gap-4 mb-3">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="absolute left-3 top-2.5 text-gray-400 w-4 h-4"></i>
+                        <input type="text" id="reports-search" placeholder="Filtrer dans les résultats (ex: Savon, Loyer...)" class="w-full pl-9 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                     </div>
+                    <select id="reports-sort" class="p-2 border border-gray-300 rounded-lg text-sm bg-white">
+                        <option value="date_desc">Date (Récent)</option>
+                        <option value="date_asc">Date (Ancien)</option>
+                        <option value="amount_desc">Montant (Élevé)</option>
+                    </select>
                 </div>
-
-                <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500">
-                        <div class="text-gray-500 text-xs font-bold uppercase">Total Vendu (Entrées)</div>
-                        <div id="report-total-sales" class="text-xl font-bold text-green-600">0 CFA</div>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500">
-                        <div class="text-gray-500 text-xs font-bold uppercase">Total Sortie (Dépenses)</div>
-                        <div id="report-total-expenses" class="text-xl font-bold text-red-600">0 CFA</div>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
-                        <div class="text-gray-500 text-xs font-bold uppercase">Bénéfice / Solde Période</div>
-                        <div id="report-balance" class="text-xl font-bold text-blue-600">0 CFA</div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-teal-700 text-white"> <tr>
-                                    <th class="p-3 font-medium whitespace-nowrap">Date</th>
-                                    <th class="p-3 font-medium">Description / Articles</th>
-                                    <th class="p-3 font-medium text-center">Type</th>
-                                    <th class="p-3 font-medium text-right">Entrée (Vente)</th>
-                                    <th class="p-3 font-medium text-right">Sortie (Dépense)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reports-table-body" class="divide-y divide-gray-100">
-                                <tr><td colspan="5" class="p-6 text-center text-gray-400">Chargement des données...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-teal-700 text-white"><tr><th class="p-3 font-medium whitespace-nowrap">Date</th><th class="p-3 font-medium">Description</th><th class="p-3 font-medium text-center">Type</th><th class="p-3 font-medium text-right">Entrée (+)</th><th class="p-3 font-medium text-right">Sortie (-)</th></tr></thead><tbody id="reports-table-body" class="divide-y divide-gray-100"><tr><td colspan="5" class="p-6 text-center text-gray-400">Chargement...</td></tr></tbody></table></div></div>
             </div>
 
             <div id="page-admin" class="page-content hidden">
                 <h1 class="text-2xl font-bold mb-6">Super Admin</h1>
-                
-                <div class="bg-white p-6 rounded-xl shadow mb-8">
-                    <h2 class="text-lg font-bold text-gray-700 mb-4">1. Gestion des Boutiques</h2>
-                    <button id="open-admin-modal" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 flex items-center gap-2">
-                        <i data-lucide="plus"></i> Créer une Boutique
-                    </button>
-                    <div id="admin-boutiques-list" class="space-y-2 border-t pt-4"></div>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
-                    <h2 class="text-lg font-bold text-gray-700 mb-2">2. Importation de Données (Historique)</h2>
-                    <p class="text-sm text-gray-500 mb-6">Sélectionnez une boutique cible, puis chargez un fichier CSV pour injecter des données.</p>
-
-                    <div class="mb-6">
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Boutique Cible pour l'import</label>
-                        <select id="import-target-shop" class="w-full p-3 border-2 border-green-200 rounded-lg bg-green-50 focus:ring-green-500">
-                            <option value="">-- Choisir la boutique --</option>
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
-                        <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
-                            <h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2">
-                                <i data-lucide="package" class="text-blue-600"></i> Importer Stock
-                            </h3>
-                            <p class="text-xs text-gray-400 mb-3">
-                                Colonnes : Nom, PrixVente, PrixAchat, Quantite<br>
-                                <span class="text-orange-500 font-bold">* Les prix peuvent être laissés vides (0 par défaut)</span>
-                            </p>
-                            <input type="file" id="csv-stock" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
-                            <button onclick="processImport('products')" class="mt-2 w-full bg-blue-600 text-white text-xs font-bold py-2 rounded">Lancer l'import Stock</button>
-                        </div>
-
-                        <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
-                            <h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2">
-                                <i data-lucide="users" class="text-orange-600"></i> Importer Clients
-                            </h3>
-                            <p class="text-xs text-gray-400 mb-3">Colonnes: Nom, Telephone, Dette</p>
-                            <input type="file" id="csv-clients" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/>
-                            <button onclick="processImport('clients')" class="mt-2 w-full bg-orange-600 text-white text-xs font-bold py-2 rounded">Lancer l'import Clients</button>
-                        </div>
-
-                        <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
-                            <h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2">
-                                <i data-lucide="credit-card" class="text-red-600"></i> Importer Charges
-                            </h3>
-                            <p class="text-xs text-gray-400 mb-3">Colonnes: Date (AAAA-MM-JJ), Motif, Montant</p>
-                            <input type="file" id="csv-expenses" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/>
-                            <button onclick="processImport('expenses')" class="mt-2 w-full bg-red-600 text-white text-xs font-bold py-2 rounded">Lancer l'import Charges</button>
-                        </div>
-                        <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
-                            <h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2">
-                                <i data-lucide="shopping-cart" class="text-green-600"></i> Importer Ventes
-                            </h3>
-                            <p class="text-xs text-gray-400 mb-3">
-                                Colonnes: Date, Produit, Quantite, PrixUnitaire, Profit<br>
-                                <span class="text-blue-600 font-bold">* Le Total sera calculé (Qté x PrixU)</span>
-                            </p>
-                            <input type="file" id="csv-sales" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
-                            <button onclick="processImport('ventes')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold py-2 rounded">Lancer l'import Ventes</button>
-                        </div>
-
-                    </div>
-                </div>
+                <div class="bg-white p-6 rounded-xl shadow mb-8"><h2 class="text-lg font-bold text-gray-700 mb-4">1. Gestion des Boutiques</h2><button id="open-admin-modal" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 flex items-center gap-2"><i data-lucide="plus"></i> Créer une Boutique</button><div id="admin-boutiques-list" class="space-y-2 border-t pt-4"></div></div>
+                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500"><h2 class="text-lg font-bold text-gray-700 mb-2">2. Importation de Données</h2><div class="mb-6"><label class="block text-sm font-bold text-gray-700 mb-1">Boutique Cible</label><select id="import-target-shop" class="w-full p-3 border-2 border-green-200 rounded-lg bg-green-50 focus:ring-green-500"><option value="">-- Choisir la boutique --</option></select></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="package" class="text-blue-600"></i> Importer Stock</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Nom, PrixVente, PrixAchat, Quantite<br><span class="text-orange-500 font-bold">* Prix facultatifs</span></p><input type="file" id="csv-stock" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/><button onclick="processImport('products')" class="mt-2 w-full bg-blue-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="users" class="text-orange-600"></i> Importer Clients</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Nom, Telephone, Dette</p><input type="file" id="csv-clients" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/><button onclick="processImport('clients')" class="mt-2 w-full bg-orange-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="credit-card" class="text-red-600"></i> Importer Charges</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Date, Motif, Montant</p><input type="file" id="csv-expenses" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/><button onclick="processImport('expenses')" class="mt-2 w-full bg-red-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="shopping-cart" class="text-green-600"></i> Importer Ventes</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Date, Produit, Quantite, PrixUnitaire, Profit<br><span class="text-blue-600 font-bold">* Total calculé auto</span></p><input type="file" id="csv-sales" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/><button onclick="processImport('ventes')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div></div></div>
             </div>
 
         </main>
@@ -453,74 +341,29 @@
     <div id="credit-sale-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[150]">
         <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
             <h3 class="text-lg font-bold text-gray-800 mb-4">Sélectionner le Client</h3>
+            
             <div class="mb-4">
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Client</label>
-                <select id="credit-client-select" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50">
-                    <option value="">Chargement...</option>
-                </select>
+                <div class="flex gap-2">
+                    <select id="credit-client-select" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Chargement...</option>
+                    </select>
+                    
+                    <button id="btn-quick-add-client" class="bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg shadow transition" title="Nouveau Client">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </div>
+
             <div class="flex justify-end gap-3">
                 <button onclick="document.getElementById('credit-sale-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold">Annuler</button>
                 <button id="confirm-credit-sale-btn" class="px-4 py-2 bg-orange-600 text-white rounded-lg font-bold shadow">Valider la Dette</button>
             </div>
         </div>
     </div>
-
-    <div id="add-client-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[150]">
-        <div class="bg-white p-6 rounded-xl w-full max-w-sm">
-            <h3 class="font-bold text-lg mb-4">Nouveau Client</h3>
-            <form id="form-client" class="space-y-4">
-                <input type="text" id="client-nom" placeholder="Nom" class="w-full border p-2 rounded" required>
-                <input type="tel" id="client-tel" placeholder="Tel" class="w-full border p-2 rounded">
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="document.getElementById('add-client-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600">Annuler</button>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Sauvegarder</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[160]">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
-            <h2 id="confirm-modal-title" class="text-lg font-bold text-gray-800 mb-2">Confirmation</h2>
-            <p id="confirm-modal-text" class="text-sm text-gray-600 mb-6">...</p>
-            <div class="flex justify-end gap-3">
-                <button id="modal-cancel-btn" class="bg-gray-100 text-gray-800 font-bold py-2 px-4 rounded-lg">Non</button>
-                <button id="modal-confirm-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Oui</button>
-            </div>
-        </div>
-    </div>
-    <div id="invoice-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[200] backdrop-blur-sm">
-        <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform transition-all scale-100">
-            <div class="text-center mb-6">
-                <div class="mx-auto bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-3">
-                    <i data-lucide="check" class="text-green-600 w-6 h-6"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-gray-800">Vente Réussie !</h2>
-                <p class="text-gray-500 text-sm">Le stock et la caisse ont été mis à jour.</p>
-            </div>
-
-            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 text-sm font-mono">
-                <div class="flex justify-between border-b border-gray-200 pb-2 mb-2">
-                    <span class="font-bold">Total payé</span>
-                    <span class="font-bold text-blue-600" id="invoice-amount">0 CFA</span>
-                </div>
-                <div class="text-xs text-gray-500" id="invoice-preview">
-                    </div>
-            </div>
-
-            <div class="space-y-3">
-                <a id="btn-whatsapp-share" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-xl font-bold shadow-lg flex justify-center items-center gap-2 transition-transform hover:scale-105">
-                    <i data-lucide="message-circle" class="w-5 h-5 fill-current"></i>
-                    Envoyer Facture WhatsApp
-                </a>
-                
-                <button onclick="document.getElementById('invoice-modal').classList.add('hidden')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold">
-                    Fermer et Nouvelle Vente
-                </button>
-            </div>
-        </div>
-    </div>
+    <div id="add-client-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[150]"><div class="bg-white p-6 rounded-xl w-full max-w-sm"><h3 class="font-bold text-lg mb-4">Nouveau Client</h3><form id="form-client" class="space-y-4"><input type="text" id="client-nom" placeholder="Nom" class="w-full border p-2 rounded" required><input type="tel" id="client-tel" placeholder="Tel" class="w-full border p-2 rounded"><div class="flex justify-end gap-2"><button type="button" onclick="document.getElementById('add-client-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600">Annuler</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Sauvegarder</button></div></form></div></div>
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[160]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"><h2 id="confirm-modal-title" class="text-lg font-bold text-gray-800 mb-2">Confirmation</h2><p id="confirm-modal-text" class="text-sm text-gray-600 mb-6">...</p><div class="flex justify-end gap-3"><button id="modal-cancel-btn" class="bg-gray-100 text-gray-800 font-bold py-2 px-4 rounded-lg">Non</button><button id="modal-confirm-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Oui</button></div></div></div>
+    <div id="invoice-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[200] backdrop-blur-sm"><div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform transition-all scale-100"><div class="text-center mb-6"><div class="mx-auto bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-3"><i data-lucide="check" class="text-green-600 w-6 h-6"></i></div><h2 class="text-2xl font-bold text-gray-800">Vente Réussie !</h2><p class="text-gray-500 text-sm">Le stock et la caisse ont été mis à jour.</p></div><div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 text-sm font-mono"><div class="flex justify-between border-b border-gray-200 pb-2 mb-2"><span class="font-bold">Total payé</span><span class="font-bold text-blue-600" id="invoice-amount">0 CFA</span></div><div class="text-xs text-gray-500" id="invoice-preview"></div></div><div class="space-y-3"><a id="btn-whatsapp-share" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-xl font-bold shadow-lg flex justify-center items-center gap-2 transition-transform hover:scale-105"><i data-lucide="message-circle" class="w-5 h-5 fill-current"></i> Envoyer Facture WhatsApp</a><button onclick="document.getElementById('invoice-modal').classList.add('hidden')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold">Fermer et Nouvelle Vente</button></div></div></div>
 
     <div id="toast-container"></div>
     <script type="module" src="script.js"></script>
