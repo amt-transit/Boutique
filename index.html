@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 
 <body class="bg-gray-100 font-sans text-gray-800">
@@ -16,16 +17,39 @@
         <div class="w-full max-w-md p-6 md:p-8 bg-white rounded-xl shadow-2xl">
             <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Ma Boutique</h1>
             <form id="login-form" class="space-y-4">
+                
                 <h2 class="text-lg font-semibold text-gray-700">Se Connecter</h2>
+                
                 <div class="boutique-selector">
                     <label for="login-boutique">Boutique</label>
                     <select id="login-boutique" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg bg-gray-50">
                         <option value="">Chargement...</option>
                     </select>
                 </div>
-                <input type="email" id="login-email" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required placeholder="Email">
-                <input type="password" id="login-password" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required placeholder="Mot de passe">
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm transition shadow-md">Connexion</button>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600 block mb-2">Email</label>
+                    <input type="email" id="login-email" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-gray-600 block mb-2">Mot de passe</label>
+                    <input type="password" id="login-password" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
+                    
+                    <div class="text-right mt-1">
+                        <a href="#" id="forgot-password-link" class="text-xs text-blue-600 hover:text-blue-800 hover:underline">
+                            Mot de passe oublié ?
+                        </a>
+                    </div>
+                </div>
+                <div id="login-error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+                    <span id="login-error-text">Une erreur est survenue.</span>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm transition shadow-md">
+                    Connexion
+                </button>
             </form>
         </div>
     </div>
@@ -334,7 +358,10 @@
                             <h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2">
                                 <i data-lucide="package" class="text-blue-600"></i> Importer Stock
                             </h3>
-                            <p class="text-xs text-gray-400 mb-3">Colonnes: Nom, PrixVente, PrixAchat, Quantite</p>
+                            <p class="text-xs text-gray-400 mb-3">
+                                Colonnes : Nom, PrixVente, PrixAchat, Quantite<br>
+                                <span class="text-orange-500 font-bold">* Les prix peuvent être laissés vides (0 par défaut)</span>
+                            </p>
                             <input type="file" id="csv-stock" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
                             <button onclick="processImport('products')" class="mt-2 w-full bg-blue-600 text-white text-xs font-bold py-2 rounded">Lancer l'import Stock</button>
                         </div>

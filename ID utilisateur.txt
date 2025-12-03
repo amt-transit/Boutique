@@ -10,3 +10,5 @@ Votre ID utilisateur : 17256742193135701957
             appId: "1:402820959115:web:6fb6b2c78fc9c5fe203d8e"
 
 maboutique-7891-default-rtdb.europe-west1.firebasedatabase.app/
+
+En fonction des caractéristiques de l'application, peut tu me faire des propositions de logo ou sinon donne moi la possibilité de télécharger dans le super admin les logos de chaque boutique au moment de la création d'une boutique. 

@@ -8,7 +8,8 @@ import {
     onAuthStateChanged, 
     signInWithEmailAndPassword, 
     signOut,
-    createUserWithEmailAndPassword  // <--- C'EST CETTE LIGNE QUI MANQUAIT
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 import { 
@@ -79,13 +80,58 @@ async function updateBoutiqueSelector() {
 }
 
 function setupLoginForm() {
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
+    const loginForm = document.getElementById('login-form');
+    const errorBox = document.getElementById('login-error-msg');
+    const errorText = document.getElementById('login-error-text');
+
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // 1. Réinitialiser l'affichage (cacher l'erreur précédente)
+        errorBox.classList.add('hidden');
         const email = document.getElementById('login-email').value;
         const pass = document.getElementById('login-password').value;
-        try { await signInWithEmailAndPassword(auth, email, pass); } 
-        catch (error) { showToast("Erreur login", "error"); }
+
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+            // Si réussite, setupAuthListener prendra le relais pour la redirection
+        } catch (error) {
+            console.error("Erreur Auth:", error.code);
+            
+            // 2. Traduire le code d'erreur Firebase en français
+            let message = "Une erreur inconnue est survenue.";
+            
+            switch (error.code) {
+                case 'auth/invalid-credential': // Nouveau code standard Firebase
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    message = "Email ou mot de passe incorrect.";
+                    break;
+                case 'auth/invalid-email':
+                    message = "L'adresse email n'est pas valide.";
+                    break;
+                case 'auth/user-disabled':
+                    message = "Ce compte a été désactivé.";
+                    break;
+                case 'auth/too-many-requests':
+                    message = "Trop de tentatives. Réessayez plus tard.";
+                    break;
+                case 'auth/network-request-failed':
+                    message = "Erreur de connexion internet.";
+                    break;
+                default:
+                    message = "Erreur de connexion (" + error.code + ")";
+            }
+
+            // 3. Afficher le message
+            errorText.textContent = message;
+            errorBox.classList.remove('hidden');
+            
+            // Réactiver les icônes si besoin
+            if (window.lucide) window.lucide.createIcons();
+        }
     });
+
     document.getElementById('bottom-logout-btn').addEventListener('click', () => signOut(auth));
 }
 
@@ -227,11 +273,25 @@ async function uploadBatchData(shopId, collectionName, data) {
 
         try {
             if (collectionName === 'products') {
+                // LOGIQUE SOUPLE POUR LES PRIX
+                // Si la case est vide dans Excel, on met 0 au lieu de créer une erreur.
+                
+                let pVente = 0;
+                if (row.PrixVente && row.PrixVente.trim() !== "") {
+                    // On remplace la virgule par un point si l'utilisateur a utilisé le format français (ex: 500,50)
+                    pVente = parseFloat(row.PrixVente.replace(',', '.')) || 0;
+                }
+
+                let pAchat = 0;
+                if (row.PrixAchat && row.PrixAchat.trim() !== "") {
+                    pAchat = parseFloat(row.PrixAchat.replace(',', '.')) || 0;
+                }
+
                 cleanData = {
-                    nom: row.Nom ? row.Nom.toString().toLowerCase() : 'inconnu',
-                    nomDisplay: row.Nom || 'Inconnu',
-                    prixVente: parseFloat(row.PrixVente) || 0,
-                    prixAchat: parseFloat(row.PrixAchat) || 0,
+                    nom: row.Nom ? row.Nom.toString().toLowerCase() : 'produit sans nom',
+                    nomDisplay: row.Nom || 'Produit Sans Nom',
+                    prixVente: pVente, // Sera 0 si vide
+                    prixAchat: pAchat, // Sera 0 si vide (Facultatif)
                     stock: parseInt(row.Quantite) || 0,
                     createdAt: serverTimestamp()
                 };
