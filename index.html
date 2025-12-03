@@ -196,9 +196,8 @@
                             <table class="w-full">
                                 <thead class="bg-gray-50 text-gray-600 text-sm">
                                     <tr>
-                                        <th class="p-3 text-left rounded-l-lg">Date</th>
-                                        <th class="p-3 text-left">Produit</th>
-                                        <th class="p-3 text-center">Qté</th>
+                                        <th class="p-3 text-left rounded-l-lg">Produit</th>
+                                        <th class="p-3 text-center">Prix Unitaire</th> <th class="p-3 text-center">Qté</th>
                                         <th class="p-3 text-right">Total</th>
                                         <th class="p-3 rounded-r-lg"></th>
                                     </tr>
@@ -231,24 +230,73 @@
             </div>
 
             <div id="page-stock" class="page-content hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800">Stock</h1>
-                    <button onclick="document.getElementById('add-product-form').classList.toggle('hidden')" class="bg-green-600 text-white px-4 py-2 rounded-lg flex gap-2"><i data-lucide="plus"></i> Produit</button>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h1 class="text-2xl font-bold text-gray-800">Gestion du Stock</h1>
+                    <button onclick="document.getElementById('add-product-form').classList.toggle('hidden')" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i> Nouveau Produit
+                    </button>
                 </div>
-                <div id="add-product-form" class="bg-white p-4 rounded-xl shadow mb-4 hidden">
-                    <form id="form-stock" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <input type="text" id="prod-nom" placeholder="Nom" class="md:col-span-2 p-2 border rounded" required>
-                        <input type="number" id="prod-prix" placeholder="P. Vente" class="p-2 border rounded" required>
-                        <input type="number" id="prod-achat" placeholder="P. Achat" class="p-2 border rounded">
-                        <input type="number" id="prod-qte" placeholder="Qté" class="p-2 border rounded" required>
-                        <button type="submit" class="bg-blue-600 text-white rounded md:col-span-5 py-2">Enregistrer</button>
+
+                <div id="add-product-form" class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8 hidden">
+                    <h3 class="font-bold text-lg mb-4 text-gray-700">Ajouter / Modifier</h3>
+                    <form id="form-stock" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div class="lg:col-span-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Nom</label>
+                            <input type="text" id="prod-nom" placeholder="Ex: Chemise XL" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Prix Achat</label>
+                            <input type="number" id="prod-achat" placeholder="0" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Prix Vente</label>
+                            <input type="number" id="prod-prix" placeholder="0" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Stock</label>
+                            <input type="number" id="prod-qte" placeholder="0" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2">
+                            <button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-bold">Enregistrer</button>
+                        </div>
                     </form>
                 </div>
-                <div class="bg-white rounded-xl shadow overflow-hidden">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-50"><tr><th class="p-4">Produit</th><th class="p-4">Prix</th><th class="p-4">Stock</th><th class="p-4">Action</th></tr></thead>
-                        <tbody id="stock-table-body"></tbody>
-                    </table>
+
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                        <input type="text" id="stock-search-input" placeholder="Rechercher un produit..." 
+                               class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    </div>
+                    
+                    <div class="w-full md:w-64">
+                        <select id="stock-sort-select" class="w-full p-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="name_asc">Nom (A-Z)</option>
+                            <option value="price_asc">Prix Achat (Croissant)</option>
+                            <option value="price_desc">Prix Achat (Décroissant)</option>
+                            <option value="stock_asc">Stock (Croissant)</option>
+                            <option value="stock_desc">Stock (Décroissant)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Produit</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Prix Achat</th> <th class="p-4 font-semibold text-gray-600 text-sm">Prix Vente</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Stock</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stock-table-body" class="divide-y divide-gray-100">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -383,12 +431,14 @@
                             <input type="file" id="csv-expenses" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/>
                             <button onclick="processImport('expenses')" class="mt-2 w-full bg-red-600 text-white text-xs font-bold py-2 rounded">Lancer l'import Charges</button>
                         </div>
-
                         <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
                             <h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2">
                                 <i data-lucide="shopping-cart" class="text-green-600"></i> Importer Ventes
                             </h3>
-                            <p class="text-xs text-gray-400 mb-3">Colonnes: Date, Produit, Quantite, Total, Profit</p>
+                            <p class="text-xs text-gray-400 mb-3">
+                                Colonnes: Date, Produit, Quantite, PrixUnitaire, Profit<br>
+                                <span class="text-blue-600 font-bold">* Le Total sera calculé (Qté x PrixU)</span>
+                            </p>
                             <input type="file" id="csv-sales" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
                             <button onclick="processImport('ventes')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold py-2 rounded">Lancer l'import Ventes</button>
                         </div>

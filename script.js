@@ -313,21 +313,38 @@ async function uploadBatchData(shopId, collectionName, data) {
                 };
             }
             else if (collectionName === 'ventes') {
-                // Création d'un item fictif pour que le dashboard comprenne
+                // LOGIQUE DE CALCUL AUTOMATIQUE
+                
+                // 1. On récupère la quantité (1 par défaut)
+                const qty = parseInt(row.Quantite) || 1;
+                
+                // 2. On récupère le Prix Unitaire
+                // (Le code accepte "PrixUnitaire", "PU", ou "Total" si vous n'avez pas changé votre CSV)
+                const unitPrice = parseFloat(row.PrixUnitaire || row.PU || row.Total) || 0;
+                
+                // 3. LE SYSTÈME CALCULE LE VRAI TOTAL ICI
+                const finalTotal = qty * unitPrice;
+
+                // 4. Gestion du Profit
+                // Si la colonne Profit est remplie, on l'utilise.
+                // Sinon, on estime le profit à 20% du total par défaut (facultatif)
+                const profit = parseFloat(row.Profit) || 0;
+
+                // Création de l'article pour l'affichage
                 const fakeItem = {
                     id: 'imp_' + Math.random().toString(36).substr(2, 5),
                     nom: row.Produit ? row.Produit.toLowerCase() : 'art. import',
                     nomDisplay: row.Produit || 'Article Importé',
-                    qty: parseInt(row.Quantite) || 1,
-                    prixVente: parseFloat(row.Total) || 0, // Approximation si pas de PU
+                    qty: qty,
+                    prixVente: unitPrice, // On stocke le prix unitaire ici
                     prixAchat: 0
                 };
 
                 cleanData = {
                     date: row.Date ? new Date(row.Date) : serverTimestamp(),
-                    total: parseFloat(row.Total) || 0,
-                    profit: parseFloat(row.Profit) || 0,
-                    items: [fakeItem], // IMPORTANT pour le Top 10
+                    total: finalTotal, // <--- C'est ici que le total multiplié est enregistré
+                    profit: profit,
+                    items: [fakeItem],
                     type: 'cash_import',
                     vendeurId: 'import'
                 };
@@ -663,6 +680,9 @@ window.addToCart = (p) => {
     renderCart();
 };
 
+// ================= GESTION PANIER MODIFIÉE =================
+
+// 1. Fonction d'affichage du panier (Avec Prix Modifiable)
 window.renderCart = () => {
     const tbody = document.getElementById('cart-table-body');
     const totalEl = document.getElementById('cart-total-display');
@@ -670,30 +690,75 @@ window.renderCart = () => {
     let total = 0;
     
     if (saleCart.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400 italic">Panier vide</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400 italic">Panier vide - Ajoutez des produits</td></tr>';
         totalEl.textContent = "0 CFA";
         return;
     }
 
     saleCart.forEach((item, idx) => {
-        total += item.prixVente * item.qty;
-        const timeStr = item.addedAt ? new Date(item.addedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+        // Calcul de la ligne
+        const lineTotal = item.prixVente * item.qty;
+        total += lineTotal;
+        
+        // Affichage de l'heure d'ajout (optionnel, mis en petit sous le nom)
+        const timeStr = item.addedAt ? new Date(item.addedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+
         tbody.innerHTML += `
-            <tr class="border-b last:border-0 border-gray-50">
-                <td class="p-3 text-gray-400 text-xs">${timeStr}</td>
-                <td class="p-3 font-medium text-gray-700">${item.nomDisplay}</td>
-                <td class="p-3 text-center flex justify-center gap-1 items-center">
-                    <button onclick="updateQty(${idx}, -1)" class="w-6 h-6 bg-gray-100 rounded hover:bg-gray-200">-</button>
-                    <span class="w-6 text-center font-bold text-sm">${item.qty}</span>
-                    <button onclick="updateQty(${idx}, 1)" class="w-6 h-6 bg-gray-100 rounded hover:bg-gray-200">+</button>
+            <tr class="border-b last:border-0 border-gray-50 hover:bg-gray-50">
+                
+                <td class="p-3">
+                    <div class="font-medium text-gray-700">${item.nomDisplay}</div>
+                    <div class="text-xs text-gray-400">${timeStr}</div>
                 </td>
-                <td class="p-3 text-right font-bold text-gray-800">${formatPrice(item.prixVente * item.qty)}</td>
-                <td class="p-3 text-right"><button onclick="saleCart.splice(${idx},1);renderCart()" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+
+                <td class="p-3 text-center">
+                    <input type="number" 
+                           value="${item.prixVente}" 
+                           onchange="updateItemPrice(${idx}, this.value)" 
+                           class="w-24 p-1 text-center border border-blue-300 rounded font-bold text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none"
+                    >
+                </td>
+
+                <td class="p-3 text-center">
+                    <div class="flex justify-center items-center gap-1">
+                        <button onclick="updateQty(${idx}, -1)" class="w-6 h-6 bg-gray-200 rounded hover:bg-gray-300 font-bold">-</button>
+                        <span class="w-8 text-center font-bold text-sm">${item.qty}</span>
+                        <button onclick="updateQty(${idx}, 1)" class="w-6 h-6 bg-gray-200 rounded hover:bg-gray-300 font-bold">+</button>
+                    </div>
+                </td>
+
+                <td class="p-3 text-right font-bold text-gray-800">
+                    ${formatPrice(lineTotal)}
+                </td>
+
+                <td class="p-3 text-right">
+                    <button onclick="saleCart.splice(${idx},1);renderCart()" class="text-red-400 hover:text-red-600 p-1">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
             </tr>
         `;
     });
+
     totalEl.textContent = formatPrice(total);
     if (window.lucide) window.lucide.createIcons();
+};
+
+// 2. Nouvelle fonction pour mettre à jour le prix
+window.updateItemPrice = (index, newPrice) => {
+    const price = parseFloat(newPrice);
+    
+    if (price < 0 || isNaN(price)) {
+        showToast("Le prix ne peut pas être négatif", "error");
+        renderCart(); // Remet l'ancien prix
+        return;
+    }
+
+    // Mise à jour du prix dans le panier
+    saleCart[index].prixVente = price;
+    
+    // On rafraîchit le tableau pour recalculer les totaux
+    renderCart();
 };
 
 window.updateQty = (idx, delta) => {
@@ -705,39 +770,115 @@ window.updateQty = (idx, delta) => {
     renderCart();
 };
 
-// ================= AUTRES FONCTIONS =================
+// ================= STOCK (AVEC RECHERCHE ET TRI) =================
 
 function setupStockManagement() {
     const stockForm = document.getElementById('form-stock');
+    const searchInput = document.getElementById('stock-search-input');
+    const sortSelect = document.getElementById('stock-sort-select');
+    
+    // Fonction interne pour afficher le tableau selon les filtres
+    const renderStockTable = () => {
+        const tbody = document.getElementById('stock-table-body');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+
+        // 1. Filtrer (Recherche)
+        let filteredData = allProducts;
+        if (searchInput && searchInput.value) {
+            const term = searchInput.value.toLowerCase();
+            filteredData = allProducts.filter(p => p.nom.includes(term));
+        }
+
+        // 2. Trier
+        if (sortSelect) {
+            const sortType = sortSelect.value;
+            filteredData.sort((a, b) => {
+                if (sortType === 'name_asc') return a.nom.localeCompare(b.nom);
+                if (sortType === 'price_asc') return (a.prixAchat || 0) - (b.prixAchat || 0);
+                if (sortType === 'price_desc') return (b.prixAchat || 0) - (a.prixAchat || 0);
+                if (sortType === 'stock_asc') return a.stock - b.stock;
+                if (sortType === 'stock_desc') return b.stock - a.stock;
+                return 0;
+            });
+        }
+
+        // 3. Afficher
+        filteredData.forEach(p => {
+            // Affichage du Prix Achat en gras comme demandé
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-gray-100 hover:bg-gray-50 transition";
+            tr.innerHTML = `
+                <td class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom}</td>
+                <td class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td>
+                <td class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td>
+                <td class="p-4">
+                    <span class="${p.stock < 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded-full text-xs font-bold">
+                        ${p.stock}
+                    </span>
+                </td>
+                <td class="p-4 text-right">
+                    <button class="delete-prod-btn text-red-400 hover:text-red-600 p-2" data-id="${p.id}">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        // Réactiver les boutons supprimer
+        document.querySelectorAll('.delete-prod-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.dataset.id;
+                showConfirmModal("Supprimer ?", "Action irréversible.", async () => {
+                    await deleteDoc(doc(db, "boutiques", currentBoutiqueId, "products", id));
+                    showToast("Produit supprimé");
+                });
+            });
+        });
+
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    // Écouteur Firebase en temps réel
     onSnapshot(collection(db, "boutiques", currentBoutiqueId, "products"), (snap) => {
         allProducts = [];
-        const tbody = document.getElementById('stock-table-body');
-        if(tbody) tbody.innerHTML = '';
         snap.forEach(docSnap => {
-            const p = { id: docSnap.id, ...docSnap.data() };
-            allProducts.push(p);
-            if(tbody) {
-                tbody.innerHTML += `<tr class="border-b"><td class="p-4 font-medium">${p.nomDisplay}</td><td class="p-4">${formatPrice(p.prixVente)}</td><td class="p-4 font-bold ${p.stock<5?'text-red-600':'text-green-600'}">${p.stock}</td><td class="p-4"><button class="text-red-500" onclick="deleteProduct('${p.id}')"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`;
-            }
+            allProducts.push({ id: docSnap.id, ...docSnap.data() });
         });
-        if (window.lucide) window.lucide.createIcons();
+        renderStockTable(); // Affichage initial
     });
+
+    // Écouteurs pour la recherche et le tri
+    if(searchInput) searchInput.addEventListener('input', renderStockTable);
+    if(sortSelect) sortSelect.addEventListener('change', renderStockTable);
+
+    // Ajout Produit
     if(stockForm) {
         stockForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const nom = document.getElementById('prod-nom').value;
-            const prix = parseFloat(document.getElementById('prod-prix').value);
-            const achat = parseFloat(document.getElementById('prod-achat').value) || 0;
+            const prixVente = parseFloat(document.getElementById('prod-prix').value) || 0; // Facultatif
+            const prixAchat = parseFloat(document.getElementById('prod-achat').value) || 0; // Facultatif
             const qte = parseInt(document.getElementById('prod-qte').value);
+
             try {
                 await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "products")), {
-                    nom: nom.toLowerCase(), nomDisplay: nom, prixVente: prix, prixAchat: achat, stock: qte, createdAt: serverTimestamp()
+                    nom: nom.toLowerCase(),
+                    nomDisplay: nom,
+                    prixVente: prixVente,
+                    prixAchat: prixAchat,
+                    stock: qte,
+                    createdAt: serverTimestamp()
                 });
-                stockForm.reset(); document.getElementById('add-product-form').classList.add('hidden'); showToast("Produit ajouté");
-            } catch (err) { showToast("Erreur ajout", "error"); }
+                stockForm.reset();
+                document.getElementById('add-product-form').classList.add('hidden');
+                showToast("Produit ajouté !", "success");
+            } catch (err) {
+                showToast("Erreur ajout", "error");
+            }
         });
     }
-    window.deleteProduct = (id) => { if(confirm("Supprimer ?")) deleteDoc(doc(db, "boutiques", currentBoutiqueId, "products", id)); };
 }
 
 function setupCredits() {
