@@ -559,7 +559,7 @@ function setupCredits() {
     window.deleteClient = (id) => { if(confirm("Archiver ce client ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "clients", id), { deleted: true }); };
 }
 
-// ================= RAPPORTS =================
+// ================= RAPPORTS (SÉCURISÉ : ADMIN SEULEMENT POUR LA FINANCE) =================
 
 function setupReports() {
     if (!currentBoutiqueId) return;
@@ -572,18 +572,35 @@ function setupReports() {
     const btnSaveCaisse = document.getElementById('btn-save-caisse');
     const searchInput = document.getElementById('reports-search');
     const sortSelect = document.getElementById('reports-sort');
+    const adminStatsDiv = document.getElementById('report-financial-stats');
+
+    // --- GESTION DE LA VISIBILITÉ FINANCIÈRE ---
+    if (userRole === 'seller') {
+        if(adminStatsDiv) adminStatsDiv.classList.add('hidden');
+    } else {
+        if(adminStatsDiv) adminStatsDiv.classList.remove('hidden');
+    }
+    // -------------------------------------------
 
     const now = new Date();
     dateStart.valueAsDate = new Date(now.getFullYear(), now.getMonth(), 1);
     dateEnd.valueAsDate = now;
 
     const shopRef = doc(db, "boutiques", currentBoutiqueId);
-    getDoc(shopRef).then(snap => { if(snap.exists()) { caisseInput.value = snap.data().caisseInitiale || 0; loadData(); } });
-
-    btnSaveCaisse.addEventListener('click', async () => {
-        await updateDoc(shopRef, { caisseInitiale: parseFloat(caisseInput.value)||0 });
-        showToast("Sauvegardé"); loadData();
-    });
+    
+    // On ne charge la caisse initiale que si c'est un admin
+    if (userRole !== 'seller') {
+        getDoc(shopRef).then(snap => { if(snap.exists()) { caisseInput.value = snap.data().caisseInitiale || 0; loadData(); } });
+        
+        btnSaveCaisse.addEventListener('click', async () => {
+            await updateDoc(shopRef, { caisseInitiale: parseFloat(caisseInput.value)||0 });
+            showToast("Sauvegardé"); loadData();
+        });
+    } else {
+        // Si vendeur, on lance juste le chargement des données
+        // On attend un petit peu que l'UI soit prête
+        setTimeout(() => loadData(), 100); 
+    }
 
     let loadedTransactions = [];
 
@@ -628,12 +645,15 @@ function setupReports() {
             tbody.appendChild(row);
         });
 
-        const caisseInitiale = parseFloat(caisseInput.value) || 0;
-        const totalDispo = caisseInitiale + totalEncaisse;
-        document.getElementById('report-total-dispo').textContent = formatPrice(totalDispo);
-        document.getElementById('report-only-sales').textContent = formatPrice(totalEncaisse);
-        document.getElementById('report-total-expenses').textContent = formatPrice(totalSorties);
-        document.getElementById('report-balance').textContent = formatPrice(totalDispo - totalSorties);
+        // --- MISE À JOUR DES TOTAUX (UNIQUEMENT POUR ADMIN) ---
+        if (userRole !== 'seller') {
+            const caisseInitiale = parseFloat(caisseInput.value) || 0;
+            const totalDispo = caisseInitiale + totalEncaisse;
+            document.getElementById('report-total-dispo').textContent = formatPrice(totalDispo);
+            document.getElementById('report-only-sales').textContent = formatPrice(totalEncaisse);
+            document.getElementById('report-total-expenses').textContent = formatPrice(totalSorties);
+            document.getElementById('report-balance').textContent = formatPrice(totalDispo - totalSorties);
+        }
     };
 
     if(searchInput) searchInput.addEventListener('input', renderReportsTable);
@@ -689,8 +709,20 @@ function setupReports() {
 
         } catch (error) { console.error(error); }
     };
+    
     btnFilter.addEventListener('click', loadData);
-    const observer = new MutationObserver((mutations) => { mutations.forEach((mutation) => { if (!mutation.target.classList.contains('hidden')) { setTimeout(() => { getDoc(shopRef).then(snap => { if(snap.exists()) caisseInput.value = snap.data().caisseInitiale || 0; loadData(); }); }, 100); } }); });
+    
+    const observer = new MutationObserver((mutations) => { 
+        mutations.forEach((mutation) => { 
+            if (!mutation.target.classList.contains('hidden')) { 
+                if (userRole === 'seller') {
+                    loadData();
+                } else {
+                    setTimeout(() => { getDoc(shopRef).then(snap => { if(snap.exists()) caisseInput.value = snap.data().caisseInitiale || 0; loadData(); }); }, 100); 
+                }
+            } 
+        }); 
+    });
     observer.observe(document.getElementById('page-rapports'), { attributes: true, attributeFilter: ['class'] });
 }
 

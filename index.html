@@ -354,21 +354,69 @@
             </div>
 
             <div id="page-rapports" class="page-content hidden">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4"><h1 class="text-2xl font-bold text-gray-800">Historique & Trésorerie</h1><div class="flex gap-2 bg-white p-2 rounded-lg shadow-sm"><input type="date" id="report-date-start" class="border-none bg-gray-50 rounded px-2 text-sm"><span class="text-gray-400 self-center">à</span><input type="date" id="report-date-end" class="border-none bg-gray-50 rounded px-2 text-sm"><button id="btn-filter-reports" class="bg-blue-600 text-white px-3 py-1 rounded text-sm font-bold">Filtrer</button></div></div>
-                <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-6 flex items-center gap-4"><div class="flex-1"><label class="block text-xs font-bold text-blue-800 uppercase mb-1">Caisse Initiale</label><p class="text-xs text-blue-600">Argent disponible au début.</p></div><div class="flex items-center gap-2"><input type="number" id="caisse-initiale-input" value="0" class="text-right font-bold text-xl w-40 p-2 rounded border border-blue-300 focus:ring-2 focus:ring-blue-500 outline-none"><span class="font-bold text-blue-800">CFA</span><button id="btn-save-caisse" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"><i data-lucide="save" class="w-5 h-5"></i></button></div></div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500"><div class="text-gray-500 text-xs font-bold uppercase">Total Disponible (Caisse + Ventes)</div><div id="report-total-dispo" class="text-xl font-bold text-green-600">0 CFA</div><div class="text-xs text-gray-400 mt-1">Dont Ventes: <span id="report-only-sales">0</span></div></div><div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500"><div class="text-gray-500 text-xs font-bold uppercase">Total Sorties (Charges & Achats)</div><div id="report-total-expenses" class="text-xl font-bold text-red-600">0 CFA</div></div><div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-800"><div class="text-gray-500 text-xs font-bold uppercase">Solde Théorique (Bénéfice)</div><div id="report-balance" class="text-2xl font-bold text-blue-800">0 CFA</div></div></div>
-                <div class="flex flex-col sm:flex-row gap-4 mb-3">
-                    <div class="relative flex-1">
-                        <i data-lucide="search" class="absolute left-3 top-2.5 text-gray-400 w-4 h-4"></i>
-                        <input type="text" id="reports-search" placeholder="Filtrer dans les résultats (ex: Savon, Loyer...)" class="w-full pl-9 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h1 class="text-2xl font-bold text-gray-800">Historique</h1>
+                    
+                    <div class="flex gap-2 bg-white p-2 rounded-lg shadow-sm">
+                        <input type="date" id="report-date-start" class="border-none bg-gray-50 rounded px-2 text-sm focus:ring-0">
+                        <span class="text-gray-400 self-center">à</span>
+                        <input type="date" id="report-date-end" class="border-none bg-gray-50 rounded px-2 text-sm focus:ring-0">
+                        <button id="btn-filter-reports" class="bg-blue-600 text-white px-3 py-1 rounded text-sm font-bold">Filtrer</button>
                     </div>
-                    <select id="reports-sort" class="p-2 border border-gray-300 rounded-lg text-sm bg-white">
-                        <option value="date_desc">Date (Récent)</option>
-                        <option value="date_asc">Date (Ancien)</option>
-                        <option value="amount_desc">Montant (Élevé)</option>
-                    </select>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-teal-700 text-white"><tr><th class="p-3 font-medium whitespace-nowrap">Date</th><th class="p-3 font-medium">Description</th><th class="p-3 font-medium text-center">Type</th><th class="p-3 font-medium text-right">Entrée (+)</th><th class="p-3 font-medium text-right">Sortie (-)</th></tr></thead><tbody id="reports-table-body" class="divide-y divide-gray-100"><tr><td colspan="5" class="p-6 text-center text-gray-400">Chargement...</td></tr></tbody></table></div></div>
+
+                <div id="report-financial-stats">
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-6 flex items-center gap-4">
+                        <div class="flex-1">
+                            <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Caisse Initiale (Fond de roulement)</label>
+                            <p class="text-xs text-blue-600">Argent disponible au début de la période.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="caisse-initiale-input" value="0" class="text-right font-bold text-xl w-40 p-2 rounded border border-blue-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <span class="font-bold text-blue-800">CFA</span>
+                            <button id="btn-save-caisse" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+                                <i data-lucide="save" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500">
+                            <div class="text-gray-500 text-xs font-bold uppercase">Total Disponible (Caisse + Ventes)</div>
+                            <div id="report-total-dispo" class="text-xl font-bold text-green-600">0 CFA</div>
+                            <div class="text-xs text-gray-400 mt-1">Dont Ventes: <span id="report-only-sales">0</span></div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500">
+                            <div class="text-gray-500 text-xs font-bold uppercase">Total Sorties (Charges & Achats)</div>
+                            <div id="report-total-expenses" class="text-xl font-bold text-red-600">0 CFA</div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-800">
+                            <div class="text-gray-500 text-xs font-bold uppercase">Solde Théorique (Bénéfice)</div>
+                            <div id="report-balance" class="text-2xl font-bold text-blue-800">0 CFA</div>
+                            <div class="text-xs text-gray-400 mt-1">(Caisse + Ventes) - Sorties</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-teal-700 text-white">
+                                <tr>
+                                    <th class="p-3 font-medium whitespace-nowrap">Date</th>
+                                    <th class="p-3 font-medium">Description / Articles</th>
+                                    <th class="p-3 font-medium text-center">Type</th>
+                                    <th class="p-3 font-medium text-right">Entrée (+)</th>
+                                    <th class="p-3 font-medium text-right">Sortie (-)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table-body" class="divide-y divide-gray-100">
+                                <tr><td colspan="5" class="p-6 text-center text-gray-400">Chargement...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <div id="page-admin" class="page-content hidden">
