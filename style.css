@@ -185,3 +185,17 @@ main {
     padding: 1rem !important; /* Marges extérieures réduites */
 }
 
+/* ... (votre code existant) ... */
+
+/* STYLE POUR LES ÉLÉMENTS ARCHIVÉS (SUPPRIMÉS) */
+.deleted-row {
+    background-color: #f9fafb !important; /* Fond gris très clair */
+    color: #9ca3af !important;           /* Texte gris */
+    text-decoration: line-through;       /* Rayé */
+    font-style: italic;
+}
+
+/* Cache les boutons d'action sur les lignes déjà archivées */
+.deleted-row button {
+    display: none !important;
+}

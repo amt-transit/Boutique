@@ -1,5 +1,5 @@
 // ===============================================
-// SCRIPT: GESTION BOUTIQUE V3 (CORRIGÉ)
+// SCRIPT: GESTION BOUTIQUE (SÉCURITÉ VENDEUR & ARCHIVAGE)
 // ===============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -7,11 +7,10 @@ import {
     getAuth, 
     onAuthStateChanged, 
     signInWithEmailAndPassword, 
-    signOut,
+    signOut, 
     createUserWithEmailAndPassword,
-    sendPasswordResetEmail
+    sendPasswordResetEmail 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
 import { 
     getFirestore, 
     setDoc, 
@@ -27,8 +26,6 @@ import {
     getDoc, 
     setLogLevel 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-// ... Le reste du code ne change pas ...
 
 const firebaseConfig = {
     apiKey: "AIzaSyCluRVv-olQsTuZZBPjjJns1jHq0vkhjSw",
@@ -84,56 +81,41 @@ function setupLoginForm() {
     const loginForm = document.getElementById('login-form');
     const errorBox = document.getElementById('login-error-msg');
     const errorText = document.getElementById('login-error-text');
+    const forgotLink = document.getElementById('forgot-password-link');
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        // 1. Réinitialiser l'affichage (cacher l'erreur précédente)
         errorBox.classList.add('hidden');
         const email = document.getElementById('login-email').value;
         const pass = document.getElementById('login-password').value;
 
         try {
             await signInWithEmailAndPassword(auth, email, pass);
-            // Si réussite, setupAuthListener prendra le relais pour la redirection
         } catch (error) {
             console.error("Erreur Auth:", error.code);
-            
-            // 2. Traduire le code d'erreur Firebase en français
-            let message = "Une erreur inconnue est survenue.";
-            
-            switch (error.code) {
-                case 'auth/invalid-credential': // Nouveau code standard Firebase
-                case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                    message = "Email ou mot de passe incorrect.";
-                    break;
-                case 'auth/invalid-email':
-                    message = "L'adresse email n'est pas valide.";
-                    break;
-                case 'auth/user-disabled':
-                    message = "Ce compte a été désactivé.";
-                    break;
-                case 'auth/too-many-requests':
-                    message = "Trop de tentatives. Réessayez plus tard.";
-                    break;
-                case 'auth/network-request-failed':
-                    message = "Erreur de connexion internet.";
-                    break;
-                default:
-                    message = "Erreur de connexion (" + error.code + ")";
-            }
-
-            // 3. Afficher le message
+            let message = "Erreur de connexion.";
+            if(error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') message = "Email ou mot de passe incorrect.";
             errorText.textContent = message;
             errorBox.classList.remove('hidden');
-            
-            // Réactiver les icônes si besoin
             if (window.lucide) window.lucide.createIcons();
         }
     });
 
     document.getElementById('bottom-logout-btn').addEventListener('click', () => signOut(auth));
+
+    if(forgotLink) {
+        forgotLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            let email = document.getElementById('login-email').value;
+            if (!email) email = prompt("Entrez votre email :");
+            if (email) {
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    showToast("Email de réinitialisation envoyé !", "success");
+                } catch (err) { showToast(err.message, "error"); }
+            }
+        });
+    }
 }
 
 function setupAuthListener() {
@@ -141,18 +123,16 @@ function setupAuthListener() {
         if (user) {
             userId = user.uid;
             try {
-                // Check Super Admin
                 const superAdminDoc = await getDoc(doc(db, "super_admins", userId));
                 if (superAdminDoc.exists()) {
                     showSuperAdminInterface();
                     return;
                 }
-                // Check User Boutique
                 const userDoc = await getDoc(doc(db, "users", userId));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
                     currentBoutiqueId = data.boutiqueId;
-                    userRole = data.role;
+                    userRole = data.role; // 'admin' (Proprio) ou 'seller' (Vendeur)
                     
                     document.getElementById('dashboard-user-name').textContent = `${data.boutiqueName}`;
                     document.getElementById('admin-tab-btn').classList.add('hidden'); 
@@ -161,11 +141,16 @@ function setupAuthListener() {
                     document.getElementById('app-container').classList.remove('hidden');
                     document.getElementById('top-nav-bar').classList.remove('hidden');
                     
+                    showAllTabs(); 
+                    
                     if (userRole === 'seller') {
-                        ['dashboard','rapports','charges','admin'].forEach(hideTab);
+                        // LE VENDEUR NE VOIT PAS : Dashboard, Admin
+                        // IL VOIT : Ventes, Stock, Crédits, Charges, Rapports (Lecture seule pour suppressions)
+                        hideTab('dashboard');
+                        hideTab('admin');
                         switchTab('ventes');
                     } else {
-                        showAllTabs();
+                        // Le Propriétaire voit tout sauf Admin
                         hideTab('admin');
                         switchTab('dashboard');
                     }
@@ -190,14 +175,11 @@ function showSuperAdminInterface() {
     document.getElementById('top-nav-bar').classList.remove('hidden');
     document.getElementById('dashboard-user-name').textContent = "SUPER ADMIN";
     document.getElementById('admin-tab-btn').classList.remove('hidden');
-    
     ['dashboard','ventes','stock','caisse','credits','rapports','charges'].forEach(hideTab);
     showTab('admin');
     switchTab('admin');
-    
     loadBoutiquesList();
-    loadShopsForImport(); // <--- CORRECTION ICI : On charge la liste pour l'import
-    
+    loadShopsForImport(); 
     if (window.lucide) window.lucide.createIcons();
 }
 
@@ -374,7 +356,7 @@ async function uploadBatchData(shopId, collectionName, data) {
     }
 }
 
-// ================= DASHBOARD (AGRÉGATION PAR NOM) =================
+// ================= DASHBOARD & RAPPORTS (SÉCURISÉ) =================
 
 function setupDashboard() {
     let totalVentes = 0;
@@ -384,23 +366,14 @@ function setupDashboard() {
     const updateDashboardTotals = () => {
         const beneficeReel = (caisseInitiale + totalVentes) - totalDepenses;
 
-        if(document.getElementById('dash-caisse-initiale'))
-            document.getElementById('dash-caisse-initiale').textContent = formatPrice(caisseInitiale);
-        if(document.getElementById('dash-total-sales')) 
-            document.getElementById('dash-total-sales').textContent = formatPrice(totalVentes);
-        if(document.getElementById('dash-total-expenses')) 
-            document.getElementById('dash-total-expenses').textContent = formatPrice(totalDepenses);
+        if(document.getElementById('dash-caisse-initiale')) document.getElementById('dash-caisse-initiale').textContent = formatPrice(caisseInitiale);
+        if(document.getElementById('dash-total-sales')) document.getElementById('dash-total-sales').textContent = formatPrice(totalVentes);
+        if(document.getElementById('dash-total-expenses')) document.getElementById('dash-total-expenses').textContent = formatPrice(totalDepenses);
         
         if(document.getElementById('dash-total-profit')) {
             const elProfit = document.getElementById('dash-total-profit');
             elProfit.textContent = formatPrice(beneficeReel);
-            if(beneficeReel < 0) {
-                elProfit.classList.remove('text-green-600');
-                elProfit.classList.add('text-red-600');
-            } else {
-                elProfit.classList.remove('text-red-600');
-                elProfit.classList.add('text-green-600');
-            }
+            elProfit.className = `text-2xl font-bold ${beneficeReel < 0 ? 'text-red-600' : 'text-green-600'}`;
         }
     };
 
@@ -411,18 +384,24 @@ function setupDashboard() {
 
     onSnapshot(collection(db, "boutiques", currentBoutiqueId, "expenses"), (snap) => {
         totalDepenses = 0;
-        snap.forEach(d => totalDepenses += (d.data().montant || 0));
+        snap.forEach(d => {
+            const data = d.data();
+            if (!data.deleted) totalDepenses += (data.montant || 0); // Ignore archivés
+        });
         updateDashboardTotals();
     });
 
     onSnapshot(collection(db, "boutiques", currentBoutiqueId, "ventes"), (snap) => {
         totalVentes = 0;
-        const productStats = {}; // Clé = Nom Produit Normalisé
+        const productStats = {}; 
         const recentDiv = document.getElementById('dash-recent-sales');
         if(recentDiv) recentDiv.innerHTML = '';
         
         const sales = [];
-        snap.forEach(d => sales.push(d.data()));
+        snap.forEach(d => {
+            const data = d.data();
+            if(!data.deleted) sales.push(data); // Ignore archivés
+        });
         sales.sort((a,b) => b.date?.seconds - a.date?.seconds);
 
         sales.forEach(s => {
@@ -430,30 +409,18 @@ function setupDashboard() {
 
             if(s.items && Array.isArray(s.items)) {
                 s.items.forEach(item => {
-                    // AGRÉGATION PAR NOM POUR ÉVITER LES DOUBLONS
-                    const rawName = item.nomDisplay || item.nom || "Produit Inconnu";
+                    // TOP 10 CORRIGÉ : AGRÉGATION PAR NOM
+                    const rawName = item.nomDisplay || item.nom || "Inconnu";
                     const keyName = rawName.trim().toUpperCase();
 
-                    if (!productStats[keyName]) {
-                        productStats[keyName] = { 
-                            name: rawName, 
-                            qty: 0, 
-                            revenue: 0 // On utilise le CA
-                        };
-                    }
+                    if (!productStats[keyName]) productStats[keyName] = { name: rawName, qty: 0, revenue: 0 };
                     
                     const qty = item.qty || 0;
                     const price = item.prixVente || 0;
                     
                     productStats[keyName].qty += qty;
-                    // Pour le CA: si c'est un import, le prix est dans s.total, sinon calculé
-                    if(s.type === 'cash_import') {
-                        // Attention: Dans un import, 'total' est le total de la ligne CSV. 
-                        // Comme on crée 1 item par ligne CSV, le CA de l'item = s.total
-                        productStats[keyName].revenue += s.total;
-                    } else {
-                        productStats[keyName].revenue += (price * qty);
-                    }
+                    if(s.type === 'cash_import') productStats[keyName].revenue += s.total;
+                    else productStats[keyName].revenue += (price * qty);
                 });
             }
         });
@@ -463,12 +430,9 @@ function setupDashboard() {
         if(recentDiv) {
             sales.slice(0, 5).forEach(s => {
                 const div = document.createElement('div');
-                const dateObj = new Date(s.date?.seconds * 1000);
-                const dateStr = dateObj.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'});
-                const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                let productList = "Vente divers";
-                if (s.items && s.items.length > 0) productList = s.items.map(i => `${i.nomDisplay || i.nom}`).join(', ');
-
+                const dateStr = new Date(s.date?.seconds * 1000).toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'});
+                const timeStr = new Date(s.date?.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                let productList = s.items ? s.items.map(i => `${i.nomDisplay || i.nom}`).join(', ') : "Divers";
                 div.className = "flex justify-between items-center border-b pb-2 last:border-0";
                 div.innerHTML = `
                     <div class="flex flex-col min-w-[60px]"><span class="text-xs font-bold text-gray-700">${dateStr}</span><span class="text-[10px] text-gray-400">${timeStr}</span></div>
@@ -480,87 +444,54 @@ function setupDashboard() {
         }
 
         const statsArray = Object.values(productStats);
-
-        // Top 10 Rentabilité (Montant Total)
         const topRevenue = [...statsArray].sort((a, b) => b.revenue - a.revenue).slice(0, 10);
         const profitBody = document.getElementById('dash-top-profit-body');
         if (profitBody) {
-            profitBody.innerHTML = topRevenue.map(p => `
-                <tr class="border-b last:border-0"><td class="p-2 font-medium text-gray-700 truncate max-w-[150px]" title="${p.name}">${p.name}</td><td class="p-2 text-right font-bold text-green-600">${formatPrice(p.revenue)}</td></tr>`).join('');
+            profitBody.innerHTML = topRevenue.map(p => `<tr class="border-b last:border-0"><td class="p-2 font-medium text-gray-700 truncate max-w-[150px]" title="${p.name}">${p.name}</td><td class="p-2 text-right font-bold text-green-600">${formatPrice(p.revenue)}</td></tr>`).join('');
         }
-
-        // Top 10 Quantités
         const topQty = [...statsArray].sort((a, b) => b.qty - a.qty).slice(0, 10);
         const qtyBody = document.getElementById('dash-top-qty-body');
         if (qtyBody) {
-            qtyBody.innerHTML = topQty.map(p => `
-                <tr class="border-b last:border-0"><td class="p-2 font-medium text-gray-700 truncate max-w-[150px]" title="${p.name}">${p.name}</td><td class="p-2 text-right font-bold text-blue-600">${p.qty}</td></tr>`).join('');
+            qtyBody.innerHTML = topQty.map(p => `<tr class="border-b last:border-0"><td class="p-2 font-medium text-gray-700 truncate max-w-[150px]" title="${p.name}">${p.name}</td><td class="p-2 text-right font-bold text-blue-600">${p.qty}</td></tr>`).join('');
         }
     });
-
-    setInterval(() => {
-        const lowDiv = document.getElementById('dash-low-stock');
-        if(!lowDiv) return;
-        const low = allProducts.filter(p => p.stock < 5);
-        if (low.length > 0) {
-            lowDiv.innerHTML = low.map(p => `<div class="flex justify-between text-sm p-2 bg-orange-50 rounded text-orange-700 mb-1"><span>${p.nomDisplay}</span><span class="font-bold">${p.stock}</span></div>`).join('');
-        } else {
-            lowDiv.innerHTML = '<p class="text-gray-400 italic">Stock OK.</p>';
-        }
-    }, 3000);
 }
 
-// ================= HISTORIQUE & TRÉSORERIE (SÉCURISÉ) =================
-
 function setupReports() {
+    if (!currentBoutiqueId) return;
     const btnFilter = document.getElementById('btn-filter-reports');
+    if(!btnFilter) return;
+    
     const dateStart = document.getElementById('report-date-start');
     const dateEnd = document.getElementById('report-date-end');
     const caisseInput = document.getElementById('caisse-initiale-input');
     const btnSaveCaisse = document.getElementById('btn-save-caisse');
-    
-    // Nouveaux éléments
     const searchInput = document.getElementById('reports-search');
     const sortSelect = document.getElementById('reports-sort');
 
-    if(!btnFilter) return;
-
-    // ... (Logique Dates et Caisse Initiale inchangée) ...
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    dateStart.valueAsDate = firstDay;
+    dateStart.valueAsDate = new Date(now.getFullYear(), now.getMonth(), 1);
     dateEnd.valueAsDate = now;
 
     const shopRef = doc(db, "boutiques", currentBoutiqueId);
     getDoc(shopRef).then(snap => { if(snap.exists()) { caisseInput.value = snap.data().caisseInitiale || 0; loadData(); } });
 
     btnSaveCaisse.addEventListener('click', async () => {
-        const montant = parseFloat(caisseInput.value) || 0;
-        await updateDoc(shopRef, { caisseInitiale: montant });
-        showToast("Caisse initiale sauvegardée !", "success");
-        loadData();
+        await updateDoc(shopRef, { caisseInitiale: parseFloat(caisseInput.value)||0 });
+        showToast("Sauvegardé"); loadData();
     });
 
-    // Variable pour stocker les transactions chargées
     let loadedTransactions = [];
 
-    // Fonction de rendu du tableau (Filtre local)
     const renderReportsTable = () => {
         const tbody = document.getElementById('reports-table-body');
         tbody.innerHTML = '';
-
         let filtered = loadedTransactions;
 
-        // 1. Recherche locale (Description ou Type)
         if(searchInput && searchInput.value) {
             const term = searchInput.value.toLowerCase();
-            filtered = loadedTransactions.filter(t => 
-                t.desc.toLowerCase().includes(term) || 
-                t.type.toLowerCase().includes(term)
-            );
+            filtered = loadedTransactions.filter(t => t.desc.toLowerCase().includes(term) || t.type.toLowerCase().includes(term));
         }
-
-        // 2. Tri local
         if(sortSelect) {
             const sort = sortSelect.value;
             filtered.sort((a, b) => {
@@ -571,43 +502,17 @@ function setupReports() {
             });
         }
 
-        // 3. Affichage
-        let totalVentesFilter = 0;
-        let totalDepensesFilter = 0;
-
-        if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Aucun résultat.</td></tr>';
-        }
+        let globalVentes = 0, globalDepenses = 0;
+        // On recalcule les totaux sur les transactions CHARGÉES (pas seulement filtrées)
+        loadedTransactions.forEach(t => { if(t.isExpense) globalDepenses += t.amount; else if (!t.credit) globalVentes += t.amount; });
 
         filtered.forEach(t => {
-            if(t.isExpense) totalDepensesFilter += t.amount;
-            else if (!t.credit) totalVentesFilter += t.amount;
-
             const row = document.createElement('tr');
             const classVente = t.isExpense ? 'text-gray-300' : 'text-green-600 font-bold';
             const classDepense = t.isExpense ? 'text-red-600 font-bold' : 'text-gray-300';
-            
             row.className = "border-b hover:bg-gray-50 transition";
-            row.innerHTML = `
-                <td class="p-3 text-gray-500 text-xs whitespace-nowrap">${t.date.toLocaleDateString()} <br> <span class="text-gray-300">${t.date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></td>
-                <td class="p-3 text-sm font-medium ${t.isExpense ? 'text-red-500' : 'text-gray-700'}">${t.desc} ${t.credit ? '<span class="bg-orange-100 text-orange-600 px-1 rounded text-xs">Crédit</span>' : ''}</td>
-                <td class="p-3 text-center text-xs text-gray-400">${t.isExpense ? 'SORTIE' : 'ENTRÉE'}</td>
-                <td class="p-3 text-right text-sm ${classVente}">${!t.isExpense ? formatPrice(t.amount) : '-'}</td>
-                <td class="p-3 text-right text-sm ${classDepense}">${t.isExpense ? formatPrice(t.amount) : '-'}</td>
-            `;
+            row.innerHTML = `<td class="p-3 text-xs">${t.date.toLocaleString()}</td><td class="p-3 text-sm ${t.isExpense?'text-red-500':''}">${t.desc} ${t.credit?'(Crédit)':''}</td><td class="p-3 text-center text-xs">${t.type}</td><td class="p-3 text-right ${classVente}">${!t.isExpense?formatPrice(t.amount):'-'}</td><td class="p-3 text-right ${classDepense}">${t.isExpense?formatPrice(t.amount):'-'}</td>`;
             tbody.appendChild(row);
-        });
-
-        // Mise à jour des cartes Totaux (Basé sur le filtre ou le chargement global ?)
-        // Généralement, on veut que les totaux reflètent ce qu'on voit, OU la période chargée.
-        // Ici, je laisse les totaux globaux de la période chargée (loadedTransactions) pour ne pas fausser le "Bilan"
-        // Si vous voulez que les cartes changent avec la recherche, utilisez "filtered" au lieu de "loadedTransactions" ci-dessous.
-        
-        let globalVentes = 0;
-        let globalDepenses = 0;
-        loadedTransactions.forEach(t => {
-             if(t.isExpense) globalDepenses += t.amount;
-             else if (!t.credit) globalVentes += t.amount;
         });
 
         const caisseInitiale = parseFloat(caisseInput.value) || 0;
@@ -617,77 +522,39 @@ function setupReports() {
         document.getElementById('report-balance').textContent = formatPrice((caisseInitiale + globalVentes) - globalDepenses);
     };
 
-    // Écouteurs sur les inputs locaux
     if(searchInput) searchInput.addEventListener('input', renderReportsTable);
     if(sortSelect) sortSelect.addEventListener('change', renderReportsTable);
 
-    // Fonction de Chargement (Base de données)
     const loadData = async () => {
         const tbody = document.getElementById('reports-table-body');
-        if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Calcul en cours...</td></tr>';
-
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Chargement...</td></tr>';
         try {
             const salesSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "ventes"));
             const expSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "expenses"));
-
-            loadedTransactions = []; // On reset
+            loadedTransactions = [];
 
             salesSnap.forEach(doc => {
                 const s = doc.data();
-                const desc = s.items ? s.items.map(i => {
-                    const pu = i.prixVente || 0; 
-                    return `${i.nomDisplay || i.nom} (${i.qty} x ${formatPrice(pu)})`;
-                }).join(', ') : 'Vente';
-                
-                loadedTransactions.push({
-                    date: s.date?.toDate ? s.date.toDate() : new Date(),
-                    desc: desc,
-                    type: 'VENTE',
-                    credit: s.type === 'credit',
-                    amount: s.total || 0,
-                    isExpense: false
-                });
+                if(s.deleted) return; // IGNORE ARCHIVÉS
+                const desc = s.items ? s.items.map(i => `${i.nomDisplay||i.nom} (${i.qty}x${formatPrice(i.prixVente)})`).join(', ') : 'Vente';
+                loadedTransactions.push({ date: s.date?.toDate(), desc, type: 'VENTE', credit: s.type==='credit', amount: s.total||0, isExpense: false });
             });
 
             expSnap.forEach(doc => {
                 const e = doc.data();
-                loadedTransactions.push({
-                    date: e.date?.toDate ? e.date.toDate() : new Date(),
-                    desc: e.motif || 'Dépense',
-                    type: 'SORTIE',
-                    credit: false,
-                    amount: e.montant || 0,
-                    isExpense: true
-                });
+                if(e.deleted) return; // IGNORE ARCHIVÉS
+                loadedTransactions.push({ date: e.date?.toDate(), desc: e.motif, type: 'SORTIE', amount: e.montant||0, isExpense: true });
             });
 
-            // Filtre Date
             const start = new Date(dateStart.value); start.setHours(0,0,0,0);
             const end = new Date(dateEnd.value); end.setHours(23,59,59,999);
-            loadedTransactions = loadedTransactions.filter(t => t.date >= start && t.date <= end);
-            
-            // Premier tri par défaut
-            loadedTransactions.sort((a, b) => b.date - a.date);
-
-            // Affichage initial
+            loadedTransactions = loadedTransactions.filter(t => t.date >= start && t.date <= end).sort((a,b)=>a.date-b.date);
             renderReportsTable();
 
-        } catch (error) { console.error("Erreur calculs:", error); }
+        } catch (error) { console.error(error); }
     };
-
     btnFilter.addEventListener('click', loadData);
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (!mutation.target.classList.contains('hidden')) {
-                setTimeout(() => {
-                    getDoc(shopRef).then(snap => {
-                        if(snap.exists()) { caisseInput.value = snap.data().caisseInitiale || 0; loadData(); }
-                    });
-                }, 100);
-            }
-        });
-    });
+    const observer = new MutationObserver((mutations) => { mutations.forEach((mutation) => { if (!mutation.target.classList.contains('hidden')) { setTimeout(() => { getDoc(shopRef).then(snap => { if(snap.exists()) caisseInput.value = snap.data().caisseInitiale || 0; loadData(); }); }, 100); } }); });
     observer.observe(document.getElementById('page-rapports'), { attributes: true, attributeFilter: ['class'] });
 }
 
@@ -971,21 +838,17 @@ function setupStockManagement() {
     const stockForm = document.getElementById('form-stock');
     const searchInput = document.getElementById('stock-search-input');
     const sortSelect = document.getElementById('stock-sort-select');
-    
-    // Fonction interne pour afficher le tableau selon les filtres
+
     const renderStockTable = () => {
         const tbody = document.getElementById('stock-table-body');
         if(!tbody) return;
         tbody.innerHTML = '';
 
-        // 1. Filtrer (Recherche)
         let filteredData = allProducts;
         if (searchInput && searchInput.value) {
             const term = searchInput.value.toLowerCase();
             filteredData = allProducts.filter(p => p.nom.includes(term));
         }
-
-        // 2. Trier
         if (sortSelect) {
             const sortType = sortSelect.value;
             filteredData.sort((a, b) => {
@@ -998,135 +861,152 @@ function setupStockManagement() {
             });
         }
 
-        // 3. Afficher
         filteredData.forEach(p => {
-            // Affichage du Prix Achat en gras comme demandé
             const tr = document.createElement('tr');
-            tr.className = "border-b border-gray-100 hover:bg-gray-50 transition";
+            // Si archivé -> classe 'deleted-row' (gris et rayé)
+            const rowClass = p.deleted ? "deleted-row" : "border-b border-gray-100 hover:bg-gray-50 transition";
+            
+            // Le bouton supprimer n'apparaît QUE si c'est un ADMIN et que le produit n'est pas déjà supprimé
+            const deleteBtn = (userRole === 'admin' && !p.deleted) 
+                ? `<button class="text-red-500 hover:bg-red-50 p-2 rounded" onclick="deleteProduct('${p.id}')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
+                : '';
+
+            tr.className = rowClass;
             tr.innerHTML = `
-                <td class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom}</td>
+                <td class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom} ${p.deleted ? '(Archivé)' : ''}</td>
                 <td class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td>
                 <td class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td>
-                <td class="p-4">
-                    <span class="${p.stock < 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded-full text-xs font-bold">
-                        ${p.stock}
-                    </span>
-                </td>
-                <td class="p-4 text-right">
-                    <button class="delete-prod-btn text-red-400 hover:text-red-600 p-2" data-id="${p.id}">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                </td>
-            `;
+                <td class="p-4"><span class="${p.stock < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded-full text-xs font-bold">${p.stock}</span></td>
+                <td class="p-4 text-right">${deleteBtn}</td>`;
             tbody.appendChild(tr);
         });
-        
-        // Réactiver les boutons supprimer
-        document.querySelectorAll('.delete-prod-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.currentTarget.dataset.id;
-                showConfirmModal("Supprimer ?", "Action irréversible.", async () => {
-                    await deleteDoc(doc(db, "boutiques", currentBoutiqueId, "products", id));
-                    showToast("Produit supprimé");
-                });
-            });
-        });
-
         if (window.lucide) window.lucide.createIcons();
     };
 
-    // Écouteur Firebase en temps réel
     onSnapshot(collection(db, "boutiques", currentBoutiqueId, "products"), (snap) => {
         allProducts = [];
         snap.forEach(docSnap => {
-            allProducts.push({ id: docSnap.id, ...docSnap.data() });
+            const p = { id: docSnap.id, ...docSnap.data() };
+            // RÈGLE D'OR : Le Vendeur ne voit PAS les éléments supprimés
+            if (p.deleted && userRole === 'seller') return;
+            allProducts.push(p);
         });
-        renderStockTable(); // Affichage initial
+        renderStockTable();
     });
 
-    // Écouteurs pour la recherche et le tri
     if(searchInput) searchInput.addEventListener('input', renderStockTable);
     if(sortSelect) sortSelect.addEventListener('change', renderStockTable);
 
-    // Ajout Produit
     if(stockForm) {
         stockForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const nom = document.getElementById('prod-nom').value;
-            const prixVente = parseFloat(document.getElementById('prod-prix').value) || 0; // Facultatif
-            const prixAchat = parseFloat(document.getElementById('prod-achat').value) || 0; // Facultatif
-            const qte = parseInt(document.getElementById('prod-qte').value);
-
             try {
                 await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "products")), {
-                    nom: nom.toLowerCase(),
-                    nomDisplay: nom,
-                    prixVente: prixVente,
-                    prixAchat: prixAchat,
-                    stock: qte,
-                    createdAt: serverTimestamp()
+                    nom: document.getElementById('prod-nom').value.toLowerCase(),
+                    nomDisplay: document.getElementById('prod-nom').value,
+                    prixVente: parseFloat(document.getElementById('prod-prix').value)||0,
+                    prixAchat: parseFloat(document.getElementById('prod-achat').value)||0,
+                    stock: parseInt(document.getElementById('prod-qte').value),
+                    createdAt: serverTimestamp(), deleted: false
                 });
-                stockForm.reset();
-                document.getElementById('add-product-form').classList.add('hidden');
-                showToast("Produit ajouté !", "success");
-            } catch (err) {
-                showToast("Erreur ajout", "error");
-            }
+                stockForm.reset(); document.getElementById('add-product-form').classList.add('hidden'); showToast("Produit ajouté");
+            } catch (err) { showToast("Erreur ajout", "error"); }
         });
     }
+    
+    // Soft Delete (Archivage)
+    window.deleteProduct = (id) => { 
+        if(confirm("Archiver ce produit ? Il ne sera plus visible pour les vendeurs.")) {
+            updateDoc(doc(db, "boutiques", currentBoutiqueId, "products", id), { deleted: true });
+        } 
+    };
 }
+
+// ================= CREDITS (SÉCURISÉ) =================
 
 function setupCredits() {
     const form = document.getElementById('form-client');
-    // ... (Code existant pour l'affichage de la table) ...
-    onSnapshot(collection(db, "boutiques", currentBoutiqueId, "clients"), (snap) => {
+    const searchInput = document.getElementById('credits-search');
+    const sortSelect = document.getElementById('credits-sort');
+    
+    let allClients = [];
+
+    const renderTable = () => {
         const tbody = document.getElementById('credits-table-body');
-        if(tbody) tbody.innerHTML = '';
+        if(!tbody) return;
+        tbody.innerHTML = '';
+
+        let filtered = allClients;
+        if(searchInput && searchInput.value) {
+            const term = searchInput.value.toLowerCase();
+            filtered = allClients.filter(c => c.nom.toLowerCase().includes(term));
+        }
+        if(sortSelect) {
+            const sort = sortSelect.value;
+            filtered.sort((a, b) => {
+                if(sort === 'name_asc') return a.nom.localeCompare(b.nom);
+                if(sort === 'dette_desc') return b.dette - a.dette;
+                if(sort === 'dette_asc') return a.dette - b.dette;
+                return 0;
+            });
+        }
+
+        filtered.forEach(c => {
+            const rowClass = c.deleted ? "deleted-row" : "border-b hover:bg-gray-50 transition";
+            // Bouton supprimer seulement pour Admin
+            const actions = (userRole === 'admin' && !c.deleted) 
+                ? `<button onclick="deleteClient('${c.id}')" class="text-red-400 hover:text-red-600 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+            const payBtn = !c.deleted ? `<button onclick="rembourserClient('${c.id}', ${c.dette})" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs mr-2 font-bold">Payer</button>` : '';
+
+            tbody.innerHTML += `
+                <tr class="${rowClass}">
+                    <td class="p-4 font-medium text-gray-800">${c.nom} ${c.deleted ? '(Archivé)' : ''}</td>
+                    <td class="p-4 text-gray-500">${c.telephone||'-'}</td>
+                    <td class="p-4 font-bold text-orange-600">${formatPrice(c.dette||0)}</td>
+                    <td class="p-4 text-right flex gap-2 justify-end">${payBtn} ${actions}</td>
+                </tr>`;
+        });
+        
+        const totalDette = allClients.reduce((sum, c) => sum + (c.deleted ? 0 : (c.dette||0)), 0);
+        if(document.getElementById('dash-total-credits')) document.getElementById('dash-total-credits').textContent = formatPrice(totalDette);
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    onSnapshot(collection(db, "boutiques", currentBoutiqueId, "clients"), (snap) => {
+        allClients = [];
         snap.forEach(d => {
             const c = { id: d.id, ...d.data() };
-            if(tbody) tbody.innerHTML += `<tr class="border-b"><td class="p-4 font-medium">${c.nom}</td><td class="p-4">${c.telephone||'-'}</td><td class="p-4 font-bold text-orange-600">${formatPrice(c.dette||0)}</td><td class="p-4 text-right flex gap-2 justify-end"><button onclick="rembourserClient('${c.id}', ${c.dette})" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">Payer</button><button onclick="deleteClient('${c.id}')" class="text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`;
+            if (c.deleted && userRole === 'seller') return; // Vendeur ne voit pas archivés
+            allClients.push(c);
         });
-        if (window.lucide) window.lucide.createIcons();
+        renderTable();
     });
+
+    if(searchInput) searchInput.addEventListener('input', renderTable);
+    if(sortSelect) sortSelect.addEventListener('change', renderTable);
 
     if(form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const nom = document.getElementById('client-nom').value;
-            const tel = document.getElementById('client-tel').value;
             try {
                 await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "clients")), { 
-                    nom, telephone: tel, dette: 0, createdAt: serverTimestamp() 
+                    nom: document.getElementById('client-nom').value, telephone: document.getElementById('client-tel').value, dette: 0, createdAt: serverTimestamp(), deleted: false 
                 });
-                form.reset(); 
-                document.getElementById('add-client-modal').classList.add('hidden'); 
-                showToast("Client ajouté");
-
-                // GESTION RETOUR RAPIDE
-                if (isQuickAddMode) {
-                    // On revient à la modale de vente
-                    await loadClientsIntoSelect(); // Rafraîchir la liste
-                    document.getElementById('credit-sale-modal').classList.remove('hidden');
-                    
-                    // Optionnel : Sélectionner automatiquement le nouveau client ?
-                    // Pour l'instant on laisse l'utilisateur choisir dans la liste à jour
-                    
-                    isQuickAddMode = false; // Reset
-                }
-
+                form.reset(); document.getElementById('add-client-modal').classList.add('hidden'); showToast("Client ajouté");
+                if (isQuickAddMode) { await loadClientsIntoSelect(); document.getElementById('credit-sale-modal').classList.remove('hidden'); isQuickAddMode = false; }
             } catch(e) { showToast("Erreur", "error"); }
         });
     }
-    // ... (Fonctions rembourser/delete inchangées) ...
     window.rembourserClient = (id, dette) => { const m = prompt(`Montant (Max: ${dette})`); if(m && !isNaN(m)) updateDoc(doc(db, "boutiques", currentBoutiqueId, "clients", id), { dette: increment(-parseFloat(m)) }); };
-    window.deleteClient = (id) => { if(confirm("Supprimer ?")) deleteDoc(doc(db, "boutiques", currentBoutiqueId, "clients", id)); };
+    window.deleteClient = (id) => { if(confirm("Archiver ce client ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "clients", id), { deleted: true }); };
 }
+
+// ================= EXPENSES (SÉCURISÉ) =================
 
 function setupExpenses() {
     const form = document.getElementById('form-expense');
     const searchInput = document.getElementById('expenses-search');
     const sortSelect = document.getElementById('expenses-sort');
-    
     let allExpenses = [];
 
     const renderTable = () => {
@@ -1135,14 +1015,10 @@ function setupExpenses() {
         tbody.innerHTML = '';
 
         let filtered = allExpenses;
-        
-        // Filtre
         if(searchInput && searchInput.value) {
             const term = searchInput.value.toLowerCase();
             filtered = allExpenses.filter(e => e.motif.toLowerCase().includes(term));
         }
-
-        // Tri
         if(sortSelect) {
             const sort = sortSelect.value;
             filtered.sort((a, b) => {
@@ -1155,29 +1031,29 @@ function setupExpenses() {
             });
         }
 
-        // Affichage
-        let total = 0;
         filtered.forEach(ex => {
-            total += (ex.montant || 0);
+            const rowClass = ex.deleted ? "deleted-row" : "border-b hover:bg-gray-50 transition";
+            const deleteBtn = (userRole === 'admin' && !ex.deleted) 
+                ? `<button onclick="deleteExp('${ex.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+
             tbody.innerHTML += `
-                <tr class="border-b hover:bg-gray-50 transition">
+                <tr class="${rowClass}">
                     <td class="p-4 text-sm text-gray-500">${new Date(ex.date?.seconds*1000).toLocaleDateString()}</td>
                     <td class="p-4 font-medium text-gray-800">${ex.motif}</td>
                     <td class="p-4 text-right font-bold text-red-600">-${formatPrice(ex.montant)}</td>
-                    <td class="p-4 text-right">
-                        <button onclick="deleteExp('${ex.id}')" class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    </td>
-                </tr>
-            `;
+                    <td class="p-4 text-right">${deleteBtn}</td>
+                </tr>`;
         });
-        
-        // Mise à jour Dashboard si nécessaire (la fonction setupDashboard le fait aussi mais en écoute directe)
         if (window.lucide) window.lucide.createIcons();
     };
 
     onSnapshot(collection(db, "boutiques", currentBoutiqueId, "expenses"), (snap) => {
         allExpenses = [];
-        snap.forEach(d => allExpenses.push({ id: d.id, ...d.data() }));
+        snap.forEach(d => {
+            const ex = { id: d.id, ...d.data() };
+            if (ex.deleted && userRole === 'seller') return; // Vendeur ne voit pas archivés
+            allExpenses.push(ex);
+        });
         renderTable();
     });
 
@@ -1189,15 +1065,13 @@ function setupExpenses() {
             e.preventDefault();
             try {
                 await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "expenses")), {
-                    motif: document.getElementById('exp-motif').value, 
-                    montant: parseFloat(document.getElementById('exp-montant').value), 
-                    date: serverTimestamp(), user: userId
+                    motif: document.getElementById('exp-motif').value, montant: parseFloat(document.getElementById('exp-montant').value), date: serverTimestamp(), user: userId, deleted: false
                 });
                 form.reset(); showToast("Dépense ajoutée");
             } catch(e) { showToast("Erreur", "error"); }
         });
     }
-    window.deleteExp = (id) => { if(confirm("Supprimer ?")) deleteDoc(doc(db, "boutiques", currentBoutiqueId, "expenses", id)); };
+    window.deleteExp = (id) => { if(confirm("Archiver cette dépense ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "expenses", id), { deleted: true }); };
 }
 
 // ================= GESTION CREATION COMPTES (SUPER ADMIN) =================

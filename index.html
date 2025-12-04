@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion de Boutique</title>
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,15 +19,36 @@
             <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Ma Boutique</h1>
             <form id="login-form" class="space-y-4">
                 <h2 class="text-lg font-semibold text-gray-700">Se Connecter</h2>
+                
                 <div class="boutique-selector">
                     <label for="login-boutique">Boutique</label>
                     <select id="login-boutique" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg bg-gray-50">
                         <option value="">Chargement...</option>
                     </select>
                 </div>
-                <input type="email" id="login-email" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required placeholder="Email">
-                <input type="password" id="login-password" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required placeholder="Mot de passe">
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm transition shadow-md">Connexion</button>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600 block mb-2">Email</label>
+                    <input type="email" id="login-email" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-gray-600 block mb-2">Mot de passe</label>
+                    <input type="password" id="login-password" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
+                    <div class="text-right mt-1">
+                        <a href="#" id="forgot-password-link" class="text-xs text-blue-600 hover:text-blue-800 hover:underline">
+                            Mot de passe oublié ?
+                        </a>
+                    </div>
+                </div>
+
+                <div id="login-error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+                    <span id="login-error-text">Une erreur est survenue.</span>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm transition shadow-md">
+                    Connexion
+                </button>
             </form>
         </div>
     </div>
