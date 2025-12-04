@@ -254,7 +254,27 @@
                     <div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i><input type="text" id="stock-search-input" placeholder="Rechercher..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg"></div>
                     <div class="w-full md:w-64"><select id="stock-sort-select" class="w-full p-2.5 border border-gray-300 rounded-lg"><option value="name_asc">Nom (A-Z)</option><option value="price_asc">Prix Achat (Croissant)</option><option value="price_desc">Prix Achat (Décroissant)</option><option value="stock_asc">Stock (Croissant)</option><option value="stock_desc">Stock (Décroissant)</option></select></div>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="bg-gray-50 border-b border-gray-200"><tr><th class="p-4 font-semibold text-gray-600 text-sm">Produit</th><th class="p-4 font-semibold text-gray-600 text-sm">Prix Achat</th><th class="p-4 font-semibold text-gray-600 text-sm">Prix Vente</th><th class="p-4 font-semibold text-gray-600 text-sm">Stock</th><th class="p-4 font-semibold text-gray-600 text-sm text-right">Actions</th></tr></thead><tbody id="stock-table-body" class="divide-y divide-gray-100"></tbody></table></div></div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Produit</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Prix Achat</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Prix Vente</th>
+                                    
+                                    <th class="p-4 font-semibold text-gray-600 text-sm text-center">Stock (Total)</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm text-center">Vendu</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm text-center text-blue-600">Reste</th>
+                                    
+                                    <th class="p-4 font-semibold text-gray-600 text-sm text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stock-table-body" class="divide-y divide-gray-100">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <div id="page-credits" class="page-content hidden">

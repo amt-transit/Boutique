@@ -1,13 +1,31 @@
 // ===============================================
-// SCRIPT: GESTION BOUTIQUE V4 (TRÉSORERIE STRICTE)
+// SCRIPT: GESTION BOUTIQUE V5 (VERSION FINALE COMPLETE)
 // ===============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { 
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail
+    getAuth, 
+    onAuthStateChanged, 
+    signInWithEmailAndPassword, 
+    signOut,
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
 import { 
-    getFirestore, setDoc, doc, collection, onSnapshot, updateDoc, writeBatch, serverTimestamp, increment, deleteDoc, getDocs, getDoc, setLogLevel 
+    getFirestore, 
+    setDoc, 
+    doc, 
+    collection, 
+    onSnapshot, 
+    updateDoc, 
+    writeBatch, 
+    serverTimestamp, 
+    increment, 
+    deleteDoc, 
+    getDocs, 
+    getDoc, 
+    setLogLevel 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -66,32 +84,48 @@ function setupLoginForm() {
     const errorText = document.getElementById('login-error-text');
     const forgotLink = document.getElementById('forgot-password-link');
 
+    // Login Submit
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorBox.classList.add('hidden');
         const email = document.getElementById('login-email').value;
         const pass = document.getElementById('login-password').value;
-        try { await signInWithEmailAndPassword(auth, email, pass); } 
-        catch (error) {
+
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } catch (error) {
             console.error("Erreur Auth:", error.code);
             let message = "Erreur de connexion.";
-            if(error.code.includes('invalid') || error.code.includes('user-not-found') || error.code.includes('wrong-password')) message = "Email ou mot de passe incorrect.";
+            switch (error.code) {
+                case 'auth/invalid-credential':
+                case 'auth/user-not-found':
+                case 'auth/wrong-password': message = "Email ou mot de passe incorrect."; break;
+                case 'auth/invalid-email': message = "L'adresse email n'est pas valide."; break;
+                case 'auth/user-disabled': message = "Ce compte a été désactivé."; break;
+                case 'auth/too-many-requests': message = "Trop de tentatives. Réessayez plus tard."; break;
+                case 'auth/network-request-failed': message = "Erreur de connexion internet."; break;
+                default: message = "Erreur de connexion (" + error.code + ")";
+            }
             errorText.textContent = message;
             errorBox.classList.remove('hidden');
             if (window.lucide) window.lucide.createIcons();
         }
     });
 
+    // Logout
     document.getElementById('bottom-logout-btn').addEventListener('click', () => signOut(auth));
 
+    // Mot de passe oublié
     if(forgotLink) {
         forgotLink.addEventListener('click', async (e) => {
             e.preventDefault();
             let email = document.getElementById('login-email').value;
             if (!email) email = prompt("Entrez votre email :");
             if (email) {
-                try { await sendPasswordResetEmail(auth, email); showToast("Email envoyé !", "success"); } 
-                catch (err) { showToast(err.message, "error"); }
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    showToast("Email de réinitialisation envoyé !", "success");
+                } catch (err) { showToast(err.message, "error"); }
             }
         });
     }
@@ -102,26 +136,44 @@ function setupAuthListener() {
         if (user) {
             userId = user.uid;
             try {
+                // Check Super Admin
                 const superAdminDoc = await getDoc(doc(db, "super_admins", userId));
-                if (superAdminDoc.exists()) { showSuperAdminInterface(); return; }
+                if (superAdminDoc.exists()) {
+                    showSuperAdminInterface();
+                    return;
+                }
+                // Check User Boutique
                 const userDoc = await getDoc(doc(db, "users", userId));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
                     currentBoutiqueId = data.boutiqueId;
                     userRole = data.role;
+                    
                     document.getElementById('dashboard-user-name').textContent = `${data.boutiqueName}`;
                     document.getElementById('admin-tab-btn').classList.add('hidden'); 
+
                     document.getElementById('auth-container').classList.add('hidden');
                     document.getElementById('app-container').classList.remove('hidden');
                     document.getElementById('top-nav-bar').classList.remove('hidden');
+                    
+                    // --- GESTION DES DROITS VENDEUR ---
                     showAllTabs(); 
+                    
                     if (userRole === 'seller') {
-                        hideTab('dashboard'); hideTab('admin'); switchTab('ventes');
+                        // Le vendeur ne voit PAS Dashboard et Admin
+                        hideTab('dashboard');
+                        hideTab('admin');
+                        switchTab('ventes');
                     } else {
-                        hideTab('admin'); switchTab('dashboard');
+                        // Admin Boutique (Propriétaire) voit tout sauf Admin
+                        hideTab('admin');
+                        switchTab('dashboard');
                     }
                     initializeApplication();
-                } else { showToast("Compte inconnu", "error"); await signOut(auth); }
+                } else {
+                    showToast("Compte inconnu", "error");
+                    await signOut(auth);
+                }
             } catch (err) { console.error(err); }
         } else {
             document.getElementById('auth-container').classList.remove('hidden');
@@ -157,19 +209,19 @@ function initializeApplication() {
     if (window.lucide) window.lucide.createIcons();
 }
 
-// ================= DASHBOARD (TRÉSORERIE & RENTABILITÉ) =================
+// ================= DASHBOARD (TRÉSORERIE, TOP 10 & LISTE DÉTAILLÉE) =================
 
 function setupDashboard() {
-    let totalVentesCash = 0;
+    let totalVentesEncaissees = 0;
     let totalDepenses = 0;
     let caisseInitiale = 0;
 
     const updateDashboardTotals = () => {
         // FORMULE TRÉSORERIE : (Caisse Init + Ventes Cash + Remboursements) - Dépenses
-        const beneficeReel = (caisseInitiale + totalVentesCash) - totalDepenses;
+        const beneficeReel = (caisseInitiale + totalVentesEncaissees) - totalDepenses;
 
         if(document.getElementById('dash-caisse-initiale')) document.getElementById('dash-caisse-initiale').textContent = formatPrice(caisseInitiale);
-        if(document.getElementById('dash-total-sales')) document.getElementById('dash-total-sales').textContent = formatPrice(totalVentesCash);
+        if(document.getElementById('dash-total-sales')) document.getElementById('dash-total-sales').textContent = formatPrice(totalVentesEncaissees);
         if(document.getElementById('dash-total-expenses')) document.getElementById('dash-total-expenses').textContent = formatPrice(totalDepenses);
         
         if(document.getElementById('dash-total-profit')) {
@@ -179,7 +231,6 @@ function setupDashboard() {
         }
     };
 
-    // Ecouteurs
     onSnapshot(doc(db, "boutiques", currentBoutiqueId), (doc) => {
         caisseInitiale = doc.data()?.caisseInitiale || 0;
         updateDashboardTotals();
@@ -192,7 +243,7 @@ function setupDashboard() {
     });
 
     onSnapshot(collection(db, "boutiques", currentBoutiqueId, "ventes"), (snap) => {
-        totalVentesCash = 0;
+        totalVentesEncaissees = 0;
         const productStats = {}; 
         const recentDiv = document.getElementById('dash-recent-sales');
         if(recentDiv) recentDiv.innerHTML = '';
@@ -203,35 +254,38 @@ function setupDashboard() {
 
         sales.forEach(s => {
             // 1. CALCUL TRÉSORERIE
-            // On ajoute UNIQUEMENT si c'est du Cash, un Import, ou un REMBOURSEMENT
             if (s.type === 'cash' || s.type === 'cash_import' || s.type === 'remboursement') {
-                totalVentesCash += s.total || 0;
+                totalVentesEncaissees += s.total || 0;
             }
-            // Si c'est un crédit (type 'credit'), on n'ajoute rien (0 CFA encaissé)
 
-            // 2. STATS PRODUITS
+            // 2. STATS PRODUITS (AGRÉGATION PAR NOM)
             if(s.items && Array.isArray(s.items) && s.type !== 'remboursement') {
                 s.items.forEach(item => {
-                    const keyName = (item.nomDisplay || item.nom || "Inconnu").trim().toUpperCase();
-                    if (!productStats[keyName]) productStats[keyName] = { name: keyName, qty: 0, revenue: 0 };
+                    const rawName = item.nomDisplay || item.nom || "Inconnu";
+                    const keyName = rawName.trim().toUpperCase();
                     
-                    productStats[keyName].qty += (item.qty || 0);
+                    if (!productStats[keyName]) productStats[keyName] = { name: rawName, qty: 0, revenue: 0 };
                     
-                    // Pour le top 10, on compte la valeur vendue, même si c'est à crédit (car le produit est parti)
+                    const qty = item.qty || 0;
+                    const price = item.prixVente || 0;
+                    
+                    productStats[keyName].qty += qty;
+                    // Pour le Top 10 Revenu, on utilise le CA généré (Import ou Calculé)
                     if(s.type === 'cash_import') productStats[keyName].revenue += s.total;
-                    else productStats[keyName].revenue += ((item.prixVente || 0) * (item.qty || 0));
+                    else productStats[keyName].revenue += (price * qty);
                 });
             }
         });
 
         updateDashboardTotals();
 
-        // Récents
+        // Récents (Détails + Nom Client)
         if(recentDiv) {
             sales.slice(0, 5).forEach(s => {
                 const div = document.createElement('div');
                 const dateObj = new Date(s.date?.seconds * 1000);
                 const dateStr = dateObj.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'});
+                const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
                 let desc = "";
                 let colorClass = "text-blue-600";
@@ -247,7 +301,7 @@ function setupDashboard() {
 
                 div.className = "flex justify-between items-center border-b pb-2 last:border-0";
                 div.innerHTML = `
-                    <div class="flex flex-col min-w-[50px]"><span class="text-xs font-bold text-gray-700">${dateStr}</span></div>
+                    <div class="flex flex-col min-w-[50px]"><span class="text-xs font-bold text-gray-700">${dateStr}</span><span class="text-[10px] text-gray-400">${timeStr}</span></div>
                     <div class="flex-1 mx-3 overflow-hidden"><div class="text-sm font-medium text-gray-800 truncate" title="${desc}">${desc}</div></div>
                     <div class="font-bold ${colorClass} text-sm whitespace-nowrap">${formatPrice(s.total)}</div>
                 `;
@@ -269,7 +323,7 @@ function setupDashboard() {
         }
     });
 
-    // Stock
+    // Alertes Stock
     setInterval(() => {
         const lowDiv = document.getElementById('dash-low-stock');
         if(!lowDiv) return;
@@ -279,7 +333,162 @@ function setupDashboard() {
     }, 3000);
 }
 
-// ================= CREDITS (AVEC ENREGISTREMENT REMBOURSEMENT) =================
+// ================= STOCK (RESTITUÉ : MODIF LIGNE + VENDU/RESTE) =================
+
+function setupStockManagement() {
+    const stockForm = document.getElementById('form-stock');
+    const editForm = document.getElementById('form-edit-product'); // IMPORTANT
+    const searchInput = document.getElementById('stock-search-input');
+    const sortSelect = document.getElementById('stock-sort-select');
+
+    const renderStockTable = () => {
+        const tbody = document.getElementById('stock-table-body');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+
+        let filteredData = allProducts;
+        if (searchInput && searchInput.value) {
+            const term = searchInput.value.toLowerCase();
+            filteredData = allProducts.filter(p => p.nom.includes(term));
+        }
+        if (sortSelect) {
+            const sortType = sortSelect.value;
+            filteredData.sort((a, b) => {
+                if (sortType === 'name_asc') return a.nom.localeCompare(b.nom);
+                if (sortType === 'price_asc') return (a.prixAchat || 0) - (b.prixAchat || 0);
+                if (sortType === 'price_desc') return (b.prixAchat || 0) - (a.prixAchat || 0);
+                if (sortType === 'stock_asc') return a.stock - b.stock;
+                if (sortType === 'stock_desc') return b.stock - a.stock;
+                return 0;
+            });
+        }
+
+        filteredData.forEach(p => {
+            const tr = document.createElement('tr');
+            
+            // 1. Style Grisé
+            let rowClass = p.deleted ? "deleted-row" : "border-b border-gray-100 transition";
+            
+            // 2. Interaction Clic Ligne (Admin seulement)
+            let rowAction = "";
+            if (userRole === 'admin' && !p.deleted) {
+                const productData = encodeURIComponent(JSON.stringify(p));
+                rowAction = `onclick="openEditProduct('${productData}')"`;
+                rowClass += " cursor-pointer hover:bg-blue-50"; 
+            }
+
+            // 3. Bouton Archiver (avec stopPropagation)
+            const deleteBtn = (userRole === 'admin' && !p.deleted) 
+                ? `<button class="text-red-500 hover:bg-red-100 p-2 rounded-full transition" 
+                           onclick="event.stopPropagation(); deleteProduct('${p.id}')" title="Archiver">
+                   <i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+            
+            // 4. Calculs Stock
+            const reste = p.stock || 0;
+            const vendu = p.quantiteVendue || 0;
+            const total = reste + vendu;
+
+            tr.className = rowClass;
+            tr.innerHTML = `
+                <td ${rowAction} class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom} ${p.deleted ? '(Archivé)' : ''}</td>
+                <td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td>
+                <td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td>
+                
+                <td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td>
+                <td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td>
+                <td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td>
+                
+                <td class="p-4 text-right">${deleteBtn}</td>`;
+            tbody.appendChild(tr);
+        });
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    onSnapshot(collection(db, "boutiques", currentBoutiqueId, "products"), (snap) => {
+        allProducts = [];
+        snap.forEach(docSnap => {
+            const p = { id: docSnap.id, ...docSnap.data() };
+            if (p.deleted && userRole === 'seller') return; // Vendeur ne voit pas les supprimés
+            allProducts.push(p);
+        });
+        renderStockTable();
+    });
+
+    if(searchInput) searchInput.addEventListener('input', renderStockTable);
+    if(sortSelect) sortSelect.addEventListener('change', renderStockTable);
+
+    if(stockForm) {
+        stockForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "products")), {
+                    nom: document.getElementById('prod-nom').value.toLowerCase(),
+                    nomDisplay: document.getElementById('prod-nom').value,
+                    prixVente: parseFloat(document.getElementById('prod-prix').value)||0,
+                    prixAchat: parseFloat(document.getElementById('prod-achat').value)||0,
+                    stock: parseInt(document.getElementById('prod-qte').value),
+                    quantiteVendue: 0,
+                    createdAt: serverTimestamp(), deleted: false
+                });
+                stockForm.reset(); document.getElementById('add-product-form').classList.add('hidden'); showToast("Produit ajouté");
+            } catch (err) { showToast("Erreur ajout", "error"); }
+        });
+    }
+    
+    // LOGIQUE DE MODIFICATION RESTITUÉE
+    window.openEditProduct = (encodedProduct) => {
+        const p = JSON.parse(decodeURIComponent(encodedProduct));
+        document.getElementById('edit-prod-id').value = p.id;
+        document.getElementById('edit-prod-nom').value = p.nomDisplay;
+        document.getElementById('edit-prod-achat').value = p.prixAchat;
+        document.getElementById('edit-prod-vente').value = p.prixVente;
+        document.getElementById('edit-prod-stock').value = p.stock;
+        
+        const form = document.getElementById('form-edit-product');
+        if(form) {
+            form.dataset.oldAchat = p.prixAchat;
+            form.dataset.oldVente = p.prixVente;
+            form.dataset.oldStock = p.stock;
+            document.getElementById('edit-product-modal').classList.remove('hidden');
+        }
+    };
+
+    if(editForm) {
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-prod-id').value;
+            const nom = document.getElementById('edit-prod-nom').value;
+            const newAchat = parseFloat(document.getElementById('edit-prod-achat').value) || 0;
+            const newVente = parseFloat(document.getElementById('edit-prod-vente').value) || 0;
+            const newStock = parseInt(document.getElementById('edit-prod-stock').value) || 0;
+
+            const oldAchat = parseFloat(editForm.dataset.oldAchat) || 0;
+            const oldVente = parseFloat(editForm.dataset.oldVente) || 0;
+
+            try {
+                const batch = writeBatch(db);
+                const prodRef = doc(db, "boutiques", currentBoutiqueId, "products", id);
+                
+                batch.update(prodRef, { prixAchat: newAchat, prixVente: newVente, stock: newStock, lastModified: serverTimestamp() });
+
+                if (newAchat !== oldAchat || newVente !== oldVente) {
+                    const traceRef = doc(collection(db, "boutiques", currentBoutiqueId, "historique_prix"));
+                    batch.set(traceRef, { productId: id, productName: nom, oldAchat: oldAchat, newAchat: newAchat, oldVente: oldVente, newVente: newVente, user: userId, date: serverTimestamp() });
+                }
+
+                await batch.commit();
+                showToast("Modifié avec succès");
+                document.getElementById('edit-product-modal').classList.add('hidden');
+            } catch (err) { console.error(err); showToast("Erreur modification", "error"); }
+        });
+    }
+
+    window.deleteProduct = (id) => { 
+        if(confirm("Archiver ce produit ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "products", id), { deleted: true }); 
+    };
+}
+
+// ================= CREDITS (REMBOURSEMENT = ENTRÉE) =================
 
 function setupCredits() {
     const form = document.getElementById('form-client');
@@ -297,8 +506,6 @@ function setupCredits() {
             if(tbody) {
                 const rowClass = c.deleted ? "deleted-row" : "border-b hover:bg-gray-50";
                 const actions = (userRole === 'admin' && !c.deleted) ? `<button onclick="deleteClient('${c.id}')" class="text-red-400 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
-                
-                // On échappe les apostrophes dans le nom pour la fonction onclick
                 const safeName = c.nom.replace(/'/g, "\\'");
                 const payBtn = (!c.deleted && c.dette > 0) ? `<button onclick="rembourserClient('${c.id}', ${c.dette}, '${safeName}')" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs mr-2 font-bold">Payer</button>` : '';
 
@@ -320,7 +527,6 @@ function setupCredits() {
         });
     }
 
-    // --- FONCTION CRITIQUE : Remboursement = Nouvelle Vente (Entrée d'argent) ---
     window.rembourserClient = async (id, dette, nomClient) => {
         const m = prompt(`Dette: ${formatPrice(dette)}\nMontant versé :`);
         if(!m) return;
@@ -329,18 +535,15 @@ function setupCredits() {
         
         try {
             const batch = writeBatch(db);
-            
-            // 1. Baisser la dette
             const clientRef = doc(db, "boutiques", currentBoutiqueId, "clients", id);
             batch.update(clientRef, { dette: increment(-montant) });
             
-            // 2. Créer une "Vente" de type REMBOURSEMENT pour la caisse
             const moveRef = doc(collection(db, "boutiques", currentBoutiqueId, "ventes"));
             batch.set(moveRef, {
                 date: serverTimestamp(),
                 total: montant,
                 profit: 0,
-                type: 'remboursement', // Marqueur spécial
+                type: 'remboursement',
                 clientName: nomClient,
                 clientId: id,
                 items: [],
@@ -350,14 +553,13 @@ function setupCredits() {
             
             await batch.commit();
             showToast("Remboursement encaissé !", "success");
-            
         } catch(e) { console.error(e); showToast("Erreur", "error"); }
     };
     
-    window.deleteClient = (id) => { if(confirm("Archiver ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "clients", id), { deleted: true }); };
+    window.deleteClient = (id) => { if(confirm("Archiver ce client ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "clients", id), { deleted: true }); };
 }
 
-// ================= RAPPORTS (AFFICHER REMBOURSEMENTS) =================
+// ================= RAPPORTS =================
 
 function setupReports() {
     if (!currentBoutiqueId) return;
@@ -368,7 +570,9 @@ function setupReports() {
     const dateEnd = document.getElementById('report-date-end');
     const caisseInput = document.getElementById('caisse-initiale-input');
     const btnSaveCaisse = document.getElementById('btn-save-caisse');
-    
+    const searchInput = document.getElementById('reports-search');
+    const sortSelect = document.getElementById('reports-sort');
+
     const now = new Date();
     dateStart.valueAsDate = new Date(now.getFullYear(), now.getMonth(), 1);
     dateEnd.valueAsDate = now;
@@ -387,19 +591,15 @@ function setupReports() {
         const tbody = document.getElementById('reports-table-body');
         tbody.innerHTML = '';
         
-        // Calcul Totaux sur tout ce qui est chargé
         let totalEncaisse = 0; 
         let totalSorties = 0;
 
         loadedTransactions.forEach(t => {
             if(t.isExpense) totalSorties += t.amount;
-            else if (t.isEffectiveEntry) totalEncaisse += t.amount; // Cash + Import + Remboursement
+            else if (t.isEffectiveEntry) totalEncaisse += t.amount; 
         });
 
-        const searchInput = document.getElementById('reports-search');
-        const sortSelect = document.getElementById('reports-sort');
         let filtered = loadedTransactions;
-
         if(searchInput && searchInput.value) {
             const term = searchInput.value.toLowerCase();
             filtered = loadedTransactions.filter(t => t.desc.toLowerCase().includes(term) || t.type.toLowerCase().includes(term));
@@ -421,7 +621,7 @@ function setupReports() {
 
             if (t.isExpense) { classMontant = 'text-red-600 font-bold'; classType = 'text-red-400'; } 
             else if (t.isCreditSale) { classMontant = 'text-orange-400 italic'; classType = 'text-orange-400'; } 
-            else { classMontant = 'text-green-600 font-bold'; classType = 'text-green-600'; } // Cash ou Remb.
+            else { classMontant = 'text-green-600 font-bold'; classType = 'text-green-600'; } 
 
             row.className = "border-b hover:bg-gray-50 transition";
             row.innerHTML = `<td class="p-3 text-xs">${t.date.toLocaleString()}</td><td class="p-3 text-sm text-gray-700">${t.desc}</td><td class="p-3 text-center text-xs font-bold ${classType}">${t.type}</td><td class="p-3 text-right ${!t.isExpense?classMontant:'text-gray-300'}">${!t.isExpense?formatPrice(t.amount):'-'}</td><td class="p-3 text-right ${t.isExpense?classMontant:'text-gray-300'}">${t.isExpense?formatPrice(t.amount):'-'}</td>`;
@@ -430,16 +630,12 @@ function setupReports() {
 
         const caisseInitiale = parseFloat(caisseInput.value) || 0;
         const totalDispo = caisseInitiale + totalEncaisse;
-        
         document.getElementById('report-total-dispo').textContent = formatPrice(totalDispo);
         document.getElementById('report-only-sales').textContent = formatPrice(totalEncaisse);
         document.getElementById('report-total-expenses').textContent = formatPrice(totalSorties);
         document.getElementById('report-balance').textContent = formatPrice(totalDispo - totalSorties);
     };
 
-    // Listeners UI
-    const searchInput = document.getElementById('reports-search');
-    const sortSelect = document.getElementById('reports-sort');
     if(searchInput) searchInput.addEventListener('input', renderReportsTable);
     if(sortSelect) sortSelect.addEventListener('change', renderReportsTable);
 
@@ -467,7 +663,6 @@ function setupReports() {
                 } else {
                     let pList = s.items ? s.items.map(i => `${i.nomDisplay||i.nom} (${i.qty})`).join(', ') : 'Vente';
                     if (s.clientName) desc = `👤 <strong>${s.clientName}</strong> : ` + pList; else desc = pList;
-                    
                     if (s.type === 'credit') {
                         desc += ' <span class="text-xs bg-orange-100 text-orange-600 px-1 rounded">Non Payé</span>';
                         typeLabel = "CRÉDIT";
@@ -499,8 +694,7 @@ function setupReports() {
     observer.observe(document.getElementById('page-rapports'), { attributes: true, attributeFilter: ['class'] });
 }
 
-// ================= VENTES (LOGIQUE) =================
-// (Reste identique à la version précédente, je recolle pour être complet)
+// ================= VENTES =================
 
 async function loadClientsIntoSelect() {
     const select = document.getElementById('credit-client-select');
@@ -550,7 +744,12 @@ async function processSale(type, clientId, clientName) {
             const lineTotal = item.prixVente * item.qty;
             total += lineTotal;
             profit += (item.prixVente - (item.prixAchat || 0)) * item.qty;
-            batch.update(doc(db, "boutiques", currentBoutiqueId, "products", item.id), { stock: increment(-item.qty) });
+            // AJOUTER LES VENTES DANS LE STOCK
+            const pRef = doc(db, "boutiques", currentBoutiqueId, "products", item.id);
+            batch.update(pRef, { 
+                stock: increment(-item.qty),
+                quantiteVendue: increment(item.qty) 
+            });
         }
         if (type === 'credit' && clientId) batch.update(doc(db, "boutiques", currentBoutiqueId, "clients", clientId), { dette: increment(total) });
         batch.set(saleRef, { items: saleCart, total, profit, date: serverTimestamp(), vendeurId: userId, type, clientId: clientId || null, clientName: clientName || null, deleted: false });
@@ -581,188 +780,12 @@ window.updateQty = (i,d) => { const it = saleCart[i]; const st = allProducts.fin
 window.clearCart = () => { if(saleCart.length>0 && confirm("Vider ?")) { saleCart=[]; renderCart(); } };
 
 // ================= ADMIN & STOCK & EXPENSES (Déjà corrects dans versions précédentes) =================
-// ================= STOCK (AVEC MODIFICATION & TRAÇABILITÉ) =================
-
-// ================= STOCK (LIGNE CLIQUABLE + TRAÇABILITÉ) =================
-
-function setupStockManagement() {
-    const stockForm = document.getElementById('form-stock');
-    const editForm = document.getElementById('form-edit-product');
-    const searchInput = document.getElementById('stock-search-input');
-    const sortSelect = document.getElementById('stock-sort-select');
-
-    const renderStockTable = () => {
-        const tbody = document.getElementById('stock-table-body');
-        if(!tbody) return;
-        tbody.innerHTML = '';
-
-        let filteredData = allProducts;
-        if (searchInput && searchInput.value) {
-            const term = searchInput.value.toLowerCase();
-            filteredData = allProducts.filter(p => p.nom.includes(term));
-        }
-
-        if (sortSelect) {
-            const sortType = sortSelect.value;
-            filteredData.sort((a, b) => {
-                if (sortType === 'name_asc') return a.nom.localeCompare(b.nom);
-                if (sortType === 'price_asc') return (a.prixAchat || 0) - (b.prixAchat || 0);
-                if (sortType === 'price_desc') return (b.prixAchat || 0) - (a.prixAchat || 0);
-                if (sortType === 'stock_asc') return a.stock - b.stock;
-                if (sortType === 'stock_desc') return b.stock - a.stock;
-                return 0;
-            });
-        }
-
-        filteredData.forEach(p => {
-            const tr = document.createElement('tr');
-            
-            // 1. Gestion du style (Grisé si archivé)
-            let rowClass = p.deleted ? "deleted-row" : "border-b border-gray-100 transition";
-            
-            // 2. Gestion du Clic sur la ligne (Seulement pour Admin et si non supprimé)
-            let rowAction = "";
-            if (userRole === 'admin' && !p.deleted) {
-                // On encode les données pour les passer à la fonction
-                const productData = encodeURIComponent(JSON.stringify(p));
-                rowAction = `onclick="openEditProduct('${productData}')"`;
-                rowClass += " cursor-pointer hover:bg-blue-50"; // Curseur main + survol bleu
-            }
-
-            // 3. Bouton Supprimer (Avec stopPropagation pour ne pas ouvrir la modale en supprimant)
-            const deleteBtn = (userRole === 'admin' && !p.deleted) 
-                ? `<button class="text-red-500 hover:bg-red-100 p-2 rounded-full transition" 
-                           onclick="event.stopPropagation(); deleteProduct('${p.id}')" 
-                           title="Archiver">
-                       <i data-lucide="trash-2" class="w-4 h-4"></i>
-                   </button>` 
-                : '';
-
-            tr.className = rowClass;
-            
-            // On injecte l'action onclick directement dans la balise <tr>
-            // Note: On n'ajoute l'action que si c'est l'admin (géré par rowAction plus haut)
-            tr.innerHTML = `
-                <td ${rowAction} class="p-4 font-medium text-gray-800">
-                    ${p.nomDisplay || p.nom} 
-                    ${p.deleted ? '<span class="text-xs italic text-gray-400">(Archivé)</span>' : ''}
-                </td>
-                <td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td>
-                <td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td>
-                <td ${rowAction} class="p-4">
-                    <span class="${p.stock < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded-full text-xs font-bold">
-                        ${p.stock}
-                    </span>
-                </td>
-                <td class="p-4 text-right">
-                    ${deleteBtn}
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-        
-        if (window.lucide) window.lucide.createIcons();
-    };
-
-    onSnapshot(collection(db, "boutiques", currentBoutiqueId, "products"), (snap) => {
-        allProducts = [];
-        snap.forEach(docSnap => {
-            const p = { id: docSnap.id, ...docSnap.data() };
-            if (p.deleted && userRole === 'seller') return;
-            allProducts.push(p);
-        });
-        renderStockTable();
-    });
-
-    if(searchInput) searchInput.addEventListener('input', renderStockTable);
-    if(sortSelect) sortSelect.addEventListener('change', renderStockTable);
-
-    if(stockForm) {
-        stockForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "products")), {
-                    nom: document.getElementById('prod-nom').value.toLowerCase(),
-                    nomDisplay: document.getElementById('prod-nom').value,
-                    prixVente: parseFloat(document.getElementById('prod-prix').value)||0,
-                    prixAchat: parseFloat(document.getElementById('prod-achat').value)||0,
-                    stock: parseInt(document.getElementById('prod-qte').value),
-                    createdAt: serverTimestamp(), deleted: false
-                });
-                stockForm.reset(); document.getElementById('add-product-form').classList.add('hidden'); showToast("Produit ajouté");
-            } catch (err) { showToast("Erreur ajout", "error"); }
-        });
-    }
-
-    // --- LOGIQUE DE MODIFICATION (GLOBALISÉE) ---
-    window.openEditProduct = (encodedProduct) => {
-        const p = JSON.parse(decodeURIComponent(encodedProduct));
-        
-        document.getElementById('edit-prod-id').value = p.id;
-        document.getElementById('edit-prod-nom').value = p.nomDisplay;
-        document.getElementById('edit-prod-achat').value = p.prixAchat;
-        document.getElementById('edit-prod-vente').value = p.prixVente;
-        document.getElementById('edit-prod-stock').value = p.stock;
-        
-        const form = document.getElementById('form-edit-product');
-        form.dataset.oldAchat = p.prixAchat;
-        form.dataset.oldVente = p.prixVente;
-        form.dataset.oldStock = p.stock;
-
-        document.getElementById('edit-product-modal').classList.remove('hidden');
-    };
-
-    if(editForm) {
-        editForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('edit-prod-id').value;
-            const nom = document.getElementById('edit-prod-nom').value;
-            const newAchat = parseFloat(document.getElementById('edit-prod-achat').value) || 0;
-            const newVente = parseFloat(document.getElementById('edit-prod-vente').value) || 0;
-            const newStock = parseInt(document.getElementById('edit-prod-stock').value) || 0;
-
-            const oldAchat = parseFloat(editForm.dataset.oldAchat) || 0;
-            const oldVente = parseFloat(editForm.dataset.oldVente) || 0;
-
-            try {
-                const batch = writeBatch(db);
-                const prodRef = doc(db, "boutiques", currentBoutiqueId, "products", id);
-                
-                batch.update(prodRef, {
-                    prixAchat: newAchat,
-                    prixVente: newVente,
-                    stock: newStock,
-                    lastModified: serverTimestamp()
-                });
-
-                if (newAchat !== oldAchat || newVente !== oldVente) {
-                    const traceRef = doc(collection(db, "boutiques", currentBoutiqueId, "historique_prix"));
-                    batch.set(traceRef, {
-                        productId: id,
-                        productName: nom,
-                        oldAchat: oldAchat, newAchat: newAchat,
-                        oldVente: oldVente, newVente: newVente,
-                        user: userId, date: serverTimestamp()
-                    });
-                }
-
-                await batch.commit();
-                showToast("Modifié avec succès", "success");
-                document.getElementById('edit-product-modal').classList.add('hidden');
-            } catch (err) { console.error(err); showToast("Erreur modification", "error"); }
-        });
-    }
-    
-    window.deleteProduct = (id) => { 
-        if(confirm("Archiver ce produit ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "products", id), { deleted: true }); 
-    };
-}
-function setupExpenses() { const form = document.getElementById('form-expense'); onSnapshot(collection(db, "boutiques", currentBoutiqueId, "expenses"), (snap) => { const tbody = document.getElementById('expenses-table-body'); if(tbody) tbody.innerHTML = ''; snap.forEach(d => { const ex = { id: d.id, ...d.data() }; if (ex.deleted && userRole === 'seller') return; if(tbody) { const rowClass = ex.deleted ? "deleted-row" : "border-b"; const deleteBtn = (userRole === 'admin' && !ex.deleted) ? `<button onclick="deleteExp('${ex.id}')" class="text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''; tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4 text-sm">${new Date(ex.date?.seconds*1000).toLocaleDateString()}</td><td class="p-4 font-medium">${ex.motif}</td><td class="p-4 text-right font-bold text-red-600">-${formatPrice(ex.montant)}</td><td class="p-4 text-right">${deleteBtn}</td></tr>`; } }); if (window.lucide) window.lucide.createIcons(); }); if(form) { form.addEventListener('submit', async (e) => { e.preventDefault(); try { await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "expenses")), { motif: document.getElementById('exp-motif').value, montant: parseFloat(document.getElementById('exp-montant').value), date: serverTimestamp(), user: userId, deleted: false }); form.reset(); showToast("Dépense ajoutée"); } catch(e) { showToast("Erreur", "error"); } }); } window.deleteExp = (id) => { if(confirm("Annuler dépense ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "expenses", id), { deleted: true }); }; }
+function setupExpenses() { const form = document.getElementById('form-expense'); const searchInput = document.getElementById('expenses-search'); const sortSelect = document.getElementById('expenses-sort'); const renderTable = () => { const tbody = document.getElementById('expenses-table-body'); if(!tbody) return; tbody.innerHTML = ''; let filtered = allExpenses; if (searchInput && searchInput.value) { const term = searchInput.value.toLowerCase(); filtered = allExpenses.filter(e => e.motif.toLowerCase().includes(term)); } if (sortSelect) { const sort = sortSelect.value; filtered.sort((a, b) => { const dateA = a.date?.seconds || 0; const dateB = b.date?.seconds || 0; if(sort === 'date_desc') return dateB - dateA; if(sort === 'date_asc') return dateA - dateB; if(sort === 'amount_desc') return b.montant - a.montant; return 0; }); } filtered.forEach(ex => { const rowClass = ex.deleted ? "deleted-row" : "border-b hover:bg-gray-50 transition"; const deleteBtn = (userRole === 'admin' && !ex.deleted) ? `<button onclick="deleteExp('${ex.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''; tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4 text-sm text-gray-500">${new Date(ex.date?.seconds*1000).toLocaleDateString()}</td><td class="p-4 font-medium text-gray-800">${ex.motif}</td><td class="p-4 text-right font-bold text-red-600">-${formatPrice(ex.montant)}</td><td class="p-4 text-right">${deleteBtn}</td></tr>`; }); if (window.lucide) window.lucide.createIcons(); }; let allExpenses = []; onSnapshot(collection(db, "boutiques", currentBoutiqueId, "expenses"), (snap) => { allExpenses = []; snap.forEach(d => { const ex = { id: d.id, ...d.data() }; if (ex.deleted && userRole === 'seller') return; allExpenses.push(ex); }); renderTable(); }); if(searchInput) searchInput.addEventListener('input', renderTable); if(sortSelect) sortSelect.addEventListener('change', renderTable); if(form) { form.addEventListener('submit', async (e) => { e.preventDefault(); try { await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "expenses")), { motif: document.getElementById('exp-motif').value, montant: parseFloat(document.getElementById('exp-montant').value), date: serverTimestamp(), user: userId, deleted: false }); form.reset(); showToast("Dépense ajoutée"); } catch(e) { showToast("Erreur", "error"); } }); } window.deleteExp = (id) => { if(confirm("Annuler dépense ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "expenses", id), { deleted: true }); }; }
 function setupAdminFeatures() { const f = document.getElementById('create-boutique-form'); document.getElementById('open-admin-modal')?.addEventListener('click', () => document.getElementById('admin-modal').classList.remove('hidden')); document.getElementById('admin-modal-close-btn')?.addEventListener('click', () => document.getElementById('admin-modal').classList.add('hidden')); if(f) f.addEventListener('submit', async (e) => { e.preventDefault(); try { const secApp = initializeApp(firebaseConfig, "Sec"); const secAuth = getAuth(secApp); const ref = doc(collection(db, "boutiques")); await setDoc(ref, { nom: document.getElementById('new-boutique-name').value, createdAt: serverTimestamp(), createdBy: userId }); const adm = await createUserWithEmailAndPassword(secAuth, document.getElementById('admin-email').value, document.getElementById('admin-password').value); await setDoc(doc(db, "users", adm.user.uid), { email: document.getElementById('admin-email').value, role: 'admin', boutiqueId: ref.id, boutiqueName: document.getElementById('new-boutique-name').value }); await signOut(secAuth); const sell = await createUserWithEmailAndPassword(secAuth, document.getElementById('seller-email').value, document.getElementById('seller-password').value); await setDoc(doc(db, "users", sell.user.uid), { email: document.getElementById('seller-email').value, role: 'seller', boutiqueId: ref.id, boutiqueName: document.getElementById('new-boutique-name').value }); await signOut(secAuth); showToast("Créé !"); f.reset(); document.getElementById('admin-modal').classList.add('hidden'); loadBoutiquesList(); loadShopsForImport(); } catch(err) { showToast(err.message, "error"); } }); }
 async function loadBoutiquesList() { const l = await getAvailableBoutiques(); const d = document.getElementById('admin-boutiques-list'); if(d) d.innerHTML = l.map(b => `<div class="p-2 border-b">${b.nom}</div>`).join(''); }
 async function loadShopsForImport() { const s = document.getElementById('import-target-shop'); if(!s) return; const l = await getAvailableBoutiques(); s.innerHTML = '<option value="">-- Choisir --</option>'; l.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.nom; s.appendChild(o); }); }
 window.processImport = async function(n) { const id = document.getElementById('import-target-shop').value; if(!id) return showToast("Boutique?", "error"); const f = document.getElementById(n==='products'?'csv-stock':n==='clients'?'csv-clients':n==='expenses'?'csv-expenses':'csv-sales').files[0]; if(!f) return showToast("Fichier?", "error"); Papa.parse(f, { header: true, skipEmptyLines: true, complete: async (r) => { if(confirm(`Importer ${r.data.length}?`)) await uploadBatchData(id, n, r.data); } }); };
-async function uploadBatchData(id, n, d) { const b = writeBatch(db); let c = 0; for(const r of d) { const ref = doc(collection(db, "boutiques", id, n)); let o = {}; try { if(n==='products') { let pv = parseFloat(r.PrixVente?.replace(',', '.'))||0; let pa = parseFloat(r.PrixAchat?.replace(',', '.'))||0; o = { nom: r.Nom?.toLowerCase()||'inc', nomDisplay: r.Nom||'Inc', prixVente: pv, prixAchat: pa, stock: parseInt(r.Quantite)||0, createdAt: serverTimestamp(), deleted: false }; } else if(n==='clients') o = { nom: r.Nom||'Inc', telephone: r.Telephone||'', dette: parseFloat(r.Dette)||0, createdAt: serverTimestamp(), deleted: false }; else if(n==='expenses') o = { date: r.Date?new Date(r.Date):serverTimestamp(), motif: r.Motif||'Imp', montant: parseFloat(r.Montant)||0, user: userId, deleted: false }; else if(n==='ventes') { const q = parseInt(r.Quantite)||1; const p = parseFloat(r.PrixUnitaire||r.Total)||0; o = { date: r.Date?new Date(r.Date):serverTimestamp(), total: q*p, profit: parseFloat(r.Profit)||0, items:[{ id:'imp', nom: r.Produit?.toLowerCase()||'imp', nomDisplay: r.Produit||'Imp', qty: q, prixVente: p, prixAchat: 0 }], type:'cash_import', vendeurId:'imp', deleted: false }; } b.set(ref, o); c++; if(c%450===0){ await b.commit(); b = writeBatch(db); } } catch(e){} } if(c%450!==0) await b.commit(); showToast(`Importé ${c}`); }
+async function uploadBatchData(id, n, d) { const b = writeBatch(db); let c = 0; for(const r of d) { const ref = doc(collection(db, "boutiques", id, n)); let o = {}; try { if(n==='products') { let pv = parseFloat(r.PrixVente?.replace(',', '.'))||0; let pa = parseFloat(r.PrixAchat?.replace(',', '.'))||0; o = { nom: r.Nom?.toLowerCase()||'inc', nomDisplay: r.Nom||'Inc', prixVente: pv, prixAchat: pa, stock: parseInt(r.Quantite)||0, quantiteVendue: 0, createdAt: serverTimestamp(), deleted: false }; } else if(n==='clients') o = { nom: r.Nom||'Inc', telephone: r.Telephone||'', dette: parseFloat(r.Dette)||0, createdAt: serverTimestamp(), deleted: false }; else if(n==='expenses') o = { date: r.Date?new Date(r.Date):serverTimestamp(), motif: r.Motif||'Imp', montant: parseFloat(r.Montant)||0, user: userId, deleted: false }; else if(n==='ventes') { const q = parseInt(r.Quantite)||1; const p = parseFloat(r.PrixUnitaire||r.Total)||0; o = { date: r.Date?new Date(r.Date):serverTimestamp(), total: q*p, profit: parseFloat(r.Profit)||0, items:[{ id:'imp', nom: r.Produit?.toLowerCase()||'imp', nomDisplay: r.Produit||'Imp', qty: q, prixVente: p, prixAchat: 0 }], type:'cash_import', vendeurId:'imp', deleted: false }; } b.set(ref, o); c++; if(c%450===0){ await b.commit(); b = writeBatch(db); } } catch(e){} } if(c%450!==0) await b.commit(); showToast(`Importé ${c}`); }
 
 // Fonctions UI
 window.switchTab = function(n) { document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden')); document.getElementById(`page-${n}`).classList.remove('hidden'); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelector(`.tab[onclick="switchTab('${n}')"]`).classList.add('active'); };
