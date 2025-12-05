@@ -1,31 +1,12 @@
-// ===============================================
-// SCRIPT: GESTION BOUTIQUE V5 (VERSION FINALE COMPLETE)
+// SCRIPT: GESTION BOUTIQUE V6 (CONNEXION AUTOMATIQUE)
 // ===============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { 
-    getAuth, 
-    onAuthStateChanged, 
-    signInWithEmailAndPassword, 
-    signOut,
-    createUserWithEmailAndPassword,
-    sendPasswordResetEmail
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
 import { 
-    getFirestore, 
-    setDoc, 
-    doc, 
-    collection, 
-    onSnapshot, 
-    updateDoc, 
-    writeBatch, 
-    serverTimestamp, 
-    increment, 
-    deleteDoc, 
-    getDocs, 
-    getDoc, 
-    setLogLevel 
+    getFirestore, setDoc, doc, collection, onSnapshot, updateDoc, writeBatch, serverTimestamp, increment, deleteDoc, getDocs, getDoc, setLogLevel 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -55,27 +36,15 @@ async function main() {
     setupAuthListener();
     setupAdminFeatures();
     setupModalListeners();
-    await updateBoutiqueSelector();
+    // On a supprimé updateBoutiqueSelector() ici car on ne choisit plus la boutique au login
 }
 
+// Cette fonction sert maintenant UNIQUEMENT pour le Super Admin (Import CSV / Liste)
 async function getAvailableBoutiques() {
     const s = await getDocs(collection(db, "boutiques"));
     const b = [];
     s.forEach(d => b.push({id: d.id, ...d.data()}));
     return b;
-}
-
-async function updateBoutiqueSelector() {
-    const select = document.getElementById('login-boutique');
-    if(!select) return;
-    const boutiques = await getAvailableBoutiques();
-    select.innerHTML = '<option value="">Sélectionnez une boutique</option>';
-    boutiques.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b.id;
-        opt.textContent = b.nom;
-        select.appendChild(opt);
-    });
 }
 
 function setupLoginForm() {
@@ -84,7 +53,6 @@ function setupLoginForm() {
     const errorText = document.getElementById('login-error-text');
     const forgotLink = document.getElementById('forgot-password-link');
 
-    // Login Submit
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorBox.classList.add('hidden');
@@ -93,6 +61,7 @@ function setupLoginForm() {
 
         try {
             await signInWithEmailAndPassword(auth, email, pass);
+            // La redirection se fera automatiquement dans setupAuthListener
         } catch (error) {
             console.error("Erreur Auth:", error.code);
             let message = "Erreur de connexion.";
@@ -112,10 +81,8 @@ function setupLoginForm() {
         }
     });
 
-    // Logout
     document.getElementById('bottom-logout-btn').addEventListener('click', () => signOut(auth));
 
-    // Mot de passe oublié
     if(forgotLink) {
         forgotLink.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -136,18 +103,27 @@ function setupAuthListener() {
         if (user) {
             userId = user.uid;
             try {
-                // Check Super Admin
+                // 1. EST-CE UN SUPER ADMIN ?
                 const superAdminDoc = await getDoc(doc(db, "super_admins", userId));
                 if (superAdminDoc.exists()) {
                     showSuperAdminInterface();
                     return;
                 }
-                // Check User Boutique
+
+                // 2. EST-CE UN UTILISATEUR DE BOUTIQUE ?
                 const userDoc = await getDoc(doc(db, "users", userId));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
+                    
+                    // DÉTECTION AUTOMATIQUE DE LA BOUTIQUE
                     currentBoutiqueId = data.boutiqueId;
                     userRole = data.role;
+
+                    if (!currentBoutiqueId) {
+                        showToast("Erreur: Aucune boutique associée à ce compte.", "error");
+                        await signOut(auth);
+                        return;
+                    }
                     
                     document.getElementById('dashboard-user-name').textContent = `${data.boutiqueName}`;
                     document.getElementById('admin-tab-btn').classList.add('hidden'); 
@@ -156,26 +132,25 @@ function setupAuthListener() {
                     document.getElementById('app-container').classList.remove('hidden');
                     document.getElementById('top-nav-bar').classList.remove('hidden');
                     
-                    // --- GESTION DES DROITS VENDEUR ---
+                    // Gestion des droits
                     showAllTabs(); 
-                    
                     if (userRole === 'seller') {
-                        // Le vendeur ne voit PAS Dashboard et Admin
                         hideTab('dashboard');
                         hideTab('admin');
                         switchTab('ventes');
                     } else {
-                        // Admin Boutique (Propriétaire) voit tout sauf Admin
                         hideTab('admin');
                         switchTab('dashboard');
                     }
                     initializeApplication();
                 } else {
-                    showToast("Compte inconnu", "error");
+                    // Utilisateur authentifié mais pas dans la table 'users'
+                    showToast("Compte utilisateur non configuré.", "error");
                     await signOut(auth);
                 }
             } catch (err) { console.error(err); }
         } else {
+            // Déconnexion
             document.getElementById('auth-container').classList.remove('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('top-nav-bar').classList.add('hidden');
@@ -216,20 +191,24 @@ function setupDashboard() {
     let totalDepenses = 0;
     let caisseInitiale = 0;
 
-    const updateDashboardTotals = () => {
-        // FORMULE TRÉSORERIE : (Caisse Init + Ventes Cash + Remboursements) - Dépenses
-        const beneficeReel = (caisseInitiale + totalVentesEncaissees) - totalDepenses;
+    // 1. Écouteur INFOS BOUTIQUE (Caisse + Logo)
+    onSnapshot(doc(db, "boutiques", currentBoutiqueId), (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            caisseInitiale = data.caisseInitiale || 0;
+            
+            // GESTION DU LOGO
+            const logoImg = document.getElementById('dash-shop-logo');
+            if (data.logo) {
+                logoImg.src = data.logo;
+                logoImg.classList.remove('hidden'); // On affiche l'image
+            } else {
+                logoImg.classList.add('hidden'); // On cache si pas de logo
+            }
 
-        if(document.getElementById('dash-caisse-initiale')) document.getElementById('dash-caisse-initiale').textContent = formatPrice(caisseInitiale);
-        if(document.getElementById('dash-total-sales')) document.getElementById('dash-total-sales').textContent = formatPrice(totalVentesEncaissees);
-        if(document.getElementById('dash-total-expenses')) document.getElementById('dash-total-expenses').textContent = formatPrice(totalDepenses);
-        
-        if(document.getElementById('dash-total-profit')) {
-            const elProfit = document.getElementById('dash-total-profit');
-            elProfit.textContent = formatPrice(beneficeReel);
-            elProfit.className = `text-2xl font-bold ${beneficeReel < 0 ? 'text-red-600' : 'text-green-600'}`;
+            updateDashboardTotals();
         }
-    };
+    });
 
     onSnapshot(doc(db, "boutiques", currentBoutiqueId), (doc) => {
         caisseInitiale = doc.data()?.caisseInitiale || 0;
@@ -811,9 +790,176 @@ window.updateItemPrice = (i,v) => { let p = parseFloat(v); if(p<0||isNaN(p)) ret
 window.updateQty = (i,d) => { const it = saleCart[i]; const st = allProducts.find(p => p.id===it.id)?.stock||0; if(d>0 && it.qty>=st) return showToast("Stock max", "error"); it.qty+=d; if(it.qty<=0) saleCart.splice(i,1); renderCart(); };
 window.clearCart = () => { if(saleCart.length>0 && confirm("Vider ?")) { saleCart=[]; renderCart(); } };
 
+// ================= MISE À JOUR LOGO (EXISTANT) =================
+
+// 1. Fonction utilitaire de conversion (si pas déjà présente dans votre code)
+const convertBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+};
+
+// 2. Fonction déclenchée par le bouton
+window.processLogoUpdate = async function() {
+    // On récupère l'ID de la boutique sélectionnée dans le menu déroulant existant
+    const shopId = document.getElementById('import-target-shop').value;
+    
+    if (!shopId) {
+        return showToast("Veuillez d'abord sélectionner une boutique dans la liste ci-dessus.", "error");
+    }
+
+    const fileInput = document.getElementById('file-logo-update');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        return showToast("Veuillez choisir un fichier image.", "error");
+    }
+
+    // Vérification taille (Important pour Firestore)
+    if (file.size > 100000) { // 100 Ko
+        return showToast("Image trop lourde ! Max 100 Ko.", "error");
+    }
+
+    try {
+        showToast("Mise à jour du logo en cours...", "warning");
+        
+        // Conversion
+        const base64String = await convertBase64(file);
+
+        // Mise à jour dans la base de données
+        const shopRef = doc(db, "boutiques", shopId);
+        await updateDoc(shopRef, {
+            logo: base64String
+        });
+
+        showToast("Logo mis à jour avec succès !", "success");
+        fileInput.value = ''; // Reset du champ
+
+        // Si on est connecté sur cette boutique, on met à jour l'affichage tout de suite
+        if (currentBoutiqueId === shopId) {
+             const logoImg = document.getElementById('dash-shop-logo');
+             if(logoImg) {
+                 logoImg.src = base64String;
+                 logoImg.classList.remove('hidden');
+             }
+        }
+
+    } catch (error) {
+        console.error(error);
+        showToast("Erreur lors de la mise à jour.", "error");
+    }
+};
+
 // ================= ADMIN & STOCK & EXPENSES (Déjà corrects dans versions précédentes) =================
 function setupExpenses() { const form = document.getElementById('form-expense'); const searchInput = document.getElementById('expenses-search'); const sortSelect = document.getElementById('expenses-sort'); const renderTable = () => { const tbody = document.getElementById('expenses-table-body'); if(!tbody) return; tbody.innerHTML = ''; let filtered = allExpenses; if (searchInput && searchInput.value) { const term = searchInput.value.toLowerCase(); filtered = allExpenses.filter(e => e.motif.toLowerCase().includes(term)); } if (sortSelect) { const sort = sortSelect.value; filtered.sort((a, b) => { const dateA = a.date?.seconds || 0; const dateB = b.date?.seconds || 0; if(sort === 'date_desc') return dateB - dateA; if(sort === 'date_asc') return dateA - dateB; if(sort === 'amount_desc') return b.montant - a.montant; return 0; }); } filtered.forEach(ex => { const rowClass = ex.deleted ? "deleted-row" : "border-b hover:bg-gray-50 transition"; const deleteBtn = (userRole === 'admin' && !ex.deleted) ? `<button onclick="deleteExp('${ex.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''; tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4 text-sm text-gray-500">${new Date(ex.date?.seconds*1000).toLocaleDateString()}</td><td class="p-4 font-medium text-gray-800">${ex.motif}</td><td class="p-4 text-right font-bold text-red-600">-${formatPrice(ex.montant)}</td><td class="p-4 text-right">${deleteBtn}</td></tr>`; }); if (window.lucide) window.lucide.createIcons(); }; let allExpenses = []; onSnapshot(collection(db, "boutiques", currentBoutiqueId, "expenses"), (snap) => { allExpenses = []; snap.forEach(d => { const ex = { id: d.id, ...d.data() }; if (ex.deleted && userRole === 'seller') return; allExpenses.push(ex); }); renderTable(); }); if(searchInput) searchInput.addEventListener('input', renderTable); if(sortSelect) sortSelect.addEventListener('change', renderTable); if(form) { form.addEventListener('submit', async (e) => { e.preventDefault(); try { await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "expenses")), { motif: document.getElementById('exp-motif').value, montant: parseFloat(document.getElementById('exp-montant').value), date: serverTimestamp(), user: userId, deleted: false }); form.reset(); showToast("Dépense ajoutée"); } catch(e) { showToast("Erreur", "error"); } }); } window.deleteExp = (id) => { if(confirm("Annuler dépense ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "expenses", id), { deleted: true }); }; }
-function setupAdminFeatures() { const f = document.getElementById('create-boutique-form'); document.getElementById('open-admin-modal')?.addEventListener('click', () => document.getElementById('admin-modal').classList.remove('hidden')); document.getElementById('admin-modal-close-btn')?.addEventListener('click', () => document.getElementById('admin-modal').classList.add('hidden')); if(f) f.addEventListener('submit', async (e) => { e.preventDefault(); try { const secApp = initializeApp(firebaseConfig, "Sec"); const secAuth = getAuth(secApp); const ref = doc(collection(db, "boutiques")); await setDoc(ref, { nom: document.getElementById('new-boutique-name').value, createdAt: serverTimestamp(), createdBy: userId }); const adm = await createUserWithEmailAndPassword(secAuth, document.getElementById('admin-email').value, document.getElementById('admin-password').value); await setDoc(doc(db, "users", adm.user.uid), { email: document.getElementById('admin-email').value, role: 'admin', boutiqueId: ref.id, boutiqueName: document.getElementById('new-boutique-name').value }); await signOut(secAuth); const sell = await createUserWithEmailAndPassword(secAuth, document.getElementById('seller-email').value, document.getElementById('seller-password').value); await setDoc(doc(db, "users", sell.user.uid), { email: document.getElementById('seller-email').value, role: 'seller', boutiqueId: ref.id, boutiqueName: document.getElementById('new-boutique-name').value }); await signOut(secAuth); showToast("Créé !"); f.reset(); document.getElementById('admin-modal').classList.add('hidden'); loadBoutiquesList(); loadShopsForImport(); } catch(err) { showToast(err.message, "error"); } }); }
+function setupAdminFeatures() {
+    const form = document.getElementById('create-boutique-form');
+    
+    // Gestion des boutons d'ouverture/fermeture
+    document.getElementById('open-admin-modal')?.addEventListener('click', () => document.getElementById('admin-modal').classList.remove('hidden'));
+    document.getElementById('admin-modal-close-btn')?.addEventListener('click', () => document.getElementById('admin-modal').classList.add('hidden'));
+
+    if(form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Récupération des champs texte
+            const nomBoutique = document.getElementById('new-boutique-name').value;
+            const adminEmail = document.getElementById('admin-email').value;
+            const adminPass = document.getElementById('admin-password').value;
+            const sellerEmail = document.getElementById('seller-email').value;
+            const sellerPass = document.getElementById('seller-password').value;
+            
+            // Récupération du fichier logo
+            const logoInput = document.getElementById('new-boutique-logo');
+            const logoFile = logoInput ? logoInput.files[0] : null;
+
+            // Validation Mot de passe
+            if(adminPass.length < 6 || sellerPass.length < 6) {
+                return showToast("Les mots de passe doivent faire 6 caractères min.", "error");
+            }
+
+            showToast("Création en cours...", "warning");
+
+            try {
+                // 1. TRAITEMENT DU LOGO (Si présent)
+                let logoString = null;
+                if (logoFile) {
+                    // Vérification taille (Max 100Ko environ pour ne pas surcharger Firestore)
+                    if (logoFile.size > 100000) { 
+                        return showToast("Logo trop lourd ! Utilisez une image < 100 Ko.", "error");
+                    }
+                    // Conversion en texte
+                    logoString = await convertBase64(logoFile);
+                }
+
+                // 2. CRÉATION VIA INSTANCE SECONDAIRE (Pour ne pas déconnecter le Super Admin)
+                const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+                const secondaryAuth = getAuth(secondaryApp);
+
+                // 3. Création de la Boutique dans Firestore
+                const boutiqueRef = doc(collection(db, "boutiques"));
+                const boutiqueId = boutiqueRef.id;
+                
+                await setDoc(boutiqueRef, { 
+                    nom: nomBoutique, 
+                    logo: logoString, // <--- Le logo est enregistré ici
+                    createdAt: serverTimestamp(), 
+                    createdBy: userId 
+                });
+
+                // 4. Création du compte PROPRIÉTAIRE
+                try {
+                    const ownerCred = await createUserWithEmailAndPassword(secondaryAuth, adminEmail, adminPass);
+                    await setDoc(doc(db, "users", ownerCred.user.uid), {
+                        email: adminEmail,
+                        role: 'admin',
+                        boutiqueId: boutiqueId,
+                        boutiqueName: nomBoutique,
+                        createdAt: serverTimestamp()
+                    });
+                    await signOut(secondaryAuth); // Déconnexion session secondaire
+                } catch (err) {
+                    throw new Error("Erreur création Propriétaire: " + err.message);
+                }
+
+                // 5. Création du compte VENDEUR
+                try {
+                    const sellerCred = await createUserWithEmailAndPassword(secondaryAuth, sellerEmail, sellerPass);
+                    await setDoc(doc(db, "users", sellerCred.user.uid), {
+                        email: sellerEmail,
+                        role: 'seller',
+                        boutiqueId: boutiqueId,
+                        boutiqueName: nomBoutique,
+                        createdAt: serverTimestamp()
+                    });
+                    await signOut(secondaryAuth); // Déconnexion session secondaire
+                } catch (err) {
+                    throw new Error("Erreur création Vendeur: " + err.message);
+                }
+
+                // 6. Finalisation
+                showToast(`Boutique "${nomBoutique}" créée avec succès !`, "success");
+                form.reset();
+                if(logoInput) logoInput.value = ''; // Reset du champ fichier
+                document.getElementById('admin-modal').classList.add('hidden');
+                
+                // Rafraîchir les listes
+                loadBoutiquesList();
+                loadShopsForImport();
+
+            } catch (err) {
+                console.error(err);
+                let msg = err.message;
+                if(msg.includes("email-already-in-use")) msg = "Cet email est déjà utilisé !";
+                showToast(msg, "error");
+            }
+        });
+    }
+}
 async function loadBoutiquesList() { const l = await getAvailableBoutiques(); const d = document.getElementById('admin-boutiques-list'); if(d) d.innerHTML = l.map(b => `<div class="p-2 border-b">${b.nom}</div>`).join(''); }
 async function loadShopsForImport() { const s = document.getElementById('import-target-shop'); if(!s) return; const l = await getAvailableBoutiques(); s.innerHTML = '<option value="">-- Choisir --</option>'; l.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.nom; s.appendChild(o); }); }
 window.processImport = async function(n) { const id = document.getElementById('import-target-shop').value; if(!id) return showToast("Boutique?", "error"); const f = document.getElementById(n==='products'?'csv-stock':n==='clients'?'csv-clients':n==='expenses'?'csv-expenses':'csv-sales').files[0]; if(!f) return showToast("Fichier?", "error"); Papa.parse(f, { header: true, skipEmptyLines: true, complete: async (r) => { if(confirm(`Importer ${r.data.length}?`)) await uploadBatchData(id, n, r.data); } }); };
@@ -828,5 +974,6 @@ function showToast(m, t="success") { const c = document.getElementById("toast-co
 function formatPrice(p) { return (parseFloat(p)||0).toLocaleString('fr-FR') + ' CFA'; }
 function showConfirmModal(t, x, a) { document.getElementById('confirm-modal-title').textContent = t; document.getElementById('confirm-modal-text').textContent = x; actionToConfirm = a; document.getElementById('confirm-modal').classList.remove('hidden'); }
 function setupModalListeners() { document.getElementById('modal-cancel-btn').addEventListener('click', ()=>document.getElementById('confirm-modal').classList.add('hidden')); document.getElementById('modal-confirm-btn').addEventListener('click', ()=>{ if(actionToConfirm) actionToConfirm(); document.getElementById('confirm-modal').classList.add('hidden'); }); document.getElementById('admin-modal-close-btn').addEventListener('click', ()=>document.getElementById('admin-modal').classList.add('hidden')); }
+
 
 main();

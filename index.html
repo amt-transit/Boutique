@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion de Boutique</title>
+    <link rel="icon" type="image/png" href="favico.png">
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -17,37 +18,40 @@
     <div id="auth-container" class="fixed inset-0 bg-gray-200 flex items-center justify-center z-[100] p-4">
         <div class="w-full max-w-md p-6 md:p-8 bg-white rounded-xl shadow-2xl">
             <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Ma Boutique</h1>
-            <form id="login-form" class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-700">Se Connecter</h2>
-                
-                <div class="boutique-selector">
-                    <label for="login-boutique">Boutique</label>
-                    <select id="login-boutique" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg bg-gray-50">
-                        <option value="">Chargement...</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="text-sm font-medium text-gray-600 block mb-2">Email</label>
-                    <input type="email" id="login-email" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
+            <form id="login-form" class="space-y-6">
+                <div class="text-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Connexion</h2>
+                    <p class="text-sm text-gray-500">Entrez vos identifiants pour accéder à votre boutique.</p>
                 </div>
 
                 <div>
-                    <label class="text-sm font-medium text-gray-600 block mb-2">Mot de passe</label>
-                    <input type="password" id="login-password" class="w-full p-3 text-sm border-2 border-gray-300 rounded-lg" required>
-                    <div class="text-right mt-1">
-                        <a href="#" id="forgot-password-link" class="text-xs text-blue-600 hover:text-blue-800 hover:underline">
+                    <label class="text-sm font-bold text-gray-700 block mb-2">Email</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                        <input type="email" id="login-email" class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="exemple@boutique.com" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-bold text-gray-700 block mb-2">Mot de passe</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                        <input type="password" id="login-password" class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••" required>
+                    </div>
+                    <div class="text-right mt-2">
+                        <a href="#" id="forgot-password-link" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                             Mot de passe oublié ?
                         </a>
                     </div>
                 </div>
 
-                <div id="login-error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                    <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
-                    <span id="login-error-text">Une erreur est survenue.</span>
+                <div id="login-error-msg" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded text-sm flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    <span id="login-error-text">Erreur.</span>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg text-sm transition shadow-md">
-                    Connexion
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-5 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+                    Se connecter
                 </button>
             </form>
         </div>
@@ -61,6 +65,10 @@
             </div>
             <form id="create-boutique-form" class="space-y-4">
                 <input type="text" id="new-boutique-name" class="w-full p-3 border-2 border-gray-300 rounded-lg" placeholder="Nom de la boutique" required>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Logo (Petit fichier &lt; 100ko)</label>
+                    <input type="file" id="new-boutique-logo" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
                         <h4 class="text-sm font-bold text-blue-800 mb-2">Propriétaire</h4>
@@ -112,7 +120,11 @@
 
             <div id="page-dashboard" class="page-content">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800">Tableau de Bord</h1>
+                    <div class="flex items-center gap-3">
+                        <img id="dash-shop-logo" src="" alt="Logo" class="w-12 h-12 object-contain rounded-lg bg-white p-1 shadow-sm hidden">
+                        
+                        <h1 class="text-2xl font-bold text-gray-800">Tableau de Bord</h1>
+                    </div>
                     <span id="dashboard-user-name" class="text-sm bg-white px-3 py-1 rounded-full shadow-sm text-gray-500"></span>
                 </div>
                 
@@ -422,7 +434,19 @@
             <div id="page-admin" class="page-content hidden">
                 <h1 class="text-2xl font-bold mb-6">Super Admin</h1>
                 <div class="bg-white p-6 rounded-xl shadow mb-8"><h2 class="text-lg font-bold text-gray-700 mb-4">1. Gestion des Boutiques</h2><button id="open-admin-modal" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 flex items-center gap-2"><i data-lucide="plus"></i> Créer une Boutique</button><div id="admin-boutiques-list" class="space-y-2 border-t pt-4"></div></div>
-                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500"><h2 class="text-lg font-bold text-gray-700 mb-2">2. Importation de Données</h2><div class="mb-6"><label class="block text-sm font-bold text-gray-700 mb-1">Boutique Cible</label><select id="import-target-shop" class="w-full p-3 border-2 border-green-200 rounded-lg bg-green-50 focus:ring-green-500"><option value="">-- Choisir la boutique --</option></select></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="package" class="text-blue-600"></i> Importer Stock</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Nom, PrixVente, PrixAchat, Quantite<br><span class="text-orange-500 font-bold">* Prix facultatifs</span></p><input type="file" id="csv-stock" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/><button onclick="processImport('products')" class="mt-2 w-full bg-blue-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="users" class="text-orange-600"></i> Importer Clients</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Nom, Telephone, Dette</p><input type="file" id="csv-clients" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/><button onclick="processImport('clients')" class="mt-2 w-full bg-orange-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="credit-card" class="text-red-600"></i> Importer Charges</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Date, Motif, Montant</p><input type="file" id="csv-expenses" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/><button onclick="processImport('expenses')" class="mt-2 w-full bg-red-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="shopping-cart" class="text-green-600"></i> Importer Ventes</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Date, Produit, Quantite, PrixUnitaire, Profit<br><span class="text-blue-600 font-bold">* Total calculé auto</span></p><input type="file" id="csv-sales" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/><button onclick="processImport('ventes')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div></div></div>
+                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500"><h2 class="text-lg font-bold text-gray-700 mb-2">2. Importation de Données</h2><div class="mb-6"><label class="block text-sm font-bold text-gray-700 mb-1">Boutique Cible</label><select id="import-target-shop" class="w-full p-3 border-2 border-green-200 rounded-lg bg-green-50 focus:ring-green-500"><option value="">-- Choisir la boutique --</option></select></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="border rounded-lg p-4 hover:bg-purple-50 transition border-purple-100">
+                            <h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2">
+                                <i data-lucide="image" class="text-purple-600"></i> Logo Boutique
+                            </h3>
+                            <p class="text-xs text-gray-400 mb-3">
+                                Met à jour le logo de la boutique sélectionnée.<br>
+                                <span class="text-purple-600 font-bold">Max 100 Ko (Image petite)</span>
+                            </p>
+                            <input type="file" id="file-logo-update" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/>
+                            <button onclick="processLogoUpdate()" class="mt-2 w-full bg-purple-600 text-white text-xs font-bold py-2 rounded shadow-sm hover:bg-purple-700">
+                                Mettre à jour le Logo
+                            </button>
+                        </div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="package" class="text-blue-600"></i> Importer Stock</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Nom, PrixVente, PrixAchat, Quantite<br><span class="text-orange-500 font-bold">* Prix facultatifs</span></p><input type="file" id="csv-stock" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/><button onclick="processImport('products')" class="mt-2 w-full bg-blue-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="users" class="text-orange-600"></i> Importer Clients</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Nom, Telephone, Dette</p><input type="file" id="csv-clients" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/><button onclick="processImport('clients')" class="mt-2 w-full bg-orange-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="credit-card" class="text-red-600"></i> Importer Charges</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Date, Motif, Montant</p><input type="file" id="csv-expenses" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/><button onclick="processImport('expenses')" class="mt-2 w-full bg-red-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="shopping-cart" class="text-green-600"></i> Importer Ventes</h3><p class="text-xs text-gray-400 mb-3">Colonnes: Date, Produit, Quantite, PrixUnitaire, Profit<br><span class="text-blue-600 font-bold">* Total calculé auto</span></p><input type="file" id="csv-sales" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/><button onclick="processImport('ventes')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div></div></div>
             </div>
 
         </main>
