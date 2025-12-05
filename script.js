@@ -1,4 +1,5 @@
-// SCRIPT: GESTION BOUTIQUE V6 (CONNEXION AUTOMATIQUE)
+// ===============================================
+// SCRIPT: GESTION BOUTIQUE V5.2 (CORRECTIF DASHBOARD)
 // ===============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -36,15 +37,27 @@ async function main() {
     setupAuthListener();
     setupAdminFeatures();
     setupModalListeners();
-    // On a supprimé updateBoutiqueSelector() ici car on ne choisit plus la boutique au login
+    await updateBoutiqueSelector();
 }
 
-// Cette fonction sert maintenant UNIQUEMENT pour le Super Admin (Import CSV / Liste)
 async function getAvailableBoutiques() {
     const s = await getDocs(collection(db, "boutiques"));
     const b = [];
     s.forEach(d => b.push({id: d.id, ...d.data()}));
     return b;
+}
+
+async function updateBoutiqueSelector() {
+    const select = document.getElementById('login-boutique');
+    if(!select) return;
+    const boutiques = await getAvailableBoutiques();
+    select.innerHTML = '<option value="">Sélectionnez une boutique</option>';
+    boutiques.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = b.nom;
+        select.appendChild(opt);
+    });
 }
 
 function setupLoginForm() {
@@ -55,28 +68,18 @@ function setupLoginForm() {
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        errorBox.classList.add('hidden');
+        if(errorBox) errorBox.classList.add('hidden');
         const email = document.getElementById('login-email').value;
         const pass = document.getElementById('login-password').value;
 
         try {
             await signInWithEmailAndPassword(auth, email, pass);
-            // La redirection se fera automatiquement dans setupAuthListener
         } catch (error) {
             console.error("Erreur Auth:", error.code);
             let message = "Erreur de connexion.";
-            switch (error.code) {
-                case 'auth/invalid-credential':
-                case 'auth/user-not-found':
-                case 'auth/wrong-password': message = "Email ou mot de passe incorrect."; break;
-                case 'auth/invalid-email': message = "L'adresse email n'est pas valide."; break;
-                case 'auth/user-disabled': message = "Ce compte a été désactivé."; break;
-                case 'auth/too-many-requests': message = "Trop de tentatives. Réessayez plus tard."; break;
-                case 'auth/network-request-failed': message = "Erreur de connexion internet."; break;
-                default: message = "Erreur de connexion (" + error.code + ")";
-            }
-            errorText.textContent = message;
-            errorBox.classList.remove('hidden');
+            if (error.code.includes('invalid') || error.code.includes('user-not-found') || error.code.includes('wrong-password')) message = "Email ou mot de passe incorrect.";
+            if(errorText) errorText.textContent = message;
+            if(errorBox) errorBox.classList.remove('hidden');
             if (window.lucide) window.lucide.createIcons();
         }
     });
@@ -103,27 +106,18 @@ function setupAuthListener() {
         if (user) {
             userId = user.uid;
             try {
-                // 1. EST-CE UN SUPER ADMIN ?
+                // Check Super Admin
                 const superAdminDoc = await getDoc(doc(db, "super_admins", userId));
                 if (superAdminDoc.exists()) {
                     showSuperAdminInterface();
                     return;
                 }
-
-                // 2. EST-CE UN UTILISATEUR DE BOUTIQUE ?
+                // Check User Boutique
                 const userDoc = await getDoc(doc(db, "users", userId));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
-                    
-                    // DÉTECTION AUTOMATIQUE DE LA BOUTIQUE
                     currentBoutiqueId = data.boutiqueId;
                     userRole = data.role;
-
-                    if (!currentBoutiqueId) {
-                        showToast("Erreur: Aucune boutique associée à ce compte.", "error");
-                        await signOut(auth);
-                        return;
-                    }
                     
                     document.getElementById('dashboard-user-name').textContent = `${data.boutiqueName}`;
                     document.getElementById('admin-tab-btn').classList.add('hidden'); 
@@ -132,8 +126,8 @@ function setupAuthListener() {
                     document.getElementById('app-container').classList.remove('hidden');
                     document.getElementById('top-nav-bar').classList.remove('hidden');
                     
-                    // Gestion des droits
                     showAllTabs(); 
+                    
                     if (userRole === 'seller') {
                         hideTab('dashboard');
                         hideTab('admin');
@@ -144,13 +138,11 @@ function setupAuthListener() {
                     }
                     initializeApplication();
                 } else {
-                    // Utilisateur authentifié mais pas dans la table 'users'
-                    showToast("Compte utilisateur non configuré.", "error");
+                    showToast("Compte inconnu", "error");
                     await signOut(auth);
                 }
             } catch (err) { console.error(err); }
         } else {
-            // Déconnexion
             document.getElementById('auth-container').classList.remove('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('top-nav-bar').classList.add('hidden');
@@ -184,31 +176,27 @@ function initializeApplication() {
     if (window.lucide) window.lucide.createIcons();
 }
 
-// ================= DASHBOARD (TRÉSORERIE, TOP 10 & LISTE DÉTAILLÉE) =================
+// ================= DASHBOARD (CORRIGÉ AVEC FUNCTION HOISTING) =================
 
 function setupDashboard() {
     let totalVentesEncaissees = 0;
     let totalDepenses = 0;
     let caisseInitiale = 0;
 
-    // 1. Écouteur INFOS BOUTIQUE (Caisse + Logo)
-    onSnapshot(doc(db, "boutiques", currentBoutiqueId), (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            caisseInitiale = data.caisseInitiale || 0;
-            
-            // GESTION DU LOGO
-            const logoImg = document.getElementById('dash-shop-logo');
-            if (data.logo) {
-                logoImg.src = data.logo;
-                logoImg.classList.remove('hidden'); // On affiche l'image
-            } else {
-                logoImg.classList.add('hidden'); // On cache si pas de logo
-            }
+    // Utilisation de 'function' au lieu de 'const' pour éviter l'erreur ReferenceError
+    function updateDashboardTotals() {
+        const beneficeReel = (caisseInitiale + totalVentesEncaissees) - totalDepenses;
 
-            updateDashboardTotals();
+        if(document.getElementById('dash-caisse-initiale')) document.getElementById('dash-caisse-initiale').textContent = formatPrice(caisseInitiale);
+        if(document.getElementById('dash-total-sales')) document.getElementById('dash-total-sales').textContent = formatPrice(totalVentesEncaissees);
+        if(document.getElementById('dash-total-expenses')) document.getElementById('dash-total-expenses').textContent = formatPrice(totalDepenses);
+        
+        if(document.getElementById('dash-total-profit')) {
+            const elProfit = document.getElementById('dash-total-profit');
+            elProfit.textContent = formatPrice(beneficeReel);
+            elProfit.className = `text-2xl font-bold ${beneficeReel < 0 ? 'text-red-600' : 'text-green-600'}`;
         }
-    });
+    }
 
     onSnapshot(doc(db, "boutiques", currentBoutiqueId), (doc) => {
         caisseInitiale = doc.data()?.caisseInitiale || 0;
@@ -232,39 +220,29 @@ function setupDashboard() {
         sales.sort((a,b) => b.date?.seconds - a.date?.seconds);
 
         sales.forEach(s => {
-            // 1. CALCUL TRÉSORERIE
             if (s.type === 'cash' || s.type === 'cash_import' || s.type === 'remboursement') {
                 totalVentesEncaissees += s.total || 0;
             }
 
-            // 2. STATS PRODUITS (AGRÉGATION PAR NOM)
             if(s.items && Array.isArray(s.items) && s.type !== 'remboursement') {
                 s.items.forEach(item => {
-                    const rawName = item.nomDisplay || item.nom || "Inconnu";
-                    const keyName = rawName.trim().toUpperCase();
+                    const keyName = (item.nomDisplay || item.nom || "Inconnu").trim().toUpperCase();
+                    if (!productStats[keyName]) productStats[keyName] = { name: keyName, qty: 0, revenue: 0 };
                     
-                    if (!productStats[keyName]) productStats[keyName] = { name: rawName, qty: 0, revenue: 0 };
-                    
-                    const qty = item.qty || 0;
-                    const price = item.prixVente || 0;
-                    
-                    productStats[keyName].qty += qty;
-                    // Pour le Top 10 Revenu, on utilise le CA généré (Import ou Calculé)
+                    productStats[keyName].qty += (item.qty || 0);
                     if(s.type === 'cash_import') productStats[keyName].revenue += s.total;
-                    else productStats[keyName].revenue += (price * qty);
+                    else productStats[keyName].revenue += ((item.prixVente || 0) * (item.qty || 0));
                 });
             }
         });
 
         updateDashboardTotals();
 
-        // Récents (Détails + Nom Client)
         if(recentDiv) {
             sales.slice(0, 5).forEach(s => {
                 const div = document.createElement('div');
                 const dateObj = new Date(s.date?.seconds * 1000);
                 const dateStr = dateObj.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'});
-                const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
                 let desc = "";
                 let colorClass = "text-blue-600";
@@ -280,7 +258,7 @@ function setupDashboard() {
 
                 div.className = "flex justify-between items-center border-b pb-2 last:border-0";
                 div.innerHTML = `
-                    <div class="flex flex-col min-w-[50px]"><span class="text-xs font-bold text-gray-700">${dateStr}</span><span class="text-[10px] text-gray-400">${timeStr}</span></div>
+                    <div class="flex flex-col min-w-[50px]"><span class="text-xs font-bold text-gray-700">${dateStr}</span></div>
                     <div class="flex-1 mx-3 overflow-hidden"><div class="text-sm font-medium text-gray-800 truncate" title="${desc}">${desc}</div></div>
                     <div class="font-bold ${colorClass} text-sm whitespace-nowrap">${formatPrice(s.total)}</div>
                 `;
@@ -288,7 +266,6 @@ function setupDashboard() {
             });
         }
 
-        // Top 10
         const statsArray = Object.values(productStats);
         const topRevenue = [...statsArray].sort((a, b) => b.revenue - a.revenue).slice(0, 10);
         const profitBody = document.getElementById('dash-top-profit-body');
@@ -302,7 +279,6 @@ function setupDashboard() {
         }
     });
 
-    // Alertes Stock
     setInterval(() => {
         const lowDiv = document.getElementById('dash-low-stock');
         if(!lowDiv) return;
@@ -312,11 +288,11 @@ function setupDashboard() {
     }, 3000);
 }
 
-// ================= STOCK (RESTITUÉ : MODIF LIGNE + VENDU/RESTE) =================
+// ================= STOCK =================
 
 function setupStockManagement() {
     const stockForm = document.getElementById('form-stock');
-    const editForm = document.getElementById('form-edit-product'); // IMPORTANT
+    const editForm = document.getElementById('form-edit-product');
     const searchInput = document.getElementById('stock-search-input');
     const sortSelect = document.getElementById('stock-sort-select');
 
@@ -344,27 +320,16 @@ function setupStockManagement() {
 
         filteredData.forEach(p => {
             const tr = document.createElement('tr');
-            
-            // 1. Style Grisé
-            let rowClass = p.deleted ? "deleted-row" : "border-b border-gray-100 transition";
-            
-            // 2. Interaction Clic Ligne (Admin seulement)
+            let rowClass = p.deleted ? "deleted-row" : "border-b border-gray-100 hover:bg-gray-50 transition";
             let rowAction = "";
-            if (userRole === 'admin' && !p.deleted) {
-                const productData = encodeURIComponent(JSON.stringify(p));
-                rowAction = `onclick="openEditProduct('${productData}')"`;
+            if (userRole === 'admin' && !p.deleted) { 
+                const productData = encodeURIComponent(JSON.stringify(p)); 
+                rowAction = `onclick="openEditProduct('${productData}')"`; 
                 rowClass += " cursor-pointer hover:bg-blue-50"; 
             }
-
-            // 3. Bouton Archiver (avec stopPropagation)
-            const deleteBtn = (userRole === 'admin' && !p.deleted) 
-                ? `<button class="text-red-500 hover:bg-red-100 p-2 rounded-full transition" 
-                           onclick="event.stopPropagation(); deleteProduct('${p.id}')" title="Archiver">
-                   <i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
-            
-            // 4. Calculs Stock
-            const reste = p.stock || 0;
-            const vendu = p.quantiteVendue || 0;
+            const deleteBtn = (userRole === 'admin' && !p.deleted) ? `<button class="text-red-500 hover:bg-red-100 p-2 rounded-full transition" onclick="event.stopPropagation(); deleteProduct('${p.id}')" title="Archiver"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+            const reste = p.stock || 0; 
+            const vendu = p.quantiteVendue || 0; 
             const total = reste + vendu;
 
             tr.className = rowClass;
@@ -372,11 +337,9 @@ function setupStockManagement() {
                 <td ${rowAction} class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom} ${p.deleted ? '(Archivé)' : ''}</td>
                 <td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td>
                 <td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td>
-                
                 <td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td>
                 <td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td>
                 <td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td>
-                
                 <td class="p-4 text-right">${deleteBtn}</td>`;
             tbody.appendChild(tr);
         });
@@ -387,7 +350,7 @@ function setupStockManagement() {
         allProducts = [];
         snap.forEach(docSnap => {
             const p = { id: docSnap.id, ...docSnap.data() };
-            if (p.deleted && userRole === 'seller') return; // Vendeur ne voit pas les supprimés
+            if (p.deleted && userRole === 'seller') return;
             allProducts.push(p);
         });
         renderStockTable();
@@ -414,7 +377,6 @@ function setupStockManagement() {
         });
     }
     
-    // LOGIQUE DE MODIFICATION RESTITUÉE
     window.openEditProduct = (encodedProduct) => {
         const p = JSON.parse(decodeURIComponent(encodedProduct));
         document.getElementById('edit-prod-id').value = p.id;
@@ -422,7 +384,6 @@ function setupStockManagement() {
         document.getElementById('edit-prod-achat').value = p.prixAchat;
         document.getElementById('edit-prod-vente').value = p.prixVente;
         document.getElementById('edit-prod-stock').value = p.stock;
-        
         const form = document.getElementById('form-edit-product');
         if(form) {
             form.dataset.oldAchat = p.prixAchat;
@@ -447,7 +408,6 @@ function setupStockManagement() {
             try {
                 const batch = writeBatch(db);
                 const prodRef = doc(db, "boutiques", currentBoutiqueId, "products", id);
-                
                 batch.update(prodRef, { prixAchat: newAchat, prixVente: newVente, stock: newStock, lastModified: serverTimestamp() });
 
                 if (newAchat !== oldAchat || newVente !== oldVente) {
@@ -462,12 +422,10 @@ function setupStockManagement() {
         });
     }
 
-    window.deleteProduct = (id) => { 
-        if(confirm("Archiver ce produit ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "products", id), { deleted: true }); 
-    };
+    window.deleteProduct = (id) => { if(confirm("Archiver ce produit ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "products", id), { deleted: true }); };
 }
 
-// ================= CREDITS (REMBOURSEMENT = ENTRÉE) =================
+// ================= CREDITS =================
 
 function setupCredits() {
     const form = document.getElementById('form-client');
@@ -538,7 +496,35 @@ function setupCredits() {
     window.deleteClient = (id) => { if(confirm("Archiver ce client ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "clients", id), { deleted: true }); };
 }
 
-// ================= RAPPORTS (SÉCURISÉ : ADMIN SEULEMENT POUR LA FINANCE) =================
+// ================= EXPENSES =================
+
+function setupExpenses() {
+    const form = document.getElementById('form-expense');
+    const searchInput = document.getElementById('expenses-search');
+    const sortSelect = document.getElementById('expenses-sort');
+    let allExpenses = [];
+    const renderTable = () => {
+        const tbody = document.getElementById('expenses-table-body');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        let filtered = allExpenses;
+        if(searchInput && searchInput.value) { const term = searchInput.value.toLowerCase(); filtered = allExpenses.filter(e => e.motif.toLowerCase().includes(term)); }
+        if(sortSelect) { const sort = sortSelect.value; filtered.sort((a, b) => { const dateA = a.date?.seconds || 0; const dateB = b.date?.seconds || 0; if(sort === 'date_desc') return dateB - dateA; if(sort === 'date_asc') return dateA - dateB; if(sort === 'amount_desc') return b.montant - a.montant; return 0; }); }
+        filtered.forEach(ex => {
+            const rowClass = ex.deleted ? "deleted-row" : "border-b hover:bg-gray-50 transition";
+            const deleteBtn = (userRole === 'admin' && !ex.deleted) ? `<button onclick="deleteExp('${ex.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+            tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4 text-sm text-gray-500">${new Date(ex.date?.seconds*1000).toLocaleDateString()}</td><td class="p-4 font-medium text-gray-800">${ex.motif}</td><td class="p-4 text-right font-bold text-red-600">-${formatPrice(ex.montant)}</td><td class="p-4 text-right">${deleteBtn}</td></tr>`;
+        });
+        if (window.lucide) window.lucide.createIcons();
+    };
+    onSnapshot(collection(db, "boutiques", currentBoutiqueId, "expenses"), (snap) => { allExpenses = []; snap.forEach(d => { const ex = { id: d.id, ...d.data() }; if (ex.deleted && userRole === 'seller') return; allExpenses.push(ex); }); renderTable(); });
+    if(searchInput) searchInput.addEventListener('input', renderTable);
+    if(sortSelect) sortSelect.addEventListener('change', renderTable);
+    if(form) { form.addEventListener('submit', async (e) => { e.preventDefault(); try { await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "expenses")), { motif: document.getElementById('exp-motif').value, montant: parseFloat(document.getElementById('exp-montant').value), date: serverTimestamp(), user: userId, deleted: false }); form.reset(); showToast("Dépense ajoutée"); } catch(e) { showToast("Erreur", "error"); } }); }
+    window.deleteExp = (id) => { if(confirm("Annuler dépense ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "expenses", id), { deleted: true }); };
+}
+
+// ================= RAPPORTS =================
 
 function setupReports() {
     if (!currentBoutiqueId) return;
@@ -553,49 +539,26 @@ function setupReports() {
     const sortSelect = document.getElementById('reports-sort');
     const adminStatsDiv = document.getElementById('report-financial-stats');
 
-    // --- GESTION DE LA VISIBILITÉ FINANCIÈRE ---
-    if (userRole === 'seller') {
-        if(adminStatsDiv) adminStatsDiv.classList.add('hidden');
-    } else {
-        if(adminStatsDiv) adminStatsDiv.classList.remove('hidden');
-    }
-    // -------------------------------------------
+    if (userRole === 'seller') { if(adminStatsDiv) adminStatsDiv.classList.add('hidden'); } 
+    else { if(adminStatsDiv) adminStatsDiv.classList.remove('hidden'); }
 
     const now = new Date();
     dateStart.valueAsDate = new Date(now.getFullYear(), now.getMonth(), 1);
     dateEnd.valueAsDate = now;
 
     const shopRef = doc(db, "boutiques", currentBoutiqueId);
-    
-    // On ne charge la caisse initiale que si c'est un admin
     if (userRole !== 'seller') {
         getDoc(shopRef).then(snap => { if(snap.exists()) { caisseInput.value = snap.data().caisseInitiale || 0; loadData(); } });
-        
-        btnSaveCaisse.addEventListener('click', async () => {
-            await updateDoc(shopRef, { caisseInitiale: parseFloat(caisseInput.value)||0 });
-            showToast("Sauvegardé"); loadData();
-        });
-    } else {
-        // Si vendeur, on lance juste le chargement des données
-        // On attend un petit peu que l'UI soit prête
-        setTimeout(() => loadData(), 100); 
-    }
+        btnSaveCaisse.addEventListener('click', async () => { await updateDoc(shopRef, { caisseInitiale: parseFloat(caisseInput.value)||0 }); showToast("Sauvegardé"); loadData(); });
+    } else { setTimeout(() => loadData(), 100); }
 
     let loadedTransactions = [];
 
     const renderReportsTable = () => {
         const tbody = document.getElementById('reports-table-body');
         tbody.innerHTML = '';
-        
-        let totalEncaisse = 0; 
-        let totalSorties = 0;
-
-        loadedTransactions.forEach(t => {
-            if(t.isExpense) totalSorties += t.amount;
-            else if (t.isEffectiveEntry) totalEncaisse += t.amount; 
-        });
-
         let filtered = loadedTransactions;
+
         if(searchInput && searchInput.value) {
             const term = searchInput.value.toLowerCase();
             filtered = loadedTransactions.filter(t => t.desc.toLowerCase().includes(term) || t.type.toLowerCase().includes(term));
@@ -610,21 +573,20 @@ function setupReports() {
             });
         }
 
+        let totalEncaisse = 0; let totalSorties = 0;
+        loadedTransactions.forEach(t => { if(t.isExpense) totalSorties += t.amount; else if (t.isEffectiveEntry) totalEncaisse += t.amount; });
+
         filtered.forEach(t => {
             const row = document.createElement('tr');
-            let classMontant = '';
-            let classType = 'text-gray-500';
-
+            let classMontant = ''; let classType = 'text-gray-500';
             if (t.isExpense) { classMontant = 'text-red-600 font-bold'; classType = 'text-red-400'; } 
             else if (t.isCreditSale) { classMontant = 'text-orange-400 italic'; classType = 'text-orange-400'; } 
             else { classMontant = 'text-green-600 font-bold'; classType = 'text-green-600'; } 
-
             row.className = "border-b hover:bg-gray-50 transition";
             row.innerHTML = `<td class="p-3 text-xs">${t.date.toLocaleString()}</td><td class="p-3 text-sm text-gray-700">${t.desc}</td><td class="p-3 text-center text-xs font-bold ${classType}">${t.type}</td><td class="p-3 text-right ${!t.isExpense?classMontant:'text-gray-300'}">${!t.isExpense?formatPrice(t.amount):'-'}</td><td class="p-3 text-right ${t.isExpense?classMontant:'text-gray-300'}">${t.isExpense?formatPrice(t.amount):'-'}</td>`;
             tbody.appendChild(row);
         });
 
-        // --- MISE À JOUR DES TOTAUX (UNIQUEMENT POUR ADMIN) ---
         if (userRole !== 'seller') {
             const caisseInitiale = parseFloat(caisseInput.value) || 0;
             const totalDispo = caisseInitiale + totalEncaisse;
@@ -649,29 +611,9 @@ function setupReports() {
             salesSnap.forEach(doc => {
                 const s = doc.data();
                 if(s.deleted) return; 
-                
-                let desc = "";
-                let typeLabel = "VENTE";
-                let isEffectiveEntry = false; 
-                let isCreditSale = false;
-
-                if (s.type === 'remboursement') {
-                    desc = `💰 <strong>Remboursement</strong> (${s.clientName || 'Client'})`;
-                    typeLabel = "REMB.";
-                    isEffectiveEntry = true; 
-                } else {
-                    let pList = s.items ? s.items.map(i => `${i.nomDisplay||i.nom} (${i.qty})`).join(', ') : 'Vente';
-                    if (s.clientName) desc = `👤 <strong>${s.clientName}</strong> : ` + pList; else desc = pList;
-                    if (s.type === 'credit') {
-                        desc += ' <span class="text-xs bg-orange-100 text-orange-600 px-1 rounded">Non Payé</span>';
-                        typeLabel = "CRÉDIT";
-                        isCreditSale = true;
-                    } else {
-                        typeLabel = "VENTE";
-                        isEffectiveEntry = true;
-                    }
-                }
-
+                let desc = ""; let typeLabel = "VENTE"; let isEffectiveEntry = false; let isCreditSale = false;
+                if (s.type === 'remboursement') { desc = `💰 <strong>Remboursement</strong> (${s.clientName || 'Client'})`; typeLabel = "REMB."; isEffectiveEntry = true; } 
+                else { let pList = s.items ? s.items.map(i => `${i.nomDisplay||i.nom} (${i.qty}x${formatPrice(i.prixVente)})`).join(', ') : 'Vente'; if (s.clientName) desc = `👤 <strong>${s.clientName}</strong> : ` + pList; else desc = pList; if (s.type === 'credit') { desc += ' <span class="text-xs bg-orange-100 text-orange-600 px-1 rounded">Non Payé</span>'; typeLabel = "CRÉDIT"; isCreditSale = true; } else { typeLabel = "VENTE"; isEffectiveEntry = true; } }
                 loadedTransactions.push({ date: s.date?.toDate(), desc, type: typeLabel, amount: s.total||0, isExpense: false, isEffectiveEntry, isCreditSale });
             });
 
@@ -681,285 +623,20 @@ function setupReports() {
                 loadedTransactions.push({ date: e.date?.toDate(), desc: e.motif, type: 'SORTIE', amount: e.montant||0, isExpense: true, isEffectiveEntry: false });
             });
 
-            const start = new Date(dateStart.value); start.setHours(0,0,0,0);
-            const end = new Date(dateEnd.value); end.setHours(23,59,59,999);
+            const start = new Date(dateStart.value); start.setHours(0,0,0,0); const end = new Date(dateEnd.value); end.setHours(23,59,59,999);
             loadedTransactions = loadedTransactions.filter(t => t.date >= start && t.date <= end).sort((a,b)=>a.date-b.date);
             renderReportsTable();
 
         } catch (error) { console.error(error); }
     };
-    
     btnFilter.addEventListener('click', loadData);
-    
-    const observer = new MutationObserver((mutations) => { 
-        mutations.forEach((mutation) => { 
-            if (!mutation.target.classList.contains('hidden')) { 
-                if (userRole === 'seller') {
-                    loadData();
-                } else {
-                    setTimeout(() => { getDoc(shopRef).then(snap => { if(snap.exists()) caisseInput.value = snap.data().caisseInitiale || 0; loadData(); }); }, 100); 
-                }
-            } 
-        }); 
-    });
+    const observer = new MutationObserver((mutations) => { mutations.forEach((mutation) => { if (!mutation.target.classList.contains('hidden')) { if (userRole === 'seller') loadData(); else setTimeout(() => { getDoc(shopRef).then(snap => { if(snap.exists()) caisseInput.value = snap.data().caisseInitiale || 0; loadData(); }); }, 100); } }); });
     observer.observe(document.getElementById('page-rapports'), { attributes: true, attributeFilter: ['class'] });
 }
 
-// ================= VENTES =================
+// ================= ADMIN & EXPORTS =================
 
-async function loadClientsIntoSelect() {
-    const select = document.getElementById('credit-client-select');
-    select.innerHTML = '<option value="">Chargement...</option>';
-    const clientsSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "clients"));
-    if (clientsSnap.empty) { select.innerHTML = '<option value="">Aucun client</option>'; return; }
-    select.innerHTML = '<option value="">-- Choisir un client --</option>';
-    clientsSnap.forEach(doc => { if(!doc.data().deleted) { const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = doc.data().nom; select.appendChild(opt); }});
-}
-function setupSalesPage() {
-    const searchInput = document.getElementById('sale-search');
-    const resultsDiv = document.getElementById('sale-search-results');
-    const btnCash = document.getElementById('btn-validate-cash');
-    const btnCredit = document.getElementById('btn-open-credit-modal');
-    const btnQuickAdd = document.getElementById('btn-quick-add-client');
-    const dateDisplay = document.getElementById('current-date-display');
-    if(dateDisplay) dateDisplay.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
-    searchInput.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        if (term.length < 1) { resultsDiv.classList.add('hidden'); return; }
-        const matches = allProducts.filter(p => p.nom.includes(term) && !p.deleted);
-        resultsDiv.innerHTML = '';
-        if (matches.length > 0) {
-            resultsDiv.classList.remove('hidden');
-            matches.forEach(p => {
-                const div = document.createElement('div');
-                div.className = "p-3 hover:bg-blue-50 cursor-pointer border-b flex justify-between";
-                div.innerHTML = `<span>${p.nomDisplay}</span><span class="${p.stock>0?'text-green-600':'text-red-600'} font-bold">${p.stock}</span>`;
-                div.onclick = () => addToCart(p);
-                resultsDiv.appendChild(div);
-            });
-        } else { resultsDiv.classList.add('hidden'); }
-    });
-    document.addEventListener('click', (e) => { if (!searchInput.contains(e.target)) resultsDiv.classList.add('hidden'); });
-    btnCash.addEventListener('click', () => { if (saleCart.length === 0) return showToast("Vide", "error"); showConfirmModal("Encaisser ?", `Total: ${document.getElementById('cart-total-display').textContent}`, async () => await processSale('cash', null, null)); });
-    btnCredit.addEventListener('click', async () => { if (saleCart.length === 0) return showToast("Vide", "error"); await loadClientsIntoSelect(); document.getElementById('credit-sale-modal').classList.remove('hidden'); });
-    if(btnQuickAdd) btnQuickAdd.addEventListener('click', () => { document.getElementById('credit-sale-modal').classList.add('hidden'); document.getElementById('add-client-modal').classList.remove('hidden'); isQuickAddMode = true; });
-    document.getElementById('confirm-credit-sale-btn').addEventListener('click', async () => { const sel = document.getElementById('credit-client-select'); if (!sel.value) return showToast("Client?", "error"); document.getElementById('credit-sale-modal').classList.add('hidden'); await processSale('credit', sel.value, sel.options[sel.selectedIndex]?.text); });
-}
-async function processSale(type, clientId, clientName) {
-    try {
-        const batch = writeBatch(db);
-        const saleRef = doc(collection(db, "boutiques", currentBoutiqueId, "ventes"));
-        let total = 0, profit = 0;
-        const itemsForInvoice = JSON.parse(JSON.stringify(saleCart)); 
-        for (const item of saleCart) {
-            const lineTotal = item.prixVente * item.qty;
-            total += lineTotal;
-            profit += (item.prixVente - (item.prixAchat || 0)) * item.qty;
-            // AJOUTER LES VENTES DANS LE STOCK
-            const pRef = doc(db, "boutiques", currentBoutiqueId, "products", item.id);
-            batch.update(pRef, { 
-                stock: increment(-item.qty),
-                quantiteVendue: increment(item.qty) 
-            });
-        }
-        if (type === 'credit' && clientId) batch.update(doc(db, "boutiques", currentBoutiqueId, "clients", clientId), { dette: increment(total) });
-        batch.set(saleRef, { items: saleCart, total, profit, date: serverTimestamp(), vendeurId: userId, type, clientId: clientId || null, clientName: clientName || null, deleted: false });
-        await batch.commit();
-        showInvoiceModal(itemsForInvoice, total, type, clientName);
-        saleCart = []; renderCart();
-    } catch (err) { console.error(err); showToast("Erreur vente", "error"); }
-}
-function showInvoiceModal(items, total, type, clientName) {
-    const modal = document.getElementById('invoice-modal');
-    document.getElementById('invoice-amount').textContent = formatPrice(total);
-    const shopName = document.getElementById('dashboard-user-name').textContent.trim();
-    const dateStr = new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-    let receiptText = `🧾 *REÇU*\n🏪 ${shopName}\n📅 ${dateStr}\n`;
-    if(clientName) receiptText += `👤 Client: ${clientName}\n`;
-    receiptText += `----------------\n`;
-    let html = "";
-    items.forEach(i => { receiptText += `${i.qty}x ${i.nomDisplay}: ${formatPrice(i.prixVente*i.qty)}\n`; html += `<div class="flex justify-between"><span>${i.qty}x ${i.nomDisplay}</span><span>${formatPrice(i.prixVente*i.qty)}</span></div>`; });
-    receiptText += `----------------\n💰 TOTAL: ${formatPrice(total)}\n`;
-    document.getElementById('invoice-preview').innerHTML = html;
-    document.getElementById('btn-whatsapp-share').href = `https://wa.me/?text=${encodeURIComponent(receiptText)}`;
-    modal.classList.remove('hidden');
-}
-window.addToCart = (p) => { if (p.stock <= 0) return showToast("Epuisé", "error"); const ex = saleCart.find(i => i.id === p.id); if(ex) { if(ex.qty>=p.stock) return showToast("Max atteint", "error"); ex.qty++; } else saleCart.push({...p, qty:1, addedAt: new Date()}); document.getElementById('sale-search').value = ''; document.getElementById('sale-search-results').classList.add('hidden'); renderCart(); };
-window.renderCart = () => { const tb = document.getElementById('cart-table-body'); document.getElementById('cart-total-display').textContent = formatPrice(saleCart.reduce((a,b)=>a+(b.prixVente*b.qty),0)); tb.innerHTML = saleCart.length===0 ? '<tr><td colspan="5" class="p-8 text-center text-gray-400">Vide</td></tr>' : ''; saleCart.forEach((i,x) => { tb.innerHTML += `<tr class="border-b last:border-0"><td class="p-3">${i.nomDisplay}</td><td class="p-3 text-center"><input type="number" value="${i.prixVente}" onchange="updateItemPrice(${x},this.value)" class="w-24 p-1 border rounded text-center"></td><td class="p-3 text-center flex justify-center gap-1"><button onclick="updateQty(${x},-1)" class="w-6 bg-gray-200 rounded">-</button><span class="w-6 font-bold text-sm">${i.qty}</span><button onclick="updateQty(${x},1)" class="w-6 bg-gray-200 rounded">+</button></td><td class="p-3 text-right font-bold">${formatPrice(i.prixVente*i.qty)}</td><td class="p-3 text-right"><button onclick="saleCart.splice(${x},1);renderCart()" class="text-red-500">X</button></td></tr>`; }); };
-window.updateItemPrice = (i,v) => { let p = parseFloat(v); if(p<0||isNaN(p)) return renderCart(); saleCart[i].prixVente = p; renderCart(); };
-window.updateQty = (i,d) => { const it = saleCart[i]; const st = allProducts.find(p => p.id===it.id)?.stock||0; if(d>0 && it.qty>=st) return showToast("Stock max", "error"); it.qty+=d; if(it.qty<=0) saleCart.splice(i,1); renderCart(); };
-window.clearCart = () => { if(saleCart.length>0 && confirm("Vider ?")) { saleCart=[]; renderCart(); } };
-
-// ================= MISE À JOUR LOGO (EXISTANT) =================
-
-// 1. Fonction utilitaire de conversion (si pas déjà présente dans votre code)
-const convertBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-};
-
-// 2. Fonction déclenchée par le bouton
-window.processLogoUpdate = async function() {
-    // On récupère l'ID de la boutique sélectionnée dans le menu déroulant existant
-    const shopId = document.getElementById('import-target-shop').value;
-    
-    if (!shopId) {
-        return showToast("Veuillez d'abord sélectionner une boutique dans la liste ci-dessus.", "error");
-    }
-
-    const fileInput = document.getElementById('file-logo-update');
-    const file = fileInput.files[0];
-
-    if (!file) {
-        return showToast("Veuillez choisir un fichier image.", "error");
-    }
-
-    // Vérification taille (Important pour Firestore)
-    if (file.size > 100000) { // 100 Ko
-        return showToast("Image trop lourde ! Max 100 Ko.", "error");
-    }
-
-    try {
-        showToast("Mise à jour du logo en cours...", "warning");
-        
-        // Conversion
-        const base64String = await convertBase64(file);
-
-        // Mise à jour dans la base de données
-        const shopRef = doc(db, "boutiques", shopId);
-        await updateDoc(shopRef, {
-            logo: base64String
-        });
-
-        showToast("Logo mis à jour avec succès !", "success");
-        fileInput.value = ''; // Reset du champ
-
-        // Si on est connecté sur cette boutique, on met à jour l'affichage tout de suite
-        if (currentBoutiqueId === shopId) {
-             const logoImg = document.getElementById('dash-shop-logo');
-             if(logoImg) {
-                 logoImg.src = base64String;
-                 logoImg.classList.remove('hidden');
-             }
-        }
-
-    } catch (error) {
-        console.error(error);
-        showToast("Erreur lors de la mise à jour.", "error");
-    }
-};
-
-// ================= ADMIN & STOCK & EXPENSES (Déjà corrects dans versions précédentes) =================
-function setupExpenses() { const form = document.getElementById('form-expense'); const searchInput = document.getElementById('expenses-search'); const sortSelect = document.getElementById('expenses-sort'); const renderTable = () => { const tbody = document.getElementById('expenses-table-body'); if(!tbody) return; tbody.innerHTML = ''; let filtered = allExpenses; if (searchInput && searchInput.value) { const term = searchInput.value.toLowerCase(); filtered = allExpenses.filter(e => e.motif.toLowerCase().includes(term)); } if (sortSelect) { const sort = sortSelect.value; filtered.sort((a, b) => { const dateA = a.date?.seconds || 0; const dateB = b.date?.seconds || 0; if(sort === 'date_desc') return dateB - dateA; if(sort === 'date_asc') return dateA - dateB; if(sort === 'amount_desc') return b.montant - a.montant; return 0; }); } filtered.forEach(ex => { const rowClass = ex.deleted ? "deleted-row" : "border-b hover:bg-gray-50 transition"; const deleteBtn = (userRole === 'admin' && !ex.deleted) ? `<button onclick="deleteExp('${ex.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''; tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4 text-sm text-gray-500">${new Date(ex.date?.seconds*1000).toLocaleDateString()}</td><td class="p-4 font-medium text-gray-800">${ex.motif}</td><td class="p-4 text-right font-bold text-red-600">-${formatPrice(ex.montant)}</td><td class="p-4 text-right">${deleteBtn}</td></tr>`; }); if (window.lucide) window.lucide.createIcons(); }; let allExpenses = []; onSnapshot(collection(db, "boutiques", currentBoutiqueId, "expenses"), (snap) => { allExpenses = []; snap.forEach(d => { const ex = { id: d.id, ...d.data() }; if (ex.deleted && userRole === 'seller') return; allExpenses.push(ex); }); renderTable(); }); if(searchInput) searchInput.addEventListener('input', renderTable); if(sortSelect) sortSelect.addEventListener('change', renderTable); if(form) { form.addEventListener('submit', async (e) => { e.preventDefault(); try { await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "expenses")), { motif: document.getElementById('exp-motif').value, montant: parseFloat(document.getElementById('exp-montant').value), date: serverTimestamp(), user: userId, deleted: false }); form.reset(); showToast("Dépense ajoutée"); } catch(e) { showToast("Erreur", "error"); } }); } window.deleteExp = (id) => { if(confirm("Annuler dépense ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "expenses", id), { deleted: true }); }; }
-function setupAdminFeatures() {
-    const form = document.getElementById('create-boutique-form');
-    
-    // Gestion des boutons d'ouverture/fermeture
-    document.getElementById('open-admin-modal')?.addEventListener('click', () => document.getElementById('admin-modal').classList.remove('hidden'));
-    document.getElementById('admin-modal-close-btn')?.addEventListener('click', () => document.getElementById('admin-modal').classList.add('hidden'));
-
-    if(form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Récupération des champs texte
-            const nomBoutique = document.getElementById('new-boutique-name').value;
-            const adminEmail = document.getElementById('admin-email').value;
-            const adminPass = document.getElementById('admin-password').value;
-            const sellerEmail = document.getElementById('seller-email').value;
-            const sellerPass = document.getElementById('seller-password').value;
-            
-            // Récupération du fichier logo
-            const logoInput = document.getElementById('new-boutique-logo');
-            const logoFile = logoInput ? logoInput.files[0] : null;
-
-            // Validation Mot de passe
-            if(adminPass.length < 6 || sellerPass.length < 6) {
-                return showToast("Les mots de passe doivent faire 6 caractères min.", "error");
-            }
-
-            showToast("Création en cours...", "warning");
-
-            try {
-                // 1. TRAITEMENT DU LOGO (Si présent)
-                let logoString = null;
-                if (logoFile) {
-                    // Vérification taille (Max 100Ko environ pour ne pas surcharger Firestore)
-                    if (logoFile.size > 100000) { 
-                        return showToast("Logo trop lourd ! Utilisez une image < 100 Ko.", "error");
-                    }
-                    // Conversion en texte
-                    logoString = await convertBase64(logoFile);
-                }
-
-                // 2. CRÉATION VIA INSTANCE SECONDAIRE (Pour ne pas déconnecter le Super Admin)
-                const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
-                const secondaryAuth = getAuth(secondaryApp);
-
-                // 3. Création de la Boutique dans Firestore
-                const boutiqueRef = doc(collection(db, "boutiques"));
-                const boutiqueId = boutiqueRef.id;
-                
-                await setDoc(boutiqueRef, { 
-                    nom: nomBoutique, 
-                    logo: logoString, // <--- Le logo est enregistré ici
-                    createdAt: serverTimestamp(), 
-                    createdBy: userId 
-                });
-
-                // 4. Création du compte PROPRIÉTAIRE
-                try {
-                    const ownerCred = await createUserWithEmailAndPassword(secondaryAuth, adminEmail, adminPass);
-                    await setDoc(doc(db, "users", ownerCred.user.uid), {
-                        email: adminEmail,
-                        role: 'admin',
-                        boutiqueId: boutiqueId,
-                        boutiqueName: nomBoutique,
-                        createdAt: serverTimestamp()
-                    });
-                    await signOut(secondaryAuth); // Déconnexion session secondaire
-                } catch (err) {
-                    throw new Error("Erreur création Propriétaire: " + err.message);
-                }
-
-                // 5. Création du compte VENDEUR
-                try {
-                    const sellerCred = await createUserWithEmailAndPassword(secondaryAuth, sellerEmail, sellerPass);
-                    await setDoc(doc(db, "users", sellerCred.user.uid), {
-                        email: sellerEmail,
-                        role: 'seller',
-                        boutiqueId: boutiqueId,
-                        boutiqueName: nomBoutique,
-                        createdAt: serverTimestamp()
-                    });
-                    await signOut(secondaryAuth); // Déconnexion session secondaire
-                } catch (err) {
-                    throw new Error("Erreur création Vendeur: " + err.message);
-                }
-
-                // 6. Finalisation
-                showToast(`Boutique "${nomBoutique}" créée avec succès !`, "success");
-                form.reset();
-                if(logoInput) logoInput.value = ''; // Reset du champ fichier
-                document.getElementById('admin-modal').classList.add('hidden');
-                
-                // Rafraîchir les listes
-                loadBoutiquesList();
-                loadShopsForImport();
-
-            } catch (err) {
-                console.error(err);
-                let msg = err.message;
-                if(msg.includes("email-already-in-use")) msg = "Cet email est déjà utilisé !";
-                showToast(msg, "error");
-            }
-        });
-    }
-}
+function setupAdminFeatures() { const f = document.getElementById('create-boutique-form'); document.getElementById('open-admin-modal')?.addEventListener('click', () => document.getElementById('admin-modal').classList.remove('hidden')); document.getElementById('admin-modal-close-btn')?.addEventListener('click', () => document.getElementById('admin-modal').classList.add('hidden')); if(f) f.addEventListener('submit', async (e) => { e.preventDefault(); try { const secApp = initializeApp(firebaseConfig, "Sec"); const secAuth = getAuth(secApp); const ref = doc(collection(db, "boutiques")); await setDoc(ref, { nom: document.getElementById('new-boutique-name').value, createdAt: serverTimestamp(), createdBy: userId }); const adm = await createUserWithEmailAndPassword(secAuth, document.getElementById('admin-email').value, document.getElementById('admin-password').value); await setDoc(doc(db, "users", adm.user.uid), { email: document.getElementById('admin-email').value, role: 'admin', boutiqueId: ref.id, boutiqueName: document.getElementById('new-boutique-name').value }); await signOut(secAuth); const sell = await createUserWithEmailAndPassword(secAuth, document.getElementById('seller-email').value, document.getElementById('seller-password').value); await setDoc(doc(db, "users", sell.user.uid), { email: document.getElementById('seller-email').value, role: 'seller', boutiqueId: ref.id, boutiqueName: document.getElementById('new-boutique-name').value }); await signOut(secAuth); showToast("Créé !"); f.reset(); document.getElementById('admin-modal').classList.add('hidden'); loadBoutiquesList(); loadShopsForImport(); } catch(err) { showToast(err.message, "error"); } }); }
 async function loadBoutiquesList() { const l = await getAvailableBoutiques(); const d = document.getElementById('admin-boutiques-list'); if(d) d.innerHTML = l.map(b => `<div class="p-2 border-b">${b.nom}</div>`).join(''); }
 async function loadShopsForImport() { const s = document.getElementById('import-target-shop'); if(!s) return; const l = await getAvailableBoutiques(); s.innerHTML = '<option value="">-- Choisir --</option>'; l.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.nom; s.appendChild(o); }); }
 window.processImport = async function(n) { const id = document.getElementById('import-target-shop').value; if(!id) return showToast("Boutique?", "error"); const f = document.getElementById(n==='products'?'csv-stock':n==='clients'?'csv-clients':n==='expenses'?'csv-expenses':'csv-sales').files[0]; if(!f) return showToast("Fichier?", "error"); Papa.parse(f, { header: true, skipEmptyLines: true, complete: async (r) => { if(confirm(`Importer ${r.data.length}?`)) await uploadBatchData(id, n, r.data); } }); };
@@ -974,6 +651,5 @@ function showToast(m, t="success") { const c = document.getElementById("toast-co
 function formatPrice(p) { return (parseFloat(p)||0).toLocaleString('fr-FR') + ' CFA'; }
 function showConfirmModal(t, x, a) { document.getElementById('confirm-modal-title').textContent = t; document.getElementById('confirm-modal-text').textContent = x; actionToConfirm = a; document.getElementById('confirm-modal').classList.remove('hidden'); }
 function setupModalListeners() { document.getElementById('modal-cancel-btn').addEventListener('click', ()=>document.getElementById('confirm-modal').classList.add('hidden')); document.getElementById('modal-confirm-btn').addEventListener('click', ()=>{ if(actionToConfirm) actionToConfirm(); document.getElementById('confirm-modal').classList.add('hidden'); }); document.getElementById('admin-modal-close-btn').addEventListener('click', ()=>document.getElementById('admin-modal').classList.add('hidden')); }
-
 
 main();
