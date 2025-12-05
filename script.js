@@ -1,5 +1,5 @@
 // ===============================================
-// SCRIPT: GESTION BOUTIQUE V5.2 (CORRECTIF DASHBOARD)
+// SCRIPT: GESTION BOUTIQUE V6 (CORRECTIF FINAL)
 // ===============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -37,7 +37,7 @@ async function main() {
     setupAuthListener();
     setupAdminFeatures();
     setupModalListeners();
-    await updateBoutiqueSelector();
+    // Note: updateBoutiqueSelector n'est plus appelé ici car le login est auto
 }
 
 async function getAvailableBoutiques() {
@@ -47,42 +47,31 @@ async function getAvailableBoutiques() {
     return b;
 }
 
-async function updateBoutiqueSelector() {
-    const select = document.getElementById('login-boutique');
-    if(!select) return;
-    const boutiques = await getAvailableBoutiques();
-    select.innerHTML = '<option value="">Sélectionnez une boutique</option>';
-    boutiques.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b.id;
-        opt.textContent = b.nom;
-        select.appendChild(opt);
-    });
-}
-
 function setupLoginForm() {
     const loginForm = document.getElementById('login-form');
     const errorBox = document.getElementById('login-error-msg');
     const errorText = document.getElementById('login-error-text');
     const forgotLink = document.getElementById('forgot-password-link');
 
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if(errorBox) errorBox.classList.add('hidden');
-        const email = document.getElementById('login-email').value;
-        const pass = document.getElementById('login-password').value;
+    if(loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(errorBox) errorBox.classList.add('hidden');
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
 
-        try {
-            await signInWithEmailAndPassword(auth, email, pass);
-        } catch (error) {
-            console.error("Erreur Auth:", error.code);
-            let message = "Erreur de connexion.";
-            if (error.code.includes('invalid') || error.code.includes('user-not-found') || error.code.includes('wrong-password')) message = "Email ou mot de passe incorrect.";
-            if(errorText) errorText.textContent = message;
-            if(errorBox) errorBox.classList.remove('hidden');
-            if (window.lucide) window.lucide.createIcons();
-        }
-    });
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (error) {
+                console.error("Erreur Auth:", error.code);
+                let message = "Erreur de connexion.";
+                if (error.code.includes('invalid') || error.code.includes('user-not-found') || error.code.includes('wrong-password')) message = "Email ou mot de passe incorrect.";
+                if(errorText) errorText.textContent = message;
+                if(errorBox) errorBox.classList.remove('hidden');
+                if (window.lucide) window.lucide.createIcons();
+            }
+        });
+    }
 
     document.getElementById('bottom-logout-btn').addEventListener('click', () => signOut(auth));
 
@@ -176,14 +165,13 @@ function initializeApplication() {
     if (window.lucide) window.lucide.createIcons();
 }
 
-// ================= DASHBOARD (CORRIGÉ AVEC FUNCTION HOISTING) =================
+// ================= DASHBOARD =================
 
 function setupDashboard() {
     let totalVentesEncaissees = 0;
     let totalDepenses = 0;
     let caisseInitiale = 0;
 
-    // Utilisation de 'function' au lieu de 'const' pour éviter l'erreur ReferenceError
     function updateDashboardTotals() {
         const beneficeReel = (caisseInitiale + totalVentesEncaissees) - totalDepenses;
 
@@ -408,6 +396,7 @@ function setupStockManagement() {
             try {
                 const batch = writeBatch(db);
                 const prodRef = doc(db, "boutiques", currentBoutiqueId, "products", id);
+                
                 batch.update(prodRef, { prixAchat: newAchat, prixVente: newVente, stock: newStock, lastModified: serverTimestamp() });
 
                 if (newAchat !== oldAchat || newVente !== oldVente) {
@@ -425,79 +414,122 @@ function setupStockManagement() {
     window.deleteProduct = (id) => { if(confirm("Archiver ce produit ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "products", id), { deleted: true }); };
 }
 
-// ================= CREDITS =================
+// ================= VENTES (AVEC TOUTES LES FONCTIONS RESTITUÉES) =================
 
+async function loadClientsIntoSelect() {
+    const select = document.getElementById('credit-client-select');
+    select.innerHTML = '<option value="">Chargement...</option>';
+    const clientsSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "clients"));
+    if (clientsSnap.empty) { select.innerHTML = '<option value="">Aucun client</option>'; return; }
+    select.innerHTML = '<option value="">-- Choisir un client --</option>';
+    clientsSnap.forEach(doc => { if(!doc.data().deleted) { const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = doc.data().nom; select.appendChild(opt); }});
+}
+
+function setupSalesPage() {
+    const searchInput = document.getElementById('sale-search');
+    const resultsDiv = document.getElementById('sale-search-results');
+    const btnCash = document.getElementById('btn-validate-cash');
+    const btnCredit = document.getElementById('btn-open-credit-modal');
+    const btnQuickAdd = document.getElementById('btn-quick-add-client');
+    const dateDisplay = document.getElementById('current-date-display');
+    if(dateDisplay) dateDisplay.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        if (term.length < 1) { resultsDiv.classList.add('hidden'); return; }
+        const matches = allProducts.filter(p => p.nom.includes(term) && !p.deleted);
+        resultsDiv.innerHTML = '';
+        if (matches.length > 0) {
+            resultsDiv.classList.remove('hidden');
+            matches.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "p-3 hover:bg-blue-50 cursor-pointer border-b flex justify-between";
+                div.innerHTML = `<span>${p.nomDisplay}</span><span class="${p.stock>0?'text-green-600':'text-red-600'} font-bold">${p.stock}</span>`;
+                div.onclick = () => addToCart(p);
+                resultsDiv.appendChild(div);
+            });
+        } else { resultsDiv.classList.add('hidden'); }
+    });
+    document.addEventListener('click', (e) => { if (!searchInput.contains(e.target)) resultsDiv.classList.add('hidden'); });
+    btnCash.addEventListener('click', () => { if (saleCart.length === 0) return showToast("Vide", "error"); showConfirmModal("Encaisser ?", `Total: ${document.getElementById('cart-total-display').textContent}`, async () => await processSale('cash', null, null)); });
+    btnCredit.addEventListener('click', async () => { if (saleCart.length === 0) return showToast("Vide", "error"); await loadClientsIntoSelect(); document.getElementById('credit-sale-modal').classList.remove('hidden'); });
+    if(btnQuickAdd) btnQuickAdd.addEventListener('click', () => { document.getElementById('credit-sale-modal').classList.add('hidden'); document.getElementById('add-client-modal').classList.remove('hidden'); isQuickAddMode = true; });
+    document.getElementById('confirm-credit-sale-btn').addEventListener('click', async () => { const sel = document.getElementById('credit-client-select'); if (!sel.value) return showToast("Client?", "error"); document.getElementById('credit-sale-modal').classList.add('hidden'); await processSale('credit', sel.value, sel.options[sel.selectedIndex]?.text); });
+}
+
+async function processSale(type, clientId, clientName) {
+    try {
+        const batch = writeBatch(db);
+        const saleRef = doc(collection(db, "boutiques", currentBoutiqueId, "ventes"));
+        let total = 0, profit = 0;
+        const itemsForInvoice = JSON.parse(JSON.stringify(saleCart)); 
+        for (const item of saleCart) {
+            const lineTotal = item.prixVente * item.qty;
+            total += lineTotal;
+            profit += (item.prixVente - (item.prixAchat || 0)) * item.qty;
+            // AJOUTER LES VENTES DANS LE STOCK
+            const pRef = doc(db, "boutiques", currentBoutiqueId, "products", item.id);
+            batch.update(pRef, { 
+                stock: increment(-item.qty),
+                quantiteVendue: increment(item.qty) 
+            });
+        }
+        if (type === 'credit' && clientId) batch.update(doc(db, "boutiques", currentBoutiqueId, "clients", clientId), { dette: increment(total) });
+        batch.set(saleRef, { items: saleCart, total, profit, date: serverTimestamp(), vendeurId: userId, type, clientId: clientId || null, clientName: clientName || null, deleted: false });
+        await batch.commit();
+        showInvoiceModal(itemsForInvoice, total, type, clientName);
+        saleCart = []; renderCart();
+    } catch (err) { console.error(err); showToast("Erreur vente", "error"); }
+}
+
+function showInvoiceModal(items, total, type, clientName) {
+    const modal = document.getElementById('invoice-modal');
+    document.getElementById('invoice-amount').textContent = formatPrice(total);
+    const shopName = document.getElementById('dashboard-user-name').textContent.trim();
+    const dateStr = new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+    let receiptText = `🧾 *REÇU*\n🏪 ${shopName}\n📅 ${dateStr}\n`;
+    if(clientName) receiptText += `👤 Client: ${clientName}\n`;
+    receiptText += `----------------\n`;
+    let html = "";
+    items.forEach(i => { receiptText += `${i.qty}x ${i.nomDisplay}: ${formatPrice(i.prixVente*i.qty)}\n`; html += `<div class="flex justify-between"><span>${i.qty}x ${i.nomDisplay}</span><span>${formatPrice(i.prixVente*i.qty)}</span></div>`; });
+    receiptText += `----------------\n💰 TOTAL: ${formatPrice(total)}\n`;
+    document.getElementById('invoice-preview').innerHTML = html;
+    document.getElementById('btn-whatsapp-share').href = `https://wa.me/?text=${encodeURIComponent(receiptText)}`;
+    modal.classList.remove('hidden');
+}
+window.addToCart = (p) => { if (p.stock <= 0) return showToast("Epuisé", "error"); const ex = saleCart.find(i => i.id === p.id); if(ex) { if(ex.qty>=p.stock) return showToast("Max atteint", "error"); ex.qty++; } else saleCart.push({...p, qty:1, addedAt: new Date()}); document.getElementById('sale-search').value = ''; document.getElementById('sale-search-results').classList.add('hidden'); renderCart(); };
+window.renderCart = () => { const tb = document.getElementById('cart-table-body'); document.getElementById('cart-total-display').textContent = formatPrice(saleCart.reduce((a,b)=>a+(b.prixVente*b.qty),0)); tb.innerHTML = saleCart.length===0 ? '<tr><td colspan="5" class="p-8 text-center text-gray-400">Vide</td></tr>' : ''; saleCart.forEach((i,x) => { const ts = i.addedAt ? new Date(i.addedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : ''; tb.innerHTML += `<tr class="border-b last:border-0"><td class="p-3"><div>${i.nomDisplay}</div><small class="text-gray-400">${ts}</small></td><td class="p-3 text-center"><input type="number" value="${i.prixVente}" onchange="updateItemPrice(${x},this.value)" class="w-24 p-1 border rounded text-center text-blue-600 font-bold"></td><td class="p-3 text-center flex justify-center gap-1"><button onclick="updateQty(${x},-1)" class="w-6 bg-gray-200 rounded">-</button><span class="w-6 font-bold text-sm">${i.qty}</span><button onclick="updateQty(${x},1)" class="w-6 bg-gray-200 rounded">+</button></td><td class="p-3 text-right font-bold">${formatPrice(i.prixVente*i.qty)}</td><td class="p-3 text-right"><button onclick="saleCart.splice(${x},1);renderCart()" class="text-red-500">X</button></td></tr>`; }); };
+window.updateItemPrice = (i,v) => { let p = parseFloat(v); if(p<0||isNaN(p)) return renderCart(); saleCart[i].prixVente = p; renderCart(); };
+window.updateQty = (i,d) => { const it = saleCart[i]; const st = allProducts.find(p => p.id===it.id)?.stock||0; if(d>0 && it.qty>=st) return showToast("Stock max", "error"); it.qty+=d; if(it.qty<=0) saleCart.splice(i,1); renderCart(); };
+window.clearCart = () => { if(saleCart.length>0 && confirm("Vider ?")) { saleCart=[]; renderCart(); } };
+
+// ================= CREDITS =================
 function setupCredits() {
     const form = document.getElementById('form-client');
-    
     onSnapshot(collection(db, "boutiques", currentBoutiqueId, "clients"), (snap) => {
         const tbody = document.getElementById('credits-table-body');
         let totalDette = 0;
         if(tbody) tbody.innerHTML = '';
-        
         snap.forEach(d => {
             const c = { id: d.id, ...d.data() };
             if (!c.deleted) totalDette += (c.dette || 0);
             if (c.deleted && userRole === 'seller') return;
-
             if(tbody) {
                 const rowClass = c.deleted ? "deleted-row" : "border-b hover:bg-gray-50";
                 const actions = (userRole === 'admin' && !c.deleted) ? `<button onclick="deleteClient('${c.id}')" class="text-red-400 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
                 const safeName = c.nom.replace(/'/g, "\\'");
                 const payBtn = (!c.deleted && c.dette > 0) ? `<button onclick="rembourserClient('${c.id}', ${c.dette}, '${safeName}')" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs mr-2 font-bold">Payer</button>` : '';
-
                 tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4 font-medium">${c.nom} ${c.deleted?'(Archivé)':''}</td><td class="p-4">${c.telephone||'-'}</td><td class="p-4 font-bold text-orange-600">${formatPrice(c.dette||0)}</td><td class="p-4 text-right flex gap-2 justify-end">${payBtn} ${actions}</td></tr>`;
             }
         });
         if(document.getElementById('dash-total-credits')) document.getElementById('dash-total-credits').textContent = formatPrice(totalDette);
         if (window.lucide) window.lucide.createIcons();
     });
-
-    if(form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "clients")), { nom: document.getElementById('client-nom').value, telephone: document.getElementById('client-tel').value, dette: 0, createdAt: serverTimestamp(), deleted: false });
-                form.reset(); document.getElementById('add-client-modal').classList.add('hidden'); showToast("Client ajouté");
-                if (isQuickAddMode) { await loadClientsIntoSelect(); document.getElementById('credit-sale-modal').classList.remove('hidden'); isQuickAddMode = false; }
-            } catch(e) { showToast("Erreur", "error"); }
-        });
-    }
-
-    window.rembourserClient = async (id, dette, nomClient) => {
-        const m = prompt(`Dette: ${formatPrice(dette)}\nMontant versé :`);
-        if(!m) return;
-        const montant = parseFloat(m);
-        if(isNaN(montant) || montant <= 0) return showToast("Montant invalide", "error");
-        
-        try {
-            const batch = writeBatch(db);
-            const clientRef = doc(db, "boutiques", currentBoutiqueId, "clients", id);
-            batch.update(clientRef, { dette: increment(-montant) });
-            
-            const moveRef = doc(collection(db, "boutiques", currentBoutiqueId, "ventes"));
-            batch.set(moveRef, {
-                date: serverTimestamp(),
-                total: montant,
-                profit: 0,
-                type: 'remboursement',
-                clientName: nomClient,
-                clientId: id,
-                items: [],
-                vendeurId: userId,
-                deleted: false
-            });
-            
-            await batch.commit();
-            showToast("Remboursement encaissé !", "success");
-        } catch(e) { console.error(e); showToast("Erreur", "error"); }
-    };
-    
-    window.deleteClient = (id) => { if(confirm("Archiver ce client ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "clients", id), { deleted: true }); };
+    if(form) { form.addEventListener('submit', async (e) => { e.preventDefault(); try { await setDoc(doc(collection(db, "boutiques", currentBoutiqueId, "clients")), { nom: document.getElementById('client-nom').value, telephone: document.getElementById('client-tel').value, dette: 0, createdAt: serverTimestamp(), deleted: false }); form.reset(); document.getElementById('add-client-modal').classList.add('hidden'); showToast("Client ajouté"); if (isQuickAddMode) { await loadClientsIntoSelect(); document.getElementById('credit-sale-modal').classList.remove('hidden'); isQuickAddMode = false; } } catch(e) { showToast("Erreur", "error"); } }); }
+    window.rembourserClient = async (id, dette, nomClient) => { const m = prompt(`Dette: ${formatPrice(dette)}\nMontant versé :`); if(!m) return; const montant = parseFloat(m); if(isNaN(montant) || montant <= 0) return showToast("Montant invalide", "error"); try { const batch = writeBatch(db); const clientRef = doc(db, "boutiques", currentBoutiqueId, "clients", id); batch.update(clientRef, { dette: increment(-montant) }); const moveRef = doc(collection(db, "boutiques", currentBoutiqueId, "ventes")); batch.set(moveRef, { date: serverTimestamp(), total: montant, profit: 0, type: 'remboursement', clientName: nomClient, clientId: id, items: [], vendeurId: userId, deleted: false }); await batch.commit(); showToast("Remboursement encaissé !", "success"); } catch(e) { console.error(e); showToast("Erreur", "error"); } };
+    window.deleteClient = (id) => { if(confirm("Archiver ?")) updateDoc(doc(db, "boutiques", currentBoutiqueId, "clients", id), { deleted: true }); };
 }
 
 // ================= EXPENSES =================
-
 function setupExpenses() {
     const form = document.getElementById('form-expense');
     const searchInput = document.getElementById('expenses-search');
@@ -525,12 +557,10 @@ function setupExpenses() {
 }
 
 // ================= RAPPORTS =================
-
 function setupReports() {
     if (!currentBoutiqueId) return;
     const btnFilter = document.getElementById('btn-filter-reports');
     if(!btnFilter) return;
-    
     const dateStart = document.getElementById('report-date-start');
     const dateEnd = document.getElementById('report-date-end');
     const caisseInput = document.getElementById('caisse-initiale-input');
@@ -553,25 +583,12 @@ function setupReports() {
     } else { setTimeout(() => loadData(), 100); }
 
     let loadedTransactions = [];
-
     const renderReportsTable = () => {
         const tbody = document.getElementById('reports-table-body');
         tbody.innerHTML = '';
         let filtered = loadedTransactions;
-
-        if(searchInput && searchInput.value) {
-            const term = searchInput.value.toLowerCase();
-            filtered = loadedTransactions.filter(t => t.desc.toLowerCase().includes(term) || t.type.toLowerCase().includes(term));
-        }
-        if(sortSelect) {
-            const sort = sortSelect.value;
-            filtered.sort((a, b) => {
-                if(sort === 'date_desc') return b.date - a.date;
-                if(sort === 'date_asc') return a.date - b.date;
-                if(sort === 'amount_desc') return b.amount - a.amount;
-                return 0;
-            });
-        }
+        if(searchInput && searchInput.value) { const term = searchInput.value.toLowerCase(); filtered = loadedTransactions.filter(t => t.desc.toLowerCase().includes(term) || t.type.toLowerCase().includes(term)); }
+        if(sortSelect) { const sort = sortSelect.value; filtered.sort((a, b) => { if(sort === 'date_desc') return b.date - a.date; if(sort === 'date_asc') return a.date - b.date; if(sort === 'amount_desc') return b.amount - a.amount; return 0; }); }
 
         let totalEncaisse = 0; let totalSorties = 0;
         loadedTransactions.forEach(t => { if(t.isExpense) totalSorties += t.amount; else if (t.isEffectiveEntry) totalEncaisse += t.amount; });
@@ -607,7 +624,6 @@ function setupReports() {
             const salesSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "ventes"));
             const expSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "expenses"));
             loadedTransactions = [];
-
             salesSnap.forEach(doc => {
                 const s = doc.data();
                 if(s.deleted) return; 
@@ -616,17 +632,10 @@ function setupReports() {
                 else { let pList = s.items ? s.items.map(i => `${i.nomDisplay||i.nom} (${i.qty}x${formatPrice(i.prixVente)})`).join(', ') : 'Vente'; if (s.clientName) desc = `👤 <strong>${s.clientName}</strong> : ` + pList; else desc = pList; if (s.type === 'credit') { desc += ' <span class="text-xs bg-orange-100 text-orange-600 px-1 rounded">Non Payé</span>'; typeLabel = "CRÉDIT"; isCreditSale = true; } else { typeLabel = "VENTE"; isEffectiveEntry = true; } }
                 loadedTransactions.push({ date: s.date?.toDate(), desc, type: typeLabel, amount: s.total||0, isExpense: false, isEffectiveEntry, isCreditSale });
             });
-
-            expSnap.forEach(doc => {
-                const e = doc.data();
-                if(e.deleted) return;
-                loadedTransactions.push({ date: e.date?.toDate(), desc: e.motif, type: 'SORTIE', amount: e.montant||0, isExpense: true, isEffectiveEntry: false });
-            });
-
+            expSnap.forEach(doc => { const e = doc.data(); if(e.deleted) return; loadedTransactions.push({ date: e.date?.toDate(), desc: e.motif, type: 'SORTIE', amount: e.montant||0, isExpense: true, isEffectiveEntry: false }); });
             const start = new Date(dateStart.value); start.setHours(0,0,0,0); const end = new Date(dateEnd.value); end.setHours(23,59,59,999);
             loadedTransactions = loadedTransactions.filter(t => t.date >= start && t.date <= end).sort((a,b)=>a.date-b.date);
             renderReportsTable();
-
         } catch (error) { console.error(error); }
     };
     btnFilter.addEventListener('click', loadData);
@@ -635,7 +644,6 @@ function setupReports() {
 }
 
 // ================= ADMIN & EXPORTS =================
-
 function setupAdminFeatures() { const f = document.getElementById('create-boutique-form'); document.getElementById('open-admin-modal')?.addEventListener('click', () => document.getElementById('admin-modal').classList.remove('hidden')); document.getElementById('admin-modal-close-btn')?.addEventListener('click', () => document.getElementById('admin-modal').classList.add('hidden')); if(f) f.addEventListener('submit', async (e) => { e.preventDefault(); try { const secApp = initializeApp(firebaseConfig, "Sec"); const secAuth = getAuth(secApp); const ref = doc(collection(db, "boutiques")); await setDoc(ref, { nom: document.getElementById('new-boutique-name').value, createdAt: serverTimestamp(), createdBy: userId }); const adm = await createUserWithEmailAndPassword(secAuth, document.getElementById('admin-email').value, document.getElementById('admin-password').value); await setDoc(doc(db, "users", adm.user.uid), { email: document.getElementById('admin-email').value, role: 'admin', boutiqueId: ref.id, boutiqueName: document.getElementById('new-boutique-name').value }); await signOut(secAuth); const sell = await createUserWithEmailAndPassword(secAuth, document.getElementById('seller-email').value, document.getElementById('seller-password').value); await setDoc(doc(db, "users", sell.user.uid), { email: document.getElementById('seller-email').value, role: 'seller', boutiqueId: ref.id, boutiqueName: document.getElementById('new-boutique-name').value }); await signOut(secAuth); showToast("Créé !"); f.reset(); document.getElementById('admin-modal').classList.add('hidden'); loadBoutiquesList(); loadShopsForImport(); } catch(err) { showToast(err.message, "error"); } }); }
 async function loadBoutiquesList() { const l = await getAvailableBoutiques(); const d = document.getElementById('admin-boutiques-list'); if(d) d.innerHTML = l.map(b => `<div class="p-2 border-b">${b.nom}</div>`).join(''); }
 async function loadShopsForImport() { const s = document.getElementById('import-target-shop'); if(!s) return; const l = await getAvailableBoutiques(); s.innerHTML = '<option value="">-- Choisir --</option>'; l.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.nom; s.appendChild(o); }); }
