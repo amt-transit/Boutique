@@ -205,11 +205,30 @@
                 <div id="add-product-form" class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8 hidden">
                     <h3 class="font-bold text-lg mb-4 text-gray-700">Ajouter / Modifier</h3>
                     <form id="form-stock" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                        <div class="lg:col-span-2"><label class="text-xs font-bold text-gray-500 uppercase">Nom</label><input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded" required></div>
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">Prix Achat</label><input type="number" id="prod-achat" class="w-full mt-1 border p-2 rounded"></div>
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">Prix Vente</label><input type="number" id="prod-prix" class="w-full mt-1 border p-2 rounded"></div>
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">Stock</label><input type="number" id="prod-qte" class="w-full mt-1 border p-2 rounded" required></div>
-                        <div class="md:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2"><button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-bold">Enregistrer</button></div>
+                        <div class="lg:col-span-2 relative">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Nom</label>
+                            
+                            <input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required autocomplete="off">
+                            
+                            <div id="prod-nom-suggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg max-h-48 overflow-y-auto top-full left-0"></div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Achat</label>
+                            <input type="number" id="prod-achat" class="w-full mt-1 border p-2 rounded">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Vente</label>
+                            <input type="number" id="prod-prix" class="w-full mt-1 border p-2 rounded">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase">Stock</label>
+                            <input type="number" id="prod-qte" class="w-full mt-1 border p-2 rounded" required>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2">
+                            <button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-bold">Enregistrer</button>
+                        </div>
                     </form>
                 </div>
                 <div class="flex flex-col md:flex-row gap-4 mb-4">
