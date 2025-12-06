@@ -290,6 +290,8 @@ function setupDashboard() {
 
 // ================= STOCK =================
 
+// ================= STOCK (CORRECTION DÉCALAGE + AJOUT DATE) =================
+
 function setupStockManagement() {
     const stockForm = document.getElementById('form-stock');
     const editForm = document.getElementById('form-edit-product');
@@ -309,51 +311,85 @@ function setupStockManagement() {
         if (sortSelect) {
             const sortType = sortSelect.value;
             filteredData.sort((a, b) => {
+                // Tri par date
+                if (sortType === 'date_desc') return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
                 if (sortType === 'name_asc') return a.nom.localeCompare(b.nom);
                 if (sortType === 'price_asc') return (a.prixAchat || 0) - (b.prixAchat || 0);
                 if (sortType === 'price_desc') return (b.prixAchat || 0) - (a.prixAchat || 0);
                 if (sortType === 'stock_asc') return a.stock - b.stock;
                 if (sortType === 'stock_desc') return b.stock - a.stock;
-                if (sortType === 'date_desc') return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
                 return 0;
             });
         }
 
         filteredData.forEach(p => {
             const tr = document.createElement('tr');
-            let rowClass = p.deleted ? "deleted-row" : "border-b border-gray-100 hover:bg-gray-50 transition";
-            let rowAction = "";
             
+            // 1. Style
+            let rowClass = p.deleted ? "deleted-row" : "border-b border-gray-100 hover:bg-gray-50 transition";
+            
+            // 2. Action au clic (Admin)
+            let rowAction = "";
             if (userRole === 'admin' && !p.deleted) { 
                 const productData = encodeURIComponent(JSON.stringify(p)); 
                 rowAction = `onclick="openEditProduct('${productData}')"`; 
                 rowClass += " cursor-pointer hover:bg-blue-50"; 
             }
             
+            // 3. Bouton Supprimer
             const deleteBtn = (userRole === 'admin' && !p.deleted) 
                 ? `<button class="text-red-500 hover:bg-red-100 p-2 rounded-full transition" onclick="event.stopPropagation(); deleteProduct('${p.id}')" title="Archiver"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
                 : '';
             
+            // 4. Calculs
             const reste = p.stock || 0; 
             const vendu = p.quantiteVendue || 0; 
             const total = reste + vendu;
+            
+            // 5. Date (CORRECTION ICI)
+            const dateStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString('fr-FR') : '-';
 
             tr.className = rowClass;
             tr.innerHTML = `
-                <td ${rowAction} class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom} ${p.deleted ? '(Archivé)' : ''}</td>
+                <td ${rowAction} class="p-4 text-xs text-gray-500">${dateStr}</td>
+
+                <td ${rowAction} class="p-4 font-medium text-gray-800">
+                    ${p.nomDisplay || p.nom} 
+                    ${p.deleted ? '<span class="text-xs italic text-gray-400">(Archivé)</span>' : ''}
+                </td>
+
                 <td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td>
+
                 <td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td>
+                
                 <td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td>
+
                 <td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td>
-                <td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td>
-                <td class="p-4 text-right">${deleteBtn}</td>`;
+
+                <td ${rowAction} class="p-4 text-center">
+                    <span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">
+                        ${reste}
+                    </span>
+                </td>
+                
+                <td class="p-4 text-right">
+                    ${deleteBtn}
+                </td>
+            `;
             tbody.appendChild(tr);
         });
+        
         if (window.lucide) window.lucide.createIcons();
         
-        // Indicateurs Stock
+        // Mise à jour des indicateurs du haut
         let totalAchat = 0, totalVente = 0, totalItems = 0;
-        allProducts.forEach(p => { if(!p.deleted) { totalAchat += (p.prixAchat||0)*(p.stock||0); totalVente += (p.prixVente||0)*(p.stock||0); totalItems += (p.stock||0); }});
+        allProducts.forEach(p => { 
+            if(!p.deleted) { 
+                totalAchat += (p.prixAchat||0)*(p.stock||0); 
+                totalVente += (p.prixVente||0)*(p.stock||0); 
+                totalItems += (p.stock||0); 
+            }
+        });
         if(document.getElementById('stock-total-value')) document.getElementById('stock-total-value').textContent = formatPrice(totalAchat);
         if(document.getElementById('stock-potential-value')) document.getElementById('stock-potential-value').textContent = formatPrice(totalVente);
         if(document.getElementById('stock-total-count')) document.getElementById('stock-total-count').textContent = totalItems;
@@ -390,6 +426,7 @@ function setupStockManagement() {
         });
     }
     
+    // Logique Modale Edit
     window.openEditProduct = (encodedProduct) => {
         const p = JSON.parse(decodeURIComponent(encodedProduct));
         document.getElementById('edit-prod-id').value = p.id;
@@ -397,6 +434,7 @@ function setupStockManagement() {
         document.getElementById('edit-prod-achat').value = p.prixAchat;
         document.getElementById('edit-prod-vente').value = p.prixVente;
         document.getElementById('edit-prod-stock').value = p.stock;
+        
         const form = document.getElementById('form-edit-product');
         if(form) {
             form.dataset.oldAchat = p.prixAchat;
