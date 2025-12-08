@@ -11,7 +11,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCluRVv-olQsTuZZBPjjJns1jHq0vkhjSw",
+    apiKey: "AIzaSyD-akUPuXiryd01tioZqklgdg3vGa1abvs",
     authDomain: "maboutique-7891.firebaseapp.com",
     projectId: "maboutique-7891",
     storageBucket: "maboutique-7891.firebasestorage.app",
