@@ -39,7 +39,12 @@
                     <label class="text-sm font-bold text-gray-700 block mb-2">Mot de passe</label>
                     <div class="relative">
                         <i data-lucide="lock" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
-                        <input type="password" id="login-password" class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••" required>
+                        
+                        <input type="password" id="login-password" class="w-full pl-10 pr-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••" required>
+                        
+                        <button type="button" id="toggle-password-visibility" class="absolute right-3 top-3 text-gray-400 hover:text-blue-600 focus:outline-none">
+                            <i data-lucide="eye"></i>
+                        </button>
                     </div>
                     <div class="text-right mt-2">
                         <a href="#" id="forgot-password-link" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Mot de passe oublié ?</a>

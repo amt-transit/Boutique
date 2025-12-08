@@ -69,6 +69,28 @@ function setupLoginForm() {
     const errorText = document.getElementById('login-error-text');
     const forgotLink = document.getElementById('forgot-password-link');
     const logoutBtn = document.getElementById('bottom-logout-btn');
+    const togglePwdBtn = document.getElementById('toggle-password-visibility');
+    const pwdInput = document.getElementById('login-password');
+
+    if (togglePwdBtn && pwdInput) {
+        togglePwdBtn.addEventListener('click', () => {
+            // Vérifier le type actuel
+            const type = pwdInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            
+            // Changer le type (Texte <-> Masqué)
+            pwdInput.setAttribute('type', type);
+            
+            // Changer l'icône (Oeil ouvert <-> Oeil barré)
+            if (type === 'password') {
+                togglePwdBtn.innerHTML = '<i data-lucide="eye"></i>';
+            } else {
+                togglePwdBtn.innerHTML = '<i data-lucide="eye-off"></i>';
+            }
+            
+            // Rafraîchir les icônes Lucide
+            if (window.lucide) window.lucide.createIcons();
+        });
+    }
 
     if(loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -964,24 +986,54 @@ function setupAdminFeatures() {
         } catch(e) { showToast("Erreur", "error"); } 
     };
 
-    window.updateAccess = async (role) => { 
-        if (!currentAccessShopId) return; 
-        const em = document.getElementById(role === 'admin' ? 'new-admin-access-email' : 'new-seller-access-email').value; 
-        const ps = document.getElementById(role === 'admin' ? 'new-admin-access-pass' : 'new-seller-access-pass').value; 
-        if (!em || ps.length < 6) return showToast("Invalide", "error"); 
-        try { 
-            const secApp = initializeApp(firebaseConfig, "SecAccess"); 
-            const secAuth = getAuth(secApp); 
-            const cred = await createUserWithEmailAndPassword(secAuth, em, ps); 
-            const q = query(collection(db, "users"), where("boutiqueId", "==", currentAccessShopId), where("role", "==", role)); 
-            const snap = await getDocs(q); 
-            snap.forEach(async (d) => { await deleteDoc(d.ref); }); 
-            const shopDoc = await getDoc(doc(db, "boutiques", currentAccessShopId)); 
-            await setDoc(doc(db, "users", cred.user.uid), { email: em, role: role, boutiqueId: currentAccessShopId, boutiqueName: shopDoc.data().nom, createdAt: serverTimestamp() }); 
-            await signOut(secAuth); 
-            showToast("Mis à jour !"); 
-            openAccessManager(currentAccessShopId, shopDoc.data().nom); 
-        } catch (e) { showToast(e.message, "error"); } 
+    window.updateAccess = async (role) => {
+        if (!currentAccessShopId) return;
+        
+        // On récupère juste l'email
+        const em = document.getElementById(role === 'admin' ? 'new-admin-access-email' : 'new-seller-access-email').value;
+        
+        if (!em) return showToast("Veuillez entrer l'email", "error");
+
+        // On demande confirmation
+        if(!confirm("Attention : Sans serveur, nous ne pouvons pas changer le mot de passe directement.\n\nVoulez-vous envoyer un email de réinitialisation de mot de passe à cette adresse ?")) return;
+
+        try {
+            // Envoi du mail de reset
+            await sendPasswordResetEmail(auth, em);
+            
+            // Mise à jour de l'email dans la base de données (si l'utilisateur a changé d'email)
+            // On cherche l'ancien document pour le mettre à jour
+            const q = query(collection(db, "users"), where("boutiqueId", "==", currentAccessShopId), where("role", "==", role));
+            const snap = await getDocs(q);
+            
+            const batch = writeBatch(db);
+            let found = false;
+            
+            snap.forEach(d => {
+                // On met à jour l'email dans la fiche Firestore pour que l'affichage soit correct
+                batch.update(d.ref, { email: em });
+                found = true;
+            });
+
+            if(found) {
+                await batch.commit();
+                showToast("Email de réinitialisation envoyé et fiche mise à jour !", "success");
+            } else {
+                showToast("Email envoyé, mais fiche utilisateur introuvable dans la base.", "warning");
+            }
+            
+            // Rafraîchir l'affichage
+            const shopDoc = await getDoc(doc(db, "boutiques", currentAccessShopId));
+            openAccessManager(currentAccessShopId, shopDoc.data().nom);
+
+        } catch (e) {
+            console.error(e);
+            if(e.code === 'auth/user-not-found') {
+                showToast("Cet utilisateur n'existe pas dans Auth.", "error");
+            } else {
+                showToast("Erreur: " + e.message, "error");
+            }
+        }
     };
 }
 
