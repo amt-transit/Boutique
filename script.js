@@ -169,7 +169,8 @@ function showSuperAdminInterface() {
     showTab('admin');
     showTab('admin-access');
     switchTab('admin');
-    initShopSearchForImport(); 
+    loadShopsForImport();  // <--- Le bon nom de la fonction
+    loadBoutiquesList(); 
     setupAdminAccessPage(); 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -1025,23 +1026,6 @@ window.openAccessManager = async (shopId, shopName) => {
     if(!s) document.getElementById('current-seller-email').textContent = "Aucun";
 };
 
-async function loadBoutiquesList() { 
-    const l = await getAvailableBoutiques(); 
-    const d = document.getElementById('admin-boutiques-list'); 
-    if(d) d.innerHTML = l.map(b => `<div class="p-2 border-b">${b.nom}</div>`).join(''); 
-}
-
-async function loadShopsForImport() { 
-    const s = document.getElementById('import-target-shop'); 
-    if(!s) return; 
-    const l = await getAvailableBoutiques(); 
-    s.innerHTML = '<option value="">-- Choisir --</option>'; 
-    l.forEach(b => { 
-        const o = document.createElement('option'); 
-        o.value = b.id; o.textContent = b.nom; 
-        s.appendChild(o); 
-    }); 
-}
 
 window.processImport = async function(n) { 
     const id = document.getElementById('import-target-shop').value; 
@@ -1108,6 +1092,27 @@ function setupModalListeners() {
     document.getElementById('modal-cancel-btn').addEventListener('click', ()=>document.getElementById('confirm-modal').classList.add('hidden')); 
     document.getElementById('modal-confirm-btn').addEventListener('click', ()=>{ if(actionToConfirm) actionToConfirm(); document.getElementById('confirm-modal').classList.add('hidden'); }); 
     document.getElementById('admin-modal-close-btn').addEventListener('click', ()=>document.getElementById('admin-modal').classList.add('hidden')); 
+}
+async function loadBoutiquesList() { 
+    try {
+        const l = await getAvailableBoutiques(); 
+        const d = document.getElementById('admin-boutiques-list'); 
+        if(d) d.innerHTML = l.map(b => `<div class="p-2 border-b flex justify-between"><span>${b.nom}</span><span class="text-xs text-gray-400">${b.id}</span></div>`).join(''); 
+    } catch(e) { console.error(e); }
+}
+
+async function loadShopsForImport() { 
+    const s = document.getElementById('import-target-shop'); 
+    if(!s) return; 
+    try {
+        const l = await getAvailableBoutiques(); 
+        s.innerHTML = '<option value="">-- Choisir --</option>'; 
+        l.forEach(b => { 
+            const o = document.createElement('option'); 
+            o.value = b.id; o.textContent = b.nom; 
+            s.appendChild(o); 
+        }); 
+    } catch(e) { console.error(e); }
 }
 
 main();
