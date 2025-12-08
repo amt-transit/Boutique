@@ -2,7 +2,7 @@
 // SCRIPT: GESTION BOUTIQUE V12 (STABLE & CORRIGÉE)
 // ===============================================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { 
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -986,52 +986,77 @@ function setupAdminFeatures() {
         } catch(e) { showToast("Erreur", "error"); } 
     };
 
+    // Remplacez toute la fonction window.updateAccess par ceci :
+
     window.updateAccess = async (role) => {
         if (!currentAccessShopId) return;
-        
-        // On récupère juste l'email
-        const em = document.getElementById(role === 'admin' ? 'new-admin-access-email' : 'new-seller-access-email').value;
-        
-        if (!em) return showToast("Veuillez entrer l'email", "error");
 
-        // On demande confirmation
-        if(!confirm("Attention : Sans serveur, nous ne pouvons pas changer le mot de passe directement.\n\nVoulez-vous envoyer un email de réinitialisation de mot de passe à cette adresse ?")) return;
+        const em = document.getElementById(role === 'admin' ? 'new-admin-access-email' : 'new-seller-access-email').value;
+        const ps = document.getElementById(role === 'admin' ? 'new-admin-access-pass' : 'new-seller-access-pass').value;
+
+        if (!em || ps.length < 6) return showToast("Email invalide ou mot de passe trop court (6 min)", "error");
+
+        // On utilise un nom unique pour éviter les conflits si on clique 2 fois
+        const appName = "SecAccess_" + new Date().getTime();
+        let secApp;
 
         try {
-            // Envoi du mail de reset
-            await sendPasswordResetEmail(auth, em);
-            
-            // Mise à jour de l'email dans la base de données (si l'utilisateur a changé d'email)
-            // On cherche l'ancien document pour le mettre à jour
+            showToast("Création en cours...", "warning");
+
+            // 1. Initialiser une app secondaire pour créer l'utilisateur sans vous déconnecter
+            secApp = initializeApp(firebaseConfig, appName);
+            const secAuth = getAuth(secApp);
+
+            // 2. Créer l'utilisateur dans Authentication
+            const userCredential = await createUserWithEmailAndPassword(secAuth, em, ps);
+            const newUid = userCredential.user.uid;
+
+            // 3. Nettoyer l'ANCIENNE fiche dans Firestore
+            // On cherche l'ancien utilisateur de cette boutique avec ce rôle
             const q = query(collection(db, "users"), where("boutiqueId", "==", currentAccessShopId), where("role", "==", role));
             const snap = await getDocs(q);
             
             const batch = writeBatch(db);
-            let found = false;
             
+            // On supprime les anciennes fiches (car l'UID ne sert plus)
             snap.forEach(d => {
-                // On met à jour l'email dans la fiche Firestore pour que l'affichage soit correct
-                batch.update(d.ref, { email: em });
-                found = true;
+                batch.delete(d.ref);
             });
 
-            if(found) {
-                await batch.commit();
-                showToast("Email de réinitialisation envoyé et fiche mise à jour !", "success");
-            } else {
-                showToast("Email envoyé, mais fiche utilisateur introuvable dans la base.", "warning");
-            }
+            // 4. Créer la NOUVELLE fiche dans Firestore avec le nouvel UID
+            const shopDoc = await getDoc(doc(db, "boutiques", currentAccessShopId));
+            const shopName = shopDoc.exists() ? shopDoc.data().nom : "Boutique";
+
+            const newUserRef = doc(db, "users", newUid);
+            batch.set(newUserRef, {
+                email: em,
+                role: role,
+                boutiqueId: currentAccessShopId,
+                boutiqueName: shopName,
+                createdAt: serverTimestamp()
+            });
+
+            await batch.commit();
+
+            // 5. Déconnexion de l'app secondaire
+            await signOut(secAuth);
+            
+            showToast("Compte recréé et accès mis à jour !", "success");
             
             // Rafraîchir l'affichage
-            const shopDoc = await getDoc(doc(db, "boutiques", currentAccessShopId));
-            openAccessManager(currentAccessShopId, shopDoc.data().nom);
+            openAccessManager(currentAccessShopId, shopName);
 
         } catch (e) {
-            console.error(e);
-            if(e.code === 'auth/user-not-found') {
-                showToast("Cet utilisateur n'existe pas dans Auth.", "error");
+            console.error("Erreur creation:", e);
+            if (e.code === 'auth/email-already-in-use') {
+                showToast("ERREUR : Cet email existe déjà. Supprimez-le dans la console Firebase > Authentication avant de réessayer.", "error");
             } else {
                 showToast("Erreur: " + e.message, "error");
+            }
+        } finally {
+            // Nettoyage crucial pour éviter les erreurs de mémoire
+            if (secApp) {
+                await deleteApp(secApp); 
             }
         }
     };
