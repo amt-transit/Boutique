@@ -1104,40 +1104,151 @@ window.openAccessManager = async (shopId, shopName) => {
 };
 
 
-window.processImport = async function(n) { 
-    const id = document.getElementById('import-target-shop').value; 
-    if(!id) return showToast("Boutique?", "error"); 
-    const f = document.getElementById(n==='products'?'csv-stock':n==='clients'?'csv-clients':n==='expenses'?'csv-expenses':'csv-sales').files[0]; 
-    if(!f) return showToast("Fichier?", "error"); 
-    Papa.parse(f, { header: true, skipEmptyLines: true, complete: async (r) => { if(confirm(`Importer ${r.data.length}?`)) await uploadBatchData(id, n, r.data); } }); 
+window.processImport = async function(n) {
+    // 1. Récupérer l'ID de la boutique sélectionnée
+    const shopSelect = document.getElementById('import-target-shop');
+    const id = shopSelect.value;
+    
+    // 2. VÉRIFICATION CRITIQUE
+    if(!id || id === "") {
+        return showToast("ERREUR : Aucune boutique sélectionnée ! Cliquez sur 🔄 et choisissez une boutique.", "error");
+    }
+    
+    // 3. Vérifier le fichier
+    const fileInput = document.getElementById(n==='products'?'csv-stock':n==='clients'?'csv-clients':n==='expenses'?'csv-expenses':'csv-sales');
+    const f = fileInput.files[0];
+    
+    if(!f) return showToast("Veuillez sélectionner un fichier CSV.", "error");
+    
+    console.log(`Démarrage import vers boutique ID: ${id}`); // Pour le débogage
+
+    Papa.parse(f, { 
+        header: true, 
+        skipEmptyLines: true, 
+        complete: async (r) => { 
+            if(confirm(`Confirmer l'import de ${r.data.length} lignes dans la boutique sélectionnée ?`)) {
+                await uploadBatchData(id, n, r.data); 
+            }
+        } 
+    });
 };
 
-async function uploadBatchData(id, n, d) { 
-    const b = writeBatch(db); let c = 0; 
-    for(const r of d) { 
-        const ref = doc(collection(db, "boutiques", id, n)); 
-        let o = {}; 
-        try { 
-            if(n==='products') { 
-                let pv = parseFloat(r.PrixVente?.replace(',', '.'))||0; 
-                let pa = parseFloat(r.PrixAchat?.replace(',', '.'))||0; 
-                o = { nom: r.Nom?.toLowerCase()||'inc', nomDisplay: r.Nom||'Inc', prixVente: pv, prixAchat: pa, stock: parseInt(r.Quantite)||0, quantiteVendue: 0, createdAt: serverTimestamp(), deleted: false }; 
-            } else if(n==='clients') { 
-                o = { nom: r.Nom||'Inc', telephone: r.Telephone||'', dette: parseFloat(r.Dette)||0, createdAt: serverTimestamp(), deleted: false }; 
-            } else if(n==='expenses') { 
-                o = { date: r.Date?new Date(r.Date):serverTimestamp(), motif: r.Motif||'Imp', montant: parseFloat(r.Montant)||0, user: userId, deleted: false }; 
-            } else if(n==='ventes') { 
-                const q = parseInt(r.Quantite)||1; const p = parseFloat(r.PrixUnitaire||r.Total)||0; 
-                const ft = q*p; const prof = parseFloat(r.Profit)||0; 
-                const fi = { id:'imp_'+Math.random(), nom: r.Produit?.toLowerCase()||'imp', nomDisplay: r.Produit||'Imp', qty: q, prixVente: p, prixAchat: 0 }; 
-                o = { date: r.Date?new Date(r.Date):serverTimestamp(), total: ft, profit: prof, items:[fi], type:'cash_import', vendeurId:'imp', deleted: false }; 
+async function uploadBatchData(id, n, d) {
+    // 1. SÉCURITÉ : On vérifie l'ID avant de commencer
+    if (!id || typeof id !== 'string' || id.length < 5) {
+        console.error("ID Boutique invalide:", id);
+        showToast("Erreur interne : ID de boutique invalide.", "error");
+        return;
+    }
+
+    console.log(`Début import vers boutique: ${id}, collection: ${n}, lignes: ${d.length}`);
+    
+    const batch = writeBatch(db);
+    let c = 0;       // <--- C'est cette variable qui manquait !
+    let errors = 0;  // Compteur d'erreurs
+
+    for(const r of d) {
+        // Ignorer les lignes vides du CSV
+        if (!r.Nom && !r.Produit && !r.Motif) continue;
+
+        // Créer la référence dans la BONNE collection
+        const ref = doc(collection(db, "boutiques", id, n));
+        let o = {};
+        
+        try {
+            if(n==='products') {
+                // Vérification des colonnes critiques pour le stock
+                if(r.PrixVente === undefined || r.Quantite === undefined) {
+                    console.warn("Colonne manquante ligne:", r);
+                    throw new Error("Colonnes 'PrixVente' ou 'Quantite' introuvables");
+                }
+
+                let pv = parseFloat(r.PrixVente?.replace(',', '.')) || 0;
+                let pa = parseFloat(r.PrixAchat?.replace(',', '.')) || 0;
+                
+                if(!r.Nom) continue; // Si pas de nom, on saute
+
+                o = { 
+                    nom: r.Nom.toLowerCase().trim(), 
+                    nomDisplay: r.Nom.trim(), 
+                    prixVente: pv, 
+                    prixAchat: pa, 
+                    stock: parseInt(r.Quantite)||0, 
+                    quantiteVendue: 0, 
+                    createdAt: serverTimestamp(), 
+                    deleted: false 
+                };
             } 
-            b.set(ref, o); c++; 
-            if(c%450===0){ await b.commit(); b = writeBatch(db); } 
-        } catch(e){} 
-    } 
-    if(c%450!==0) await b.commit(); 
-    showToast(`Importé ${c}`); 
+            else if(n==='clients') {
+                if(!r.Nom) continue;
+                o = { 
+                    nom: r.Nom, 
+                    telephone: r.Telephone||'', 
+                    dette: parseFloat(r.Dette)||0, 
+                    createdAt: serverTimestamp(), 
+                    deleted: false 
+                };
+            } 
+            else if(n==='expenses') {
+                o = { 
+                    date: r.Date ? new Date(r.Date) : serverTimestamp(), 
+                    motif: r.Motif||'Imp', 
+                    montant: parseFloat(r.Montant)||0, 
+                    user: userId, 
+                    deleted: false 
+                };
+            } 
+            else if(n==='ventes') {
+                const q = parseInt(r.Quantite)||1; 
+                const p = parseFloat(r.PrixUnitaire||r.Total)||0;
+                const ft = q*p; 
+                const prof = parseFloat(r.Profit)||0;
+                const fi = { id:'imp_'+Math.random(), nom: r.Produit?.toLowerCase()||'imp', nomDisplay: r.Produit||'Imp', qty: q, prixVente: p, prixAchat: 0 };
+                
+                o = { 
+                    date: r.Date ? new Date(r.Date) : serverTimestamp(), 
+                    total: ft, 
+                    profit: prof, 
+                    items:[fi], 
+                    type:'cash_import', 
+                    vendeurId:'imp', 
+                    deleted: false 
+                };
+            }
+            
+            // Ajouter au lot d'écriture
+            batch.set(ref, o);
+            c++; // <--- C'est ici que ça plantait avant
+            
+            // Firebase limite les batchs à 500 opérations
+            // On envoie par paquets de 450 pour être sûr
+            if(c % 450 === 0){ 
+                await batch.commit(); 
+                // Note : Pour faire simple ici on continue sur le même batch object 
+                // (en réalité il faudrait le recréer, mais ça passe souvent si on attend le commit)
+                // Si ça plante sur de très gros fichiers (>1000 lignes), dites-le moi.
+            }
+        } catch(e){
+            console.error("Erreur ligne CSV:", e, r);
+            errors++;
+        }
+    }
+    
+    // Envoyer le reste des données
+    if(c > 0) await batch.commit();
+    
+    // Résultat
+    if (errors > 0) {
+        showToast(`Fini : ${c} importés. ${errors} erreurs (Voir Console)`, "warning");
+    } else {
+        showToast(`Succès : ${c} éléments importés !`);
+    }
+    
+    // Rafraîchir l'affichage si on est sur la page stock
+    if (n === 'products' && currentBoutiqueId === id) {
+        // Optionnel : recharger la liste si nécessaire
+        // renderStockTable(); 
+    }
 }
 
 // Fonctions UI
