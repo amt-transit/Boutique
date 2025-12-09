@@ -99,6 +99,7 @@
         <div id="top-nav-bar" class="top-tabs">
             <button class="tab active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i><div>Dashboard</div></button>
             <button class="tab" onclick="switchTab('ventes')"><i data-lucide="shopping-cart"></i><div>Vente</div></button>
+            <button class="tab" onclick="switchTab('commandes')"><i data-lucide="clipboard-list"></i><div>Commandes</div></button>
             <button class="tab" onclick="switchTab('stock')"><i data-lucide="package"></i><div>Stock</div></button>
             <button class="tab" onclick="switchTab('credits')"><i data-lucide="users"></i><div>Crédits</div></button>
             <button class="tab" onclick="switchTab('charges')"><i data-lucide="credit-card"></i><div>Charges</div></button>
@@ -180,6 +181,21 @@
                             <button onclick="clearCart()" class="w-full text-gray-400 hover:text-red-500 py-2 text-xs font-medium">Vider le panier</button>
                         </div>
                     </div>
+                </div>
+            </div>
+            <div id="page-commandes" class="page-content hidden">
+                <h1 class="text-2xl font-bold mb-6 text-gray-800">Commandes en cours</h1>
+
+                <div class="bg-white p-6 rounded-xl shadow mb-6 border-l-4 border-indigo-500">
+                    <h3 class="font-bold text-gray-700 mb-2">Nouvelle Commande</h3>
+                    <p class="text-sm text-gray-500 mb-4">Utilisez l'onglet "Vente" pour remplir le panier, puis cliquez sur le bouton "Mettre en Commande" ci-dessous.</p>
+                    <button onclick="saveCartAsOrder()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow transition">
+                        <i data-lucide="save"></i> Enregistrer le Panier actuel comme Commande
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="orders-list-container">
+                    <p class="text-gray-400 italic col-span-full text-center">Chargement des commandes...</p>
                 </div>
             </div>
 
