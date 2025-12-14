@@ -116,7 +116,7 @@
             <button class="tab" id="bottom-logout-btn"><i data-lucide="log-out" class="text-red-400"></i><div class="text-red-400">Sortir</div></button>
         </div>
 
-        <main class="flex-1 p-4 md:p-6 overflow-y-auto w-full max-w-7xl mx-auto">
+        <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50 w-full relative">
 
             <div id="page-dashboard" class="page-content">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6">
@@ -146,39 +146,62 @@
                 </div>
             </div>
 
-            <div id="page-ventes" class="page-content hidden">
-                <div class="flex justify-between items-center mb-6">
+            <div id="page-ventes" class="page-content hidden h-full flex flex-col p-4 md:p-6">
+    
+                <div class="flex-none flex justify-between items-center mb-4">
                     <h1 class="text-2xl font-bold text-gray-800">Caisse</h1>
                     <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
                         <i data-lucide="calendar" class="w-4 h-4"></i> <span id="current-date-display"></span>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm">
-                        <div class="mb-4 relative z-30">
-                            <div class="relative"><i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i><input type="text" id="sale-search" placeholder="Scanner ou chercher..." class="w-full pl-10 p-3 border rounded-lg outline-none" autocomplete="off"></div>
-                            <div id="sale-search-results" class="hidden absolute w-full bg-white border rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto"></div>
+
+                <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+                    
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm flex flex-col overflow-hidden h-full">
+                        
+                        <div class="p-4 border-b z-20 bg-white">
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                                <input type="text" id="sale-search" placeholder="Scanner ou chercher..." class="w-full pl-10 p-3 border rounded-lg outline-none" autocomplete="off">
+                                <div id="sale-search-results" class="hidden absolute w-full bg-white border rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto z-50"></div>
+                            </div>
                         </div>
-                        <div class="overflow-x-auto min-h-[250px]">
-                            <table class="w-full">
-                                <thead class="bg-gray-50 text-gray-600 text-sm">
+
+                        <div class="flex-1 overflow-y-auto p-0">
+                            <table class="w-full relative">
+                                <thead class="bg-gray-50 text-gray-600 text-sm sticky top-0 z-10 shadow-sm">
                                     <tr>
-                                        <th class="p-3 text-left rounded-l-lg">Produit</th>
-                                        <th class="p-3 text-center">Prix U.</th><th class="p-3 text-center">Qté</th>
+                                        <th class="p-3 text-left">Produit</th>
+                                        <th class="p-3 text-center">Prix U.</th>
+                                        <th class="p-3 text-center">Qté</th>
                                         <th class="p-3 text-right">Total</th>
-                                        <th class="p-3 rounded-r-lg"></th>
+                                        <th class="p-3"></th>
                                     </tr>
                                 </thead>
-                                <tbody id="cart-table-body" class="text-sm"><tr><td colspan="5" class="p-8 text-center text-gray-400 italic">Le panier est vide</td></tr></tbody>
+                                <tbody id="cart-table-body" class="text-sm divide-y">
+                                    <tr><td colspan="5" class="p-8 text-center text-gray-400 italic">Le panier est vide</td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-lg h-fit border border-gray-100">
-                        <div class="text-center mb-6 pb-6 border-b border-gray-100"><p class="text-gray-500 font-medium mb-1 text-sm">Net à Payer</p><h2 id="cart-total-display" class="text-4xl font-extrabold text-blue-600">0 CFA</h2></div>
-                        <div class="space-y-3">
-                            <button id="btn-validate-cash" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow flex justify-center items-center gap-2"><i data-lucide="banknote"></i> Espèces</button>
-                            <button id="btn-open-credit-modal" class="w-full bg-orange-50 hover:bg-orange-100 text-orange-700 py-3 rounded-xl font-bold border border-orange-200 flex justify-center items-center gap-2"><i data-lucide="user-plus"></i> Crédit</button>
-                            <button onclick="clearCart()" class="w-full text-gray-400 hover:text-red-500 py-2 text-xs font-medium">Vider le panier</button>
+
+                    <div class="flex flex-col gap-4 h-full overflow-y-auto"> <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                            <div class="text-center mb-6 pb-6 border-b border-gray-100">
+                                <p class="text-gray-500 font-medium mb-1 text-sm">Net à Payer</p>
+                                <h2 id="cart-total-display" class="text-4xl font-extrabold text-blue-600">0 CFA</h2>
+                            </div>
+                            <div class="space-y-3">
+                                <button id="btn-validate-cash" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow flex justify-center items-center gap-2">
+                                    <i data-lucide="banknote"></i> Espèces
+                                </button>
+                                <button id="btn-open-credit-modal" class="w-full bg-orange-50 hover:bg-orange-100 text-orange-700 py-3 rounded-xl font-bold border border-orange-200 flex justify-center items-center gap-2">
+                                    <i data-lucide="user-plus"></i> Crédit
+                                </button>
+                                <button onclick="saveCartAsOrder()" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-3 rounded-xl font-bold border border-indigo-200 flex justify-center items-center gap-2">
+                                    <i data-lucide="clipboard-list"></i> Commande
+                                </button>
+                                <button onclick="clearCart()" class="w-full text-gray-400 hover:text-red-500 py-2 text-xs font-medium">Vider le panier</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -199,71 +222,72 @@
                 </div>
             </div>
 
-            <div id="page-stock" class="page-content hidden">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h1 class="text-2xl font-bold text-gray-800">Gestion du Stock</h1>
-                    <button onclick="document.getElementById('add-product-form').classList.toggle('hidden')" 
-                            class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
-                        <i data-lucide="plus-circle" class="w-5 h-5"></i> Nouveau Produit
-                    </button>
+            <div id="page-stock" class="page-content hidden h-full flex flex-col p-4 md:p-6">
+    
+                <div class="flex-none mb-4">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                        <h1 class="text-2xl font-bold text-gray-800">Gestion du Stock</h1>
+                        <button onclick="document.getElementById('add-product-form').classList.toggle('hidden')" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
+                            <i data-lucide="plus-circle" class="w-5 h-5"></i> Nouveau Produit
+                        </button>
+                    </div>
+
+                    <div id="add-product-form" class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-4 hidden">
+                        <h3 class="font-bold text-lg mb-4 text-gray-700">Ajouter / Modifier</h3>
+                        <form id="form-stock" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div class="lg:col-span-2 relative">
+                                <label class="text-xs font-bold text-gray-500 uppercase">Nom</label>
+                                <input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded outline-none" required autocomplete="off">
+                                <div id="prod-nom-suggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg max-h-48 overflow-y-auto top-full left-0"></div>
+                            </div>
+                            <div><label class="text-xs font-bold text-gray-500 uppercase">Achat</label><input type="number" id="prod-achat" class="w-full mt-1 border p-2 rounded"></div>
+                            <div><label class="text-xs font-bold text-gray-500 uppercase">Vente</label><input type="number" id="prod-prix" class="w-full mt-1 border p-2 rounded"></div>
+                            <div><label class="text-xs font-bold text-gray-500 uppercase">Stock</label><input type="number" id="prod-qte" class="w-full mt-1 border p-2 rounded" required></div>
+                            <div class="md:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2">
+                                <button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-bold">Enregistrer</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-blue-100">
+                            <div class="text-gray-500 text-[10px] font-bold uppercase">Valeur Achat</div>
+                            <div id="stock-total-value" class="text-lg font-bold text-blue-600">0 CFA</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-green-100">
+                            <div class="text-gray-500 text-[10px] font-bold uppercase">Valeur Vente</div>
+                            <div id="stock-potential-value" class="text-lg font-bold text-green-600">0 CFA</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-purple-100">
+                            <div class="text-gray-500 text-[10px] font-bold uppercase">Volume</div>
+                            <div id="stock-total-count" class="text-lg font-bold text-purple-600">0</div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="relative flex-1">
+                            <i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                            <input type="text" id="stock-search-input" placeholder="Rechercher..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="w-full md:w-64">
+                            <select id="stock-sort-select" class="w-full p-2.5 border border-gray-300 rounded-lg">
+                                <option value="name_asc">Nom (A-Z)</option>
+                                <option value="stock_asc">Stock Faible ⚠️</option>
+                                <option value="stock_desc">Stock Élevé</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100">
-                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Valeur Stock (Achat)</div>
-                        <div id="stock-total-value" class="text-xl font-bold text-blue-600">0 CFA</div>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-green-100">
-                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Valeur Potentielle (Vente)</div>
-                        <div id="stock-potential-value" class="text-xl font-bold text-green-600">0 CFA</div>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-purple-100">
-                        <div class="text-gray-500 text-xs font-bold uppercase mb-1">Volume Articles</div>
-                        <div id="stock-total-count" class="text-xl font-bold text-purple-600">0</div>
-                    </div>
-                </div>
-
-                <div id="add-product-form" class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8 hidden">
-                    <h3 class="font-bold text-lg mb-4 text-gray-700">Ajouter / Modifier</h3>
-                    <form id="form-stock" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                        <div class="lg:col-span-2 relative">
-                            <label class="text-xs font-bold text-gray-500 uppercase">Nom</label>
-                            
-                            <input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" required autocomplete="off">
-                            
-                            <div id="prod-nom-suggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg max-h-48 overflow-y-auto top-full left-0"></div>
-                        </div>
-
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Achat</label>
-                            <input type="number" id="prod-achat" class="w-full mt-1 border p-2 rounded">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Vente</label>
-                            <input type="number" id="prod-prix" class="w-full mt-1 border p-2 rounded">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Stock</label>
-                            <input type="number" id="prod-qte" class="w-full mt-1 border p-2 rounded" required>
-                        </div>
-                        <div class="md:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2">
-                            <button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-bold">Enregistrer</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="flex flex-col md:flex-row gap-4 mb-4">
-                    <div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i><input type="text" id="stock-search-input" placeholder="Rechercher..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg"></div>
-                    <div class="w-full md:w-64"><select id="stock-sort-select" class="w-full p-2.5 border border-gray-300 rounded-lg"><option value="name_asc">Nom (A-Z)</option><option value="price_asc">Prix Achat (Croissant)</option><option value="price_desc">Prix Achat (Décroissant)</option><option value="stock_asc">Stock (Croissant)</option><option value="stock_desc">Stock (Décroissant)</option></select></div>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50 border-b border-gray-200">
-                                <tr>
+                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-0">
+                    <div class="overflow-auto flex-1"> <table class="w-full text-left border-collapse relative">
+                            <thead class="bg-gray-100 border-b border-gray-200 sticky top-0 z-10 shadow-sm"> <tr>
                                     <th class="p-4 font-semibold text-gray-600 text-sm">Date</th>
                                     <th class="p-4 font-semibold text-gray-600 text-sm">Produit</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Prix Achat</th><th class="p-4 font-semibold text-gray-600 text-sm">Prix Vente</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Achat</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Vente</th>
                                     <th class="p-4 font-semibold text-gray-600 text-sm text-center">Total</th>
                                     <th class="p-4 font-semibold text-gray-600 text-sm text-center">Vendu</th>
                                     <th class="p-4 font-semibold text-blue-600 text-sm text-center">Reste</th>
