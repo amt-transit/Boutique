@@ -7,7 +7,9 @@ import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
-    getFirestore, setDoc, doc, collection, onSnapshot, updateDoc, writeBatch, serverTimestamp, increment, deleteDoc, getDocs, getDoc, setLogLevel, query, where 
+    getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, 
+    onSnapshot, query, where, orderBy, limit, serverTimestamp, writeBatch, deleteDoc, 
+    increment, setLogLevel
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1258,39 +1260,56 @@ window.processImport = async function(n) {
 };
 
 async function uploadBatchData(id, n, d) {
-    // 1. SÉCURITÉ : On vérifie l'ID avant de commencer
+    // 1. SÉCURITÉ
     if (!id || typeof id !== 'string' || id.length < 5) {
-        console.error("ID Boutique invalide:", id);
         showToast("Erreur interne : ID de boutique invalide.", "error");
         return;
     }
 
-    console.log(`Début import vers boutique: ${id}, collection: ${n}, lignes: ${d.length}`);
+    console.log(`Début import ${n} pour la boutique ${id}...`);
     
+    // --- PRÉPARATION INTELLIGENTE POUR LES VENTES ---
+    // Si on importe des ventes, on doit d'abord connaître les ID des produits pour déduire le stock
+    let productMap = {}; // Va contenir : { "nom du produit" : "ID_DU_PRODUIT" }
+    
+    if (n === 'ventes') {
+        showToast("Analyse de vos produits en cours... Patientez.");
+        try {
+            const productsSnapshot = await getDocs(collection(db, "boutiques", id, "products"));
+            productsSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.nom) {
+                    // On stocke le nom en minuscule pour faciliter la recherche
+                    productMap[data.nom.toLowerCase().trim()] = doc.id;
+                }
+            });
+            console.log("Carte des produits chargée :", Object.keys(productMap).length + " produits connus.");
+        } catch (e) {
+            console.error("Impossible de charger les produits", e);
+            showToast("Erreur lecture stock. L'import ne déduira pas les quantités.", "error");
+        }
+    }
+    // ------------------------------------------------
+
     const batch = writeBatch(db);
-    let c = 0;       // <--- C'est cette variable qui manquait !
-    let errors = 0;  // Compteur d'erreurs
+    let c = 0;
+    let errors = 0;
+    let stockUpdatedCount = 0;
 
     for(const r of d) {
-        // Ignorer les lignes vides du CSV
+        // Ignorer lignes vides
         if (!r.Nom && !r.Produit && !r.Motif) continue;
 
-        // Créer la référence dans la BONNE collection
         const ref = doc(collection(db, "boutiques", id, n));
         let o = {};
         
         try {
+            // --- A. IMPORT DE STOCK (Création de produits) ---
             if(n==='products') {
-                // Vérification des colonnes critiques pour le stock
-                if(r.PrixVente === undefined || r.Quantite === undefined) {
-                    console.warn("Colonne manquante ligne:", r);
-                    throw new Error("Colonnes 'PrixVente' ou 'Quantite' introuvables");
-                }
-
+                if(r.PrixVente === undefined || r.Quantite === undefined) throw new Error("Colonnes manquantes");
                 let pv = parseFloat(r.PrixVente?.replace(',', '.')) || 0;
                 let pa = parseFloat(r.PrixAchat?.replace(',', '.')) || 0;
-                
-                if(!r.Nom) continue; // Si pas de nom, on saute
+                if(!r.Nom) continue;
 
                 o = { 
                     nom: r.Nom.toLowerCase().trim(), 
@@ -1303,31 +1322,42 @@ async function uploadBatchData(id, n, d) {
                     deleted: false 
                 };
             } 
+            // --- B. IMPORT DE CLIENTS ---
             else if(n==='clients') {
                 if(!r.Nom) continue;
-                o = { 
-                    nom: r.Nom, 
-                    telephone: r.Telephone||'', 
-                    dette: parseFloat(r.Dette)||0, 
-                    createdAt: serverTimestamp(), 
-                    deleted: false 
-                };
+                o = { nom: r.Nom, telephone: r.Telephone||'', dette: parseFloat(r.Dette)||0, createdAt: serverTimestamp(), deleted: false };
             } 
+            // --- C. IMPORT DE CHARGES ---
             else if(n==='expenses') {
-                o = { 
-                    date: r.Date ? new Date(r.Date) : serverTimestamp(), 
-                    motif: r.Motif||'Imp', 
-                    montant: parseFloat(r.Montant)||0, 
-                    user: userId, 
-                    deleted: false 
-                };
+                o = { date: r.Date?new Date(r.Date):serverTimestamp(), motif: r.Motif||'Imp', montant: parseFloat(r.Montant)||0, user: userId, deleted: false };
             } 
+            // --- D. IMPORT DE VENTES (AVEC DÉDUCTION DE STOCK) ---
             else if(n==='ventes') {
                 const q = parseInt(r.Quantite)||1; 
                 const p = parseFloat(r.PrixUnitaire||r.Total)||0;
                 const ft = q*p; 
                 const prof = parseFloat(r.Profit)||0;
-                const fi = { id:'imp_'+Math.random(), nom: r.Produit?.toLowerCase()||'imp', nomDisplay: r.Produit||'Imp', qty: q, prixVente: p, prixAchat: 0 };
+                
+                // Nom du produit dans le CSV
+                const csvProdName = (r.Produit || 'Inconnu').trim();
+                const searchName = csvProdName.toLowerCase();
+
+                // 1. On cherche l'ID du produit dans notre map
+                const prodId = productMap[searchName];
+
+                // 2. Si on trouve le produit, on déduit le stock !
+                if (prodId) {
+                    const prodRef = doc(db, "boutiques", id, "products", prodId);
+                    batch.update(prodRef, {
+                        stock: increment(-q),        // On enlève la quantité
+                        quantiteVendue: increment(q) // On ajoute aux stats
+                    });
+                    stockUpdatedCount++;
+                } else {
+                    console.warn(`Produit CSV "${csvProdName}" non trouvé dans le stock actuel. Pas de déduction.`);
+                }
+
+                const fi = { id: prodId || 'imp_unknown', nom: searchName, nomDisplay: csvProdName, qty: q, prixVente: p, prixAchat: 0 };
                 
                 o = { 
                     date: r.Date ? new Date(r.Date) : serverTimestamp(), 
@@ -1335,44 +1365,33 @@ async function uploadBatchData(id, n, d) {
                     profit: prof, 
                     items:[fi], 
                     type:'cash_import', 
-                    vendeurId:'imp', 
+                    vendeurId: userId, 
                     deleted: false 
                 };
             }
             
-            // Ajouter au lot d'écriture
+            // Ajout de l'opération principale (Création de la ligne)
             batch.set(ref, o);
-            c++; // <--- C'est ici que ça plantait avant
+            c++;
             
-            // Firebase limite les batchs à 500 opérations
-            // On envoie par paquets de 450 pour être sûr
-            if(c % 450 === 0){ 
-                await batch.commit(); 
-                // Note : Pour faire simple ici on continue sur le même batch object 
-                // (en réalité il faudrait le recréer, mais ça passe souvent si on attend le commit)
-                // Si ça plante sur de très gros fichiers (>1000 lignes), dites-le moi.
-            }
+            // Commit par paquets de 200 (car si on fait des updates stock, ça compte double : 1 set + 1 update = 2 opérations)
+            if(c % 200 === 0){ await batch.commit(); }
+
         } catch(e){
             console.error("Erreur ligne CSV:", e, r);
             errors++;
         }
     }
     
-    // Envoyer le reste des données
     if(c > 0) await batch.commit();
     
-    // Résultat
-    if (errors > 0) {
-        showToast(`Fini : ${c} importés. ${errors} erreurs (Voir Console)`, "warning");
-    } else {
-        showToast(`Succès : ${c} éléments importés !`);
+    let msg = `Succès : ${c} éléments importés !`;
+    if (n === 'ventes') {
+        msg += ` (Dont ${stockUpdatedCount} stocks mis à jour)`;
     }
     
-    // Rafraîchir l'affichage si on est sur la page stock
-    if (n === 'products' && currentBoutiqueId === id) {
-        // Optionnel : recharger la liste si nécessaire
-        // renderStockTable(); 
-    }
+    if (errors > 0) showToast(msg + ` - ${errors} erreurs.`, "warning");
+    else showToast(msg);
 }
 
 // Fonctions UI
@@ -1478,5 +1497,117 @@ window.saveCartAsOrder = async () => {
         console.error(e);
         showToast("Erreur lors de la commande", "error");
     }
+    // ============================================================
+    // LOGIQUE DE VENTE CORRIGÉE (Stock & Caisse)
+    // ============================================================
+
+    // Fonction Générale pour traiter une vente (Cash ou Crédit)
+    async function processDirectSale(type, clientInfo = null) {
+        if (saleCart.length === 0) return showToast("Panier vide !", "error");
+        if (!currentBoutiqueId) return;
+
+        const batch = writeBatch(db);
+        
+        // 1. Préparer la fiche de Vente (Historique)
+        const saleRef = doc(collection(db, "boutiques", currentBoutiqueId, "ventes"));
+        
+        let totalSale = 0;
+        let totalProfit = 0;
+
+        // 2. BOUCLE SUR CHAQUE PRODUIT DU PANIER
+        for (const item of saleCart) {
+            const itemTotal = item.prixVente * item.qty;
+            const itemProfit = (item.prixVente - (item.prixAchat || 0)) * item.qty;
+            
+            totalSale += itemTotal;
+            totalProfit += itemProfit;
+
+            // --- C'EST ICI QUE LE STOCK EST DÉDUIT ---
+            const productRef = doc(db, "boutiques", currentBoutiqueId, "products", item.id);
+            
+            batch.update(productRef, {
+                // On enlève la quantité vendue du stock actuel
+                stock: increment(-item.qty), 
+                // On augmente le compteur de popularité du produit
+                quantiteVendue: increment(item.qty)
+            });
+        }
+
+        // 3. Enregistrer la vente globale
+        const saleData = {
+            date: serverTimestamp(),
+            items: saleCart,
+            total: totalSale,
+            profit: totalProfit,
+            type: type, // 'cash' ou 'credit'
+            vendeurId: userId,
+            deleted: false
+        };
+
+        if (type === 'credit' && clientInfo) {
+            saleData.clientId = clientInfo.id;
+            saleData.clientName = clientInfo.nom;
+            
+            // Si c'est un crédit, on augmente aussi la dette du client
+            const clientRef = doc(db, "boutiques", currentBoutiqueId, "clients", clientInfo.id);
+            batch.update(clientRef, {
+                dette: increment(totalSale)
+            });
+        }
+
+        batch.set(saleRef, saleData);
+
+        // 4. Exécuter tout en même temps
+        try {
+            await batch.commit();
+            
+            // Succès
+            document.getElementById('invoice-amount').textContent = formatPrice(totalSale);
+            
+            // Générer le résumé pour WhatsApp
+            let recap = saleCart.map(i => `- ${i.qty}x ${i.nomDisplay} (${formatPrice(i.prixVente)})`).join('\n');
+            document.getElementById('invoice-preview').innerText = recap;
+            
+            // Lien WhatsApp
+            const waMsg = encodeURIComponent(`*Facture ${shopName}*\n\n${recap}\n\n*Total: ${formatPrice(totalSale)}*\nMerci de votre visite !`);
+            document.getElementById('btn-whatsapp-share').href = `https://wa.me/?text=${waMsg}`;
+
+            // Ouvrir la modale de succès
+            document.getElementById('invoice-modal').classList.remove('hidden');
+            
+            // Vider le panier
+            saleCart = [];
+            renderCart();
+            
+            // Fermer les autres modales si ouvertes
+            document.getElementById('credit-sale-modal').classList.add('hidden');
+
+        } catch (error) {
+            console.error("Erreur vente:", error);
+            showToast("Erreur lors de la vente : " + error.message, "error");
+        }
+    }
+
+    // --- RACCORDEMENT DES BOUTONS ---
+
+    // 1. Bouton ESPÈCES
+    document.getElementById('btn-validate-cash')?.addEventListener('click', () => {
+        if(confirm("Confirmer la vente en ESPÈCES ?")) {
+            processDirectSale('cash');
+        }
+    });
+
+    // 2. Bouton VALIDATION CRÉDIT (Dans la modale crédit)
+    document.getElementById('confirm-credit-sale-btn')?.addEventListener('click', () => {
+        const select = document.getElementById('credit-client-select');
+        const clientId = select.value;
+        const clientName = select.options[select.selectedIndex]?.text;
+
+        if (!clientId) return showToast("Veuillez choisir un client.", "error");
+
+        if(confirm(`Confirmer la vente à CRÉDIT pour ${clientName} ?`)) {
+            processDirectSale('credit', { id: clientId, nom: clientName });
+        }
+    });
 };
 main();
