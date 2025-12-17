@@ -1266,132 +1266,138 @@ async function uploadBatchData(id, n, d) {
         return;
     }
 
-    console.log(`Début import ${n} pour la boutique ${id}...`);
+    console.log(`Début import intelligent ${n} pour la boutique ${id}...`);
     
-    // --- PRÉPARATION INTELLIGENTE POUR LES VENTES ---
-    // Si on importe des ventes, on doit d'abord connaître les ID des produits pour déduire le stock
-    let productMap = {}; // Va contenir : { "nom du produit" : "ID_DU_PRODUIT" }
-    
+    // --- PRÉPARATION (Seulement pour les Ventes) ---
+    let productMap = {}; 
     if (n === 'ventes') {
-        showToast("Analyse de vos produits en cours... Patientez.");
+        showToast("Analyse du stock et vérification des doublons... (Cela peut prendre un moment)");
         try {
             const productsSnapshot = await getDocs(collection(db, "boutiques", id, "products"));
             productsSnapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.nom) {
-                    // On stocke le nom en minuscule pour faciliter la recherche
-                    productMap[data.nom.toLowerCase().trim()] = doc.id;
-                }
+                if (data.nom) productMap[data.nom.toLowerCase().trim()] = doc.id;
             });
-            console.log("Carte des produits chargée :", Object.keys(productMap).length + " produits connus.");
         } catch (e) {
-            console.error("Impossible de charger les produits", e);
-            showToast("Erreur lecture stock. L'import ne déduira pas les quantités.", "error");
+            console.error(e);
+            return showToast("Erreur lecture stock. Import annulé.", "error");
         }
     }
-    // ------------------------------------------------
 
-    const batch = writeBatch(db);
-    let c = 0;
-    let errors = 0;
-    let stockUpdatedCount = 0;
+    // --- CORRECTION MAJEURE ICI : 'let' au lieu de 'const' ---
+    let batch = writeBatch(db); 
+    let batchSize = 0;      // Compteur pour le lot actuel (max 500)
+    
+    let countNew = 0;       // Total ajoutés
+    let countSkipped = 0;   // Total doublons
+    let countStock = 0;     // Total stocks mis à jour
 
     for(const r of d) {
         // Ignorer lignes vides
         if (!r.Nom && !r.Produit && !r.Motif) continue;
 
-        const ref = doc(collection(db, "boutiques", id, n));
-        let o = {};
-        
+        let docId = null; 
+        let o = {}; 
+
         try {
-            // --- A. IMPORT DE STOCK (Création de produits) ---
+            // --- 1. GÉNÉRATION DE L'ID UNIQUE ---
+            if (n === 'ventes') {
+                const rawId = `${r.Date}_${r.Produit}_${r.Total}`;
+                docId = "imp_" + rawId.replace(/[^a-zA-Z0-9]/g, '_');
+            } else if (n === 'products') {
+                docId = "imp_prod_" + r.Nom.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
+            } else if (n === 'clients') {
+                docId = "imp_client_" + r.Nom.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
+            } else {
+                docId = doc(collection(db, "boutiques", id, n)).id; 
+            }
+
+            // --- 2. VÉRIFICATION ANTI-DOUBLON ---
+            if (n !== 'expenses') {
+                const existingDoc = await getDoc(doc(db, "boutiques", id, n, docId));
+                if (existingDoc.exists()) {
+                    countSkipped++;
+                    continue; // On passe à la ligne suivante
+                }
+            }
+
+            // --- 3. PRÉPARATION DES DONNÉES ---
             if(n==='products') {
-                if(r.PrixVente === undefined || r.Quantite === undefined) throw new Error("Colonnes manquantes");
                 let pv = parseFloat(r.PrixVente?.replace(',', '.')) || 0;
                 let pa = parseFloat(r.PrixAchat?.replace(',', '.')) || 0;
-                if(!r.Nom) continue;
-
                 o = { 
                     nom: r.Nom.toLowerCase().trim(), 
                     nomDisplay: r.Nom.trim(), 
-                    prixVente: pv, 
-                    prixAchat: pa, 
-                    stock: parseInt(r.Quantite)||0, 
-                    quantiteVendue: 0, 
-                    createdAt: serverTimestamp(), 
-                    deleted: false 
+                    prixVente: pv, prixAchat: pa, 
+                    stock: parseInt(r.Quantite)||0, quantiteVendue: 0, 
+                    createdAt: serverTimestamp(), deleted: false 
                 };
             } 
-            // --- B. IMPORT DE CLIENTS ---
             else if(n==='clients') {
-                if(!r.Nom) continue;
                 o = { nom: r.Nom, telephone: r.Telephone||'', dette: parseFloat(r.Dette)||0, createdAt: serverTimestamp(), deleted: false };
             } 
-            // --- C. IMPORT DE CHARGES ---
             else if(n==='expenses') {
                 o = { date: r.Date?new Date(r.Date):serverTimestamp(), motif: r.Motif||'Imp', montant: parseFloat(r.Montant)||0, user: userId, deleted: false };
             } 
-            // --- D. IMPORT DE VENTES (AVEC DÉDUCTION DE STOCK) ---
             else if(n==='ventes') {
                 const q = parseInt(r.Quantite)||1; 
                 const p = parseFloat(r.PrixUnitaire||r.Total)||0;
                 const ft = q*p; 
                 const prof = parseFloat(r.Profit)||0;
                 
-                // Nom du produit dans le CSV
-                const csvProdName = (r.Produit || 'Inconnu').trim();
-                const searchName = csvProdName.toLowerCase();
-
-                // 1. On cherche l'ID du produit dans notre map
+                const searchName = (r.Produit || '').trim().toLowerCase();
                 const prodId = productMap[searchName];
 
-                // 2. Si on trouve le produit, on déduit le stock !
+                // DÉDUCTION STOCK
                 if (prodId) {
                     const prodRef = doc(db, "boutiques", id, "products", prodId);
                     batch.update(prodRef, {
-                        stock: increment(-q),        // On enlève la quantité
-                        quantiteVendue: increment(q) // On ajoute aux stats
+                        stock: increment(-q),
+                        quantiteVendue: increment(q)
                     });
-                    stockUpdatedCount++;
-                } else {
-                    console.warn(`Produit CSV "${csvProdName}" non trouvé dans le stock actuel. Pas de déduction.`);
+                    countStock++;
+                    batchSize++; // L'update compte comme une opération
                 }
 
-                const fi = { id: prodId || 'imp_unknown', nom: searchName, nomDisplay: csvProdName, qty: q, prixVente: p, prixAchat: 0 };
-                
+                const fi = { id: prodId || 'imp_unknown', nom: searchName, nomDisplay: r.Produit, qty: q, prixVente: p, prixAchat: 0 };
                 o = { 
                     date: r.Date ? new Date(r.Date) : serverTimestamp(), 
-                    total: ft, 
-                    profit: prof, 
-                    items:[fi], 
-                    type:'cash_import', 
-                    vendeurId: userId, 
-                    deleted: false 
+                    total: ft, profit: prof, items:[fi], 
+                    type:'cash_import', vendeurId: userId, deleted: false 
                 };
             }
             
-            // Ajout de l'opération principale (Création de la ligne)
+            // --- 4. AJOUT AU BATCH ---
+            const ref = doc(db, "boutiques", id, n, docId);
             batch.set(ref, o);
-            c++;
             
-            // Commit par paquets de 200 (car si on fait des updates stock, ça compte double : 1 set + 1 update = 2 opérations)
-            if(c % 200 === 0){ await batch.commit(); }
+            countNew++;
+            batchSize++;
+            
+            // --- 5. GESTION DU BUFFER (CORRECTION CRITIQUE) ---
+            // Si le batch est plein (environ 400 op), on envoie et ON RECRÉE un nouveau batch
+            if(batchSize >= 400){ 
+                console.log("Envoi d'un lot intermédiaire...");
+                await batch.commit(); 
+                
+                // C'EST ICI QUE ÇA PLANTAIT AVANT :
+                batch = writeBatch(db); // On crée un NOUVEAU batch vide
+                batchSize = 0;          // On remet le compteur à zéro
+            }
 
         } catch(e){
             console.error("Erreur ligne CSV:", e, r);
-            errors++;
         }
     }
     
-    if(c > 0) await batch.commit();
+    // Envoi final des données restantes
+    if (batchSize > 0) await batch.commit();
     
-    let msg = `Succès : ${c} éléments importés !`;
-    if (n === 'ventes') {
-        msg += ` (Dont ${stockUpdatedCount} stocks mis à jour)`;
-    }
+    // Rapport
+    let msg = `Terminé : ${countNew} ajoutés. ${countSkipped} doublons ignorés.`;
+    if (n === 'ventes') msg += ` (${countStock} stocks mis à jour)`;
     
-    if (errors > 0) showToast(msg + ` - ${errors} erreurs.`, "warning");
-    else showToast(msg);
+    showToast(msg, countNew > 0 ? "success" : "warning");
 }
 
 // Fonctions UI
