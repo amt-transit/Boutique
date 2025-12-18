@@ -1260,7 +1260,6 @@ window.processImport = async function(n) {
 };
 
 async function uploadBatchData(id, n, d) {
-    // 1. SÉCURITÉ
     if (!id || typeof id !== 'string' || id.length < 5) {
         showToast("Erreur interne : ID de boutique invalide.", "error");
         return;
@@ -1268,10 +1267,10 @@ async function uploadBatchData(id, n, d) {
 
     console.log(`Début import intelligent ${n} pour la boutique ${id}...`);
     
-    // --- PRÉPARATION (Seulement pour les Ventes) ---
+    // --- PRÉPARATION (Carte des produits pour déduire le stock) ---
     let productMap = {}; 
     if (n === 'ventes') {
-        showToast("Analyse du stock et vérification des doublons... (Cela peut prendre un moment)");
+        showToast("Analyse du stock en cours...");
         try {
             const productsSnapshot = await getDocs(collection(db, "boutiques", id, "products"));
             productsSnapshot.forEach(doc => {
@@ -1284,27 +1283,31 @@ async function uploadBatchData(id, n, d) {
         }
     }
 
-    // --- CORRECTION MAJEURE ICI : 'let' au lieu de 'const' ---
     let batch = writeBatch(db); 
-    let batchSize = 0;      // Compteur pour le lot actuel (max 500)
-    
-    let countNew = 0;       // Total ajoutés
-    let countSkipped = 0;   // Total doublons
-    let countStock = 0;     // Total stocks mis à jour
+    let batchSize = 0;      
+    let countNew = 0;       
+    let countSkipped = 0;   
+    let countStock = 0;     
 
     for(const r of d) {
-        // Ignorer lignes vides
         if (!r.Nom && !r.Produit && !r.Motif) continue;
 
         let docId = null; 
         let o = {}; 
 
         try {
-            // --- 1. GÉNÉRATION DE L'ID UNIQUE ---
+            // --- 1. GÉNÉRATION DE L'ID UNIQUE (CORRIGÉ) ---
             if (n === 'ventes') {
-                const rawId = `${r.Date}_${r.Produit}_${r.Total}`;
+                // CORRECTION : On calcule le total nous-mêmes car la colonne 'Total' n'existe pas dans le CSV
+                const q_id = parseInt(r.Quantite)||1; 
+                const p_id = parseFloat(r.PrixUnitaire)||0;
+                const total_calc = q_id * p_id;
+                
+                // L'ID est maintenant unique par montant : Date + Produit + MontantCalculé
+                const rawId = `${r.Date}_${r.Produit}_${total_calc}`;
                 docId = "imp_" + rawId.replace(/[^a-zA-Z0-9]/g, '_');
-            } else if (n === 'products') {
+            } 
+            else if (n === 'products') {
                 docId = "imp_prod_" + r.Nom.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
             } else if (n === 'clients') {
                 docId = "imp_client_" + r.Nom.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
@@ -1317,7 +1320,7 @@ async function uploadBatchData(id, n, d) {
                 const existingDoc = await getDoc(doc(db, "boutiques", id, n, docId));
                 if (existingDoc.exists()) {
                     countSkipped++;
-                    continue; // On passe à la ligne suivante
+                    continue; // C'est un doublon, on passe au suivant
                 }
             }
 
@@ -1325,13 +1328,7 @@ async function uploadBatchData(id, n, d) {
             if(n==='products') {
                 let pv = parseFloat(r.PrixVente?.replace(',', '.')) || 0;
                 let pa = parseFloat(r.PrixAchat?.replace(',', '.')) || 0;
-                o = { 
-                    nom: r.Nom.toLowerCase().trim(), 
-                    nomDisplay: r.Nom.trim(), 
-                    prixVente: pv, prixAchat: pa, 
-                    stock: parseInt(r.Quantite)||0, quantiteVendue: 0, 
-                    createdAt: serverTimestamp(), deleted: false 
-                };
+                o = { nom: r.Nom.toLowerCase().trim(), nomDisplay: r.Nom.trim(), prixVente: pv, prixAchat: pa, stock: parseInt(r.Quantite)||0, quantiteVendue: 0, createdAt: serverTimestamp(), deleted: false };
             } 
             else if(n==='clients') {
                 o = { nom: r.Nom, telephone: r.Telephone||'', dette: parseFloat(r.Dette)||0, createdAt: serverTimestamp(), deleted: false };
@@ -1341,14 +1338,14 @@ async function uploadBatchData(id, n, d) {
             } 
             else if(n==='ventes') {
                 const q = parseInt(r.Quantite)||1; 
-                const p = parseFloat(r.PrixUnitaire||r.Total)||0;
+                const p = parseFloat(r.PrixUnitaire||r.Total)||0; // Fallback au cas où
                 const ft = q*p; 
                 const prof = parseFloat(r.Profit)||0;
                 
                 const searchName = (r.Produit || '').trim().toLowerCase();
                 const prodId = productMap[searchName];
 
-                // DÉDUCTION STOCK
+                // Mise à jour du Stock
                 if (prodId) {
                     const prodRef = doc(db, "boutiques", id, "products", prodId);
                     batch.update(prodRef, {
@@ -1356,15 +1353,11 @@ async function uploadBatchData(id, n, d) {
                         quantiteVendue: increment(q)
                     });
                     countStock++;
-                    batchSize++; // L'update compte comme une opération
+                    batchSize++; 
                 }
 
                 const fi = { id: prodId || 'imp_unknown', nom: searchName, nomDisplay: r.Produit, qty: q, prixVente: p, prixAchat: 0 };
-                o = { 
-                    date: r.Date ? new Date(r.Date) : serverTimestamp(), 
-                    total: ft, profit: prof, items:[fi], 
-                    type:'cash_import', vendeurId: userId, deleted: false 
-                };
+                o = { date: r.Date ? new Date(r.Date) : serverTimestamp(), total: ft, profit: prof, items:[fi], type:'cash_import', vendeurId: userId, deleted: false };
             }
             
             // --- 4. AJOUT AU BATCH ---
@@ -1374,15 +1367,12 @@ async function uploadBatchData(id, n, d) {
             countNew++;
             batchSize++;
             
-            // --- 5. GESTION DU BUFFER (CORRECTION CRITIQUE) ---
-            // Si le batch est plein (environ 400 op), on envoie et ON RECRÉE un nouveau batch
+            // --- 5. GESTION DES LIMITES FIREBASE ---
             if(batchSize >= 400){ 
-                console.log("Envoi d'un lot intermédiaire...");
+                console.log("Envoi intermédiaire...");
                 await batch.commit(); 
-                
-                // C'EST ICI QUE ÇA PLANTAIT AVANT :
-                batch = writeBatch(db); // On crée un NOUVEAU batch vide
-                batchSize = 0;          // On remet le compteur à zéro
+                batch = writeBatch(db); // Nouveau panier vide
+                batchSize = 0;          
             }
 
         } catch(e){
@@ -1390,13 +1380,10 @@ async function uploadBatchData(id, n, d) {
         }
     }
     
-    // Envoi final des données restantes
     if (batchSize > 0) await batch.commit();
     
-    // Rapport
     let msg = `Terminé : ${countNew} ajoutés. ${countSkipped} doublons ignorés.`;
     if (n === 'ventes') msg += ` (${countStock} stocks mis à jour)`;
-    
     showToast(msg, countNew > 0 ? "success" : "warning");
 }
 
