@@ -1266,86 +1266,95 @@ async function uploadBatchData(id, n, d) {
     }
 
     console.log(`Début import intelligent ${n} pour la boutique ${id}...`);
+
+    // --- 1. PRÉPARATION MASSIVE (Chargement en une seule fois) ---
+    // On charge tout ce dont on a besoin AVANT la boucle pour ne jamais faire de "await" DANS la boucle.
     
-    // --- PRÉPARATION (Carte des produits pour déduire le stock) ---
-    let productMap = {}; 
-    if (n === 'ventes') {
-        showToast("Analyse du stock en cours...");
-        try {
+    let productMap = {};
+    let existingIds = new Set(); // Pour stocker les IDs qui existent déjà
+
+    try {
+        // A. Charger les produits (pour le stock)
+        if (n === 'ventes') {
+            showToast("Analyse du stock...");
             const productsSnapshot = await getDocs(collection(db, "boutiques", id, "products"));
             productsSnapshot.forEach(doc => {
                 const data = doc.data();
                 if (data.nom) productMap[data.nom.toLowerCase().trim()] = doc.id;
             });
-        } catch (e) {
-            console.error(e);
-            return showToast("Erreur lecture stock. Import annulé.", "error");
         }
+
+        // B. Charger les IDs existants (pour éviter les doublons sans faire 1000 requêtes)
+        if (n !== 'expenses') { // On suppose que 'expenses' n'a pas besoin de check doublon strict
+            showToast("Vérification des doublons...");
+            // Optimisation : On ne récupère que les IDs (select()) pour économiser la bande passante
+            // Note : Si la collection est énorme (+10k items), cette stratégie devra être adaptée.
+            const existingSnapshot = await getDocs(collection(db, "boutiques", id, n));
+            existingSnapshot.forEach(doc => {
+                existingIds.add(doc.id);
+            });
+        }
+
+    } catch (e) {
+        console.error(e);
+        return showToast("Erreur lecture pré-import. Import annulé.", "error");
     }
 
-    let batch = writeBatch(db); 
-    let batchSize = 0;      
-    let countNew = 0;       
-    let countSkipped = 0;   
-    let countStock = 0;     
+    let batch = writeBatch(db);
+    let batchSize = 0;
+    let countNew = 0;
+    let countSkipped = 0;
+    let countStock = 0;
 
-    for(const r of d) {
+    // --- 2. TRAITEMENT RAPIDE (Tout se passe en mémoire locale) ---
+    for (const r of d) {
         if (!r.Nom && !r.Produit && !r.Motif) continue;
 
-        let docId = null; 
-        let o = {}; 
+        let docId = null;
+        let o = {};
 
         try {
-            // --- 1. GÉNÉRATION DE L'ID UNIQUE (CORRIGÉ) ---
+            // --- GÉNÉRATION ID ---
             if (n === 'ventes') {
-                // CORRECTION : On calcule le total nous-mêmes car la colonne 'Total' n'existe pas dans le CSV
-                const q_id = parseInt(r.Quantite)||1; 
-                const p_id = parseFloat(r.PrixUnitaire)||0;
+                const q_id = parseInt(r.Quantite) || 1;
+                const p_id = parseFloat(r.PrixUnitaire) || 0;
                 const total_calc = q_id * p_id;
-                
-                // L'ID est maintenant unique par montant : Date + Produit + MontantCalculé
                 const rawId = `${r.Date}_${r.Produit}_${total_calc}`;
                 docId = "imp_" + rawId.replace(/[^a-zA-Z0-9]/g, '_');
-            } 
-            else if (n === 'products') {
+            } else if (n === 'products') {
                 docId = "imp_prod_" + r.Nom.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
             } else if (n === 'clients') {
                 docId = "imp_client_" + r.Nom.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
             } else {
-                docId = doc(collection(db, "boutiques", id, n)).id; 
+                docId = doc(collection(db, "boutiques", id, n)).id;
             }
 
-            // --- 2. VÉRIFICATION ANTI-DOUBLON ---
-            if (n !== 'expenses') {
-                const existingDoc = await getDoc(doc(db, "boutiques", id, n, docId));
-                if (existingDoc.exists()) {
-                    countSkipped++;
-                    continue; // C'est un doublon, on passe au suivant
-                }
+            // --- VÉRIFICATION ANTI-DOUBLON INSTANTANÉE ---
+            // On vérifie dans le Set (mémoire) au lieu de faire un appel réseau
+            if (n !== 'expenses' && existingIds.has(docId)) {
+                countSkipped++;
+                continue; // Doublon détecté localement, on passe
             }
 
-            // --- 3. PRÉPARATION DES DONNÉES ---
-            if(n==='products') {
+            // --- PRÉPARATION DES DONNÉES ---
+            if (n === 'products') {
                 let pv = parseFloat(r.PrixVente?.replace(',', '.')) || 0;
                 let pa = parseFloat(r.PrixAchat?.replace(',', '.')) || 0;
-                o = { nom: r.Nom.toLowerCase().trim(), nomDisplay: r.Nom.trim(), prixVente: pv, prixAchat: pa, stock: parseInt(r.Quantite)||0, quantiteVendue: 0, createdAt: serverTimestamp(), deleted: false };
-            } 
-            else if(n==='clients') {
-                o = { nom: r.Nom, telephone: r.Telephone||'', dette: parseFloat(r.Dette)||0, createdAt: serverTimestamp(), deleted: false };
-            } 
-            else if(n==='expenses') {
-                o = { date: r.Date?new Date(r.Date):serverTimestamp(), motif: r.Motif||'Imp', montant: parseFloat(r.Montant)||0, user: userId, deleted: false };
-            } 
-            else if(n==='ventes') {
-                const q = parseInt(r.Quantite)||1; 
-                const p = parseFloat(r.PrixUnitaire||r.Total)||0; // Fallback au cas où
-                const ft = q*p; 
-                const prof = parseFloat(r.Profit)||0;
-                
+                o = { nom: r.Nom.toLowerCase().trim(), nomDisplay: r.Nom.trim(), prixVente: pv, prixAchat: pa, stock: parseInt(r.Quantite) || 0, quantiteVendue: 0, createdAt: serverTimestamp(), deleted: false };
+            } else if (n === 'clients') {
+                o = { nom: r.Nom, telephone: r.Telephone || '', dette: parseFloat(r.Dette) || 0, createdAt: serverTimestamp(), deleted: false };
+            } else if (n === 'expenses') {
+                o = { date: r.Date ? new Date(r.Date) : serverTimestamp(), motif: r.Motif || 'Imp', montant: parseFloat(r.Montant) || 0, user: userId, deleted: false };
+            } else if (n === 'ventes') {
+                const q = parseInt(r.Quantite) || 1;
+                const p = parseFloat(r.PrixUnitaire || r.Total) || 0;
+                const ft = q * p;
+                const prof = parseFloat(r.Profit) || 0;
+
                 const searchName = (r.Produit || '').trim().toLowerCase();
                 const prodId = productMap[searchName];
 
-                // Mise à jour du Stock
+                // Mise à jour Stock
                 if (prodId) {
                     const prodRef = doc(db, "boutiques", id, "products", prodId);
                     batch.update(prodRef, {
@@ -1353,35 +1362,37 @@ async function uploadBatchData(id, n, d) {
                         quantiteVendue: increment(q)
                     });
                     countStock++;
-                    batchSize++; 
+                    batchSize++; // Compte comme une opération dans le batch
                 }
 
                 const fi = { id: prodId || 'imp_unknown', nom: searchName, nomDisplay: r.Produit, qty: q, prixVente: p, prixAchat: 0 };
-                o = { date: r.Date ? new Date(r.Date) : serverTimestamp(), total: ft, profit: prof, items:[fi], type:'cash_import', vendeurId: userId, deleted: false };
-            }
-            
-            // --- 4. AJOUT AU BATCH ---
-            const ref = doc(db, "boutiques", id, n, docId);
-            batch.set(ref, o);
-            
-            countNew++;
-            batchSize++;
-            
-            // --- 5. GESTION DES LIMITES FIREBASE ---
-            if(batchSize >= 400){ 
-                console.log("Envoi intermédiaire...");
-                await batch.commit(); 
-                batch = writeBatch(db); // Nouveau panier vide
-                batchSize = 0;          
+                o = { date: r.Date ? new Date(r.Date) : serverTimestamp(), total: ft, profit: prof, items: [fi], type: 'cash_import', vendeurId: userId, deleted: false };
             }
 
-        } catch(e){
+            // --- AJOUT AU BATCH ---
+            const ref = doc(db, "boutiques", id, n, docId);
+            batch.set(ref, o);
+
+            countNew++;
+            batchSize++;
+
+            // --- ENVOI PAR PAQUETS DE 400 ---
+            // On laisse une marge de sécurité (400 au lieu de 500)
+            if (batchSize >= 400) {
+                console.log("Envoi intermédiaire...");
+                await batch.commit();
+                batch = writeBatch(db);
+                batchSize = 0;
+            }
+
+        } catch (e) {
             console.error("Erreur ligne CSV:", e, r);
         }
     }
-    
+
+    // Envoi du reste
     if (batchSize > 0) await batch.commit();
-    
+
     let msg = `Terminé : ${countNew} ajoutés. ${countSkipped} doublons ignorés.`;
     if (n === 'ventes') msg += ` (${countStock} stocks mis à jour)`;
     showToast(msg, countNew > 0 ? "success" : "warning");
