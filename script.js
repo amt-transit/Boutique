@@ -1508,18 +1508,29 @@ window.saveCartAsOrder = async () => {
 
     // Fonction Générale pour traiter une vente (Cash ou Crédit)
     async function processDirectSale(type, clientInfo = null) {
-        if (saleCart.length === 0) return showToast("Panier vide !", "error");
-        if (!currentBoutiqueId) return;
+    // --- 1. SÉCURITÉ : VÉRIFICATIONS ---
+    if (saleCart.length === 0) return showToast("Panier vide !", "error");
+    if (!currentBoutiqueId) return showToast("Erreur : Aucune boutique sélectionnée", "error");
 
+    // --- 2. ANTI-DOUBLON (Verrouillage des boutons) ---
+    // On cible le bouton de confirmation du crédit (ajustez l'ID si nécessaire)
+    const btnCredit = document.getElementById('btn-confirm-credit'); 
+    const btnCash = document.getElementById('btn-valider-vente'); // Si vous avez un bouton cash principal
+    
+    // On désactive pour empêcher le double clic
+    if (btnCredit) { btnCredit.disabled = true; btnCredit.innerText = "En cours..."; }
+    if (btnCash) { btnCash.disabled = true; }
+
+    try {
         const batch = writeBatch(db);
         
-        // 1. Préparer la fiche de Vente (Historique)
+        // Préparer la fiche de Vente
         const saleRef = doc(collection(db, "boutiques", currentBoutiqueId, "ventes"));
         
         let totalSale = 0;
         let totalProfit = 0;
 
-        // 2. BOUCLE SUR CHAQUE PRODUIT DU PANIER
+        // BOUCLE SUR CHAQUE PRODUIT
         for (const item of saleCart) {
             const itemTotal = item.prixVente * item.qty;
             const itemProfit = (item.prixVente - (item.prixAchat || 0)) * item.qty;
@@ -1527,18 +1538,15 @@ window.saveCartAsOrder = async () => {
             totalSale += itemTotal;
             totalProfit += itemProfit;
 
-            // --- C'EST ICI QUE LE STOCK EST DÉDUIT ---
+            // DÉDUCTION DU STOCK
             const productRef = doc(db, "boutiques", currentBoutiqueId, "products", item.id);
-            
             batch.update(productRef, {
-                // On enlève la quantité vendue du stock actuel
                 stock: increment(-item.qty), 
-                // On augmente le compteur de popularité du produit
                 quantiteVendue: increment(item.qty)
             });
         }
 
-        // 3. Enregistrer la vente globale
+        // ENREGISTREMENT DE LA VENTE
         const saleData = {
             date: serverTimestamp(),
             items: saleCart,
@@ -1553,7 +1561,7 @@ window.saveCartAsOrder = async () => {
             saleData.clientId = clientInfo.id;
             saleData.clientName = clientInfo.nom;
             
-            // Si c'est un crédit, on augmente aussi la dette du client
+            // Augmentation de la dette client
             const clientRef = doc(db, "boutiques", currentBoutiqueId, "clients", clientInfo.id);
             batch.update(clientRef, {
                 dette: increment(totalSale)
@@ -1562,36 +1570,49 @@ window.saveCartAsOrder = async () => {
 
         batch.set(saleRef, saleData);
 
-        // 4. Exécuter tout en même temps
-        try {
-            await batch.commit();
-            
-            // Succès
-            document.getElementById('invoice-amount').textContent = formatPrice(totalSale);
-            
-            // Générer le résumé pour WhatsApp
-            let recap = saleCart.map(i => `- ${i.qty}x ${i.nomDisplay} (${formatPrice(i.prixVente)})`).join('\n');
-            document.getElementById('invoice-preview').innerText = recap;
-            
-            // Lien WhatsApp
-            const waMsg = encodeURIComponent(`*Facture ${shopName}*\n\n${recap}\n\n*Total: ${formatPrice(totalSale)}*\nMerci de votre visite !`);
-            document.getElementById('btn-whatsapp-share').href = `https://wa.me/?text=${waMsg}`;
+        // --- 3. EXÉCUTION (COMMIT) ---
+        await batch.commit();
+        
+        // --- 4. SUCCÈS & UI ---
+        
+        // CORRECTION DU BUG "shopName is not defined"
+        // On essaie de récupérer le nom depuis une variable globale 'currentShop' ou on met une valeur par défaut
+        const shopName = (typeof currentShop !== 'undefined' && currentShop?.nom) ? currentShop.nom : "Ma Boutique";
 
-            // Ouvrir la modale de succès
-            document.getElementById('invoice-modal').classList.remove('hidden');
-            
-            // Vider le panier
-            saleCart = [];
-            renderCart();
-            
-            // Fermer les autres modales si ouvertes
-            document.getElementById('credit-sale-modal').classList.add('hidden');
+        document.getElementById('invoice-amount').textContent = formatPrice(totalSale);
+        
+        // Générer le résumé pour WhatsApp
+        let recap = saleCart.map(i => `- ${i.qty}x ${i.nomDisplay} (${formatPrice(i.prixVente)})`).join('\n');
+        document.getElementById('invoice-preview').innerText = recap;
+        
+        // Lien WhatsApp (Maintenant shopName est défini, ça ne plantera plus)
+        const waMsg = encodeURIComponent(`*Facture ${shopName}*\n\n${recap}\n\n*Total: ${formatPrice(totalSale)}*\nMerci de votre visite !`);
+        const btnWa = document.getElementById('btn-whatsapp-share');
+        if(btnWa) btnWa.href = `https://wa.me/?text=${waMsg}`;
 
-        } catch (error) {
-            console.error("Erreur vente:", error);
-            showToast("Erreur lors de la vente : " + error.message, "error");
-        }
+        // Ouvrir la modale de succès
+        const modalInvoice = document.getElementById('invoice-modal');
+        if(modalInvoice) modalInvoice.classList.remove('hidden');
+        
+        // Vider le panier
+        saleCart = [];
+        if (typeof renderCart === "function") renderCart(); // Sécurité si la fonction n'existe pas
+        
+        // Fermer les autres modales
+        const modalCredit = document.getElementById('credit-sale-modal');
+        if(modalCredit) modalCredit.classList.add('hidden');
+
+        showToast("Vente enregistrée avec succès !", "success");
+
+    } catch (error) {
+        console.error("Erreur vente:", error);
+        showToast("Erreur lors de la vente : " + error.message, "error");
+    } finally {
+        // --- 5. FINALLY : ON RÉACTIVE LES BOUTONS QUOI QU'IL ARRIVE ---
+        if (btnCredit) { btnCredit.disabled = false; btnCredit.innerText = "Confirmer Crédit"; }
+        if (btnCash) { btnCash.disabled = false; }
     }
+}
 
     // --- RACCORDEMENT DES BOUTONS ---
 
