@@ -1307,7 +1307,7 @@ async function uploadBatchData(id, n, d) {
     let countStock = 0;
 
     // --- 2. TRAITEMENT RAPIDE (Tout se passe en mémoire locale) ---
-    for (const r of d) {
+    for (const [i, r] of d.entries()) {
         if (!r.Nom && !r.Produit && !r.Motif) continue;
 
         let docId = null;
@@ -1319,7 +1319,8 @@ async function uploadBatchData(id, n, d) {
                 const q_id = parseInt(r.Quantite) || 1;
                 const p_id = parseFloat(r.PrixUnitaire) || 0;
                 const total_calc = q_id * p_id;
-                const rawId = `${r.Date}_${r.Produit}_${total_calc}`;
+                // CORRECTION ICI : Ajout de _L${i} pour rendre l'ID unique même si la vente est identique
+                const rawId = `${r.Date}_${r.Produit}_${total_calc}_L${i}`;
                 docId = "imp_" + rawId.replace(/[^a-zA-Z0-9]/g, '_');
             } else if (n === 'products') {
                 docId = "imp_prod_" + r.Nom.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
