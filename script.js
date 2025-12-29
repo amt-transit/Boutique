@@ -1635,5 +1635,127 @@ window.saveCartAsOrder = async () => {
             processDirectSale('credit', { id: clientId, nom: clientName });
         }
     });
+    // ===============================================
+    // MODULE SCANNER & APPRENTISSAGE CODE-BARRES
+    // ===============================================
+
+    let html5QrcodeScanner = null;
+    let currentScannedCode = null;
+
+    // 1. Démarrer le scanner
+    window.startScanner = function() {
+        document.getElementById('scanner-modal').classList.remove('hidden');
+        
+        // Si déjà lancé, on ne relance pas
+        if (html5QrcodeScanner) return; 
+
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+        html5QrcodeScanner.render(onScanSuccess, (err) => { /* Ignorer les erreurs de lecture en boucle */ });
+    };
+
+    // 2. Arrêter le scanner
+    window.stopScanner = function() {
+        document.getElementById('scanner-modal').classList.add('hidden');
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().then(() => {
+                html5QrcodeScanner = null;
+                // On supprime le contenu du div pour éviter les bugs de redémarrage
+                document.getElementById('reader').innerHTML = ""; 
+            }).catch(err => console.error(err));
+        }
+    };
+
+    // 3. Succès du scan
+    async function onScanSuccess(decodedText, decodedResult) {
+        // Petit bip sonore
+        new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e=>{});
+
+        console.log(`Code scanné : ${decodedText}`);
+        
+        // Pause temporaire du scanner pour éviter les doubles lectures
+        window.stopScanner(); 
+
+        // A. CHERCHER LE PRODUIT DANS LA LISTE LOCALE
+        // On cherche si un produit possède déjà ce 'codeBarre'
+        const productFound = allProducts.find(p => p.codeBarre === decodedText);
+
+        if (productFound) {
+            // SCÉNARIO 1 : PRODUIT CONNU -> On ajoute au panier
+            addToCart(productFound);
+            showToast(`Produit scanné : ${productFound.nomDisplay}`, "success");
+        } else {
+            // SCÉNARIO 2 : CODE INCONNU -> On lance l'association (Apprentissage)
+            currentScannedCode = decodedText;
+            openAssociationModal(decodedText);
+        }
+    }
+
+    // 4. Ouvrir la modale d'association
+    function openAssociationModal(code) {
+        const modal = document.getElementById('barcode-assoc-modal');
+        const display = document.getElementById('assoc-barcode-display');
+        const select = document.getElementById('assoc-product-select');
+        const searchInput = document.getElementById('assoc-search');
+
+        display.textContent = code;
+        modal.classList.remove('hidden');
+
+        // Remplir le select avec tous les produits actifs
+        const populateSelect = (filter = "") => {
+            select.innerHTML = '<option value="">-- Choisir un produit --</option>';
+            const filtered = allProducts.filter(p => !p.deleted && p.nomDisplay.toLowerCase().includes(filter.toLowerCase()));
+            
+            // On trie par nom
+            filtered.sort((a,b) => a.nomDisplay.localeCompare(b.nomDisplay));
+
+            filtered.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.nomDisplay;
+                select.appendChild(opt);
+            });
+        };
+
+        populateSelect();
+
+        // Filtre de recherche dans la modale
+        searchInput.oninput = (e) => populateSelect(e.target.value);
+    }
+
+    // 5. Confirmer l'association
+    window.confirmBarcodeAssociation = async function() {
+        const select = document.getElementById('assoc-product-select');
+        const productId = select.value;
+
+        if (!productId) return showToast("Veuillez choisir un produit.", "error");
+
+        try {
+            const product = allProducts.find(p => p.id === productId);
+            
+            // Mise à jour Firebase
+            const productRef = doc(db, "boutiques", currentBoutiqueId, "products", productId);
+            await updateDoc(productRef, { 
+                codeBarre: currentScannedCode 
+            });
+
+            // Mise à jour locale immédiate (pour ne pas attendre le snapshot)
+            product.codeBarre = currentScannedCode;
+
+            showToast("Code associé avec succès !", "success");
+            closeAssocModal();
+
+            // On ajoute directement le produit au panier pour gagner du temps
+            addToCart(product);
+
+        } catch (error) {
+            console.error("Erreur association:", error);
+            showToast("Erreur lors de l'enregistrement", "error");
+        }
+    };
+
+    window.closeAssocModal = function() {
+        document.getElementById('barcode-assoc-modal').classList.add('hidden');
+        currentScannedCode = null;
+    };
 };
 main();

@@ -13,6 +13,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 
 <body class="bg-gray-100 font-sans text-gray-800">
@@ -160,10 +162,14 @@
                     <div class="lg:col-span-2 bg-white rounded-xl shadow-sm flex flex-col overflow-hidden h-full border border-gray-200">
                         
                         <div class="p-4 border-b z-20 bg-white flex-none">
-                            <div class="relative">
-                                <i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
-                                <input type="text" id="sale-search" placeholder="Scanner un produit ou taper son nom..." class="w-full pl-10 p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" autocomplete="off">
-                                <div id="sale-search-results" class="hidden absolute w-full bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto z-50"></div>
+                            <div class="flex gap-2"> <div class="relative flex-1">
+                                    <i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                                    <input type="text" id="sale-search" placeholder="Nom du produit..." class="w-full pl-10 p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" autocomplete="off">
+                                    <div id="sale-search-results" class="hidden absolute w-full bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto z-50"></div>
+                                </div>
+                                <button onclick="startScanner()" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg shadow-sm transition">
+                                    <i data-lucide="scan-barcode" class="w-6 h-6"></i>
+                                </button>
                             </div>
                         </div>
 
@@ -598,6 +604,36 @@
     <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[160]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"><h2 id="confirm-modal-title" class="text-lg font-bold text-gray-800 mb-2">Confirmation</h2><p id="confirm-modal-text" class="text-sm text-gray-600 mb-6">...</p><div class="flex justify-end gap-3"><button id="modal-cancel-btn" class="bg-gray-100 text-gray-800 font-bold py-2 px-4 rounded-lg">Non</button><button id="modal-confirm-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Oui</button></div></div></div>
     <div id="invoice-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[200] backdrop-blur-sm"><div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform transition-all scale-100"><div class="text-center mb-6"><div class="mx-auto bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-3"><i data-lucide="check" class="text-green-600 w-6 h-6"></i></div><h2 class="text-2xl font-bold text-gray-800">Vente Réussie !</h2><p class="text-gray-500 text-sm">Le stock et la caisse ont été mis à jour.</p></div><div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 text-sm font-mono"><div class="flex justify-between border-b border-gray-200 pb-2 mb-2"><span class="font-bold">Total payé</span><span class="font-bold text-blue-600" id="invoice-amount">0 CFA</span></div><div class="text-xs text-gray-500" id="invoice-preview"></div></div><div class="space-y-3"><a id="btn-whatsapp-share" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-xl font-bold shadow-lg flex justify-center items-center gap-2 transition-transform hover:scale-105"><i data-lucide="message-circle" class="w-5 h-5 fill-current"></i> Envoyer Facture WhatsApp</a><button onclick="document.getElementById('invoice-modal').classList.add('hidden')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold">Fermer et Nouvelle Vente</button></div></div></div>
     <div id="access-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[170]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full"><h3 class="text-lg font-bold text-gray-800 mb-4">Gestion Accès (Secours)</h3><p class="text-sm text-gray-500 mb-4">Boutique: <span id="access-shop-name" class="font-bold text-blue-600"></span></p><div class="space-y-4"><div class="p-4 bg-blue-50 rounded border border-blue-100"><h4 class="text-xs font-bold text-blue-800 uppercase mb-2">Propriétaire</h4><p class="text-xs text-gray-600 mb-2">Actuel: <span id="current-admin-email" class="font-mono font-bold">...</span></p><input type="email" id="new-admin-access-email" placeholder="Nouvel Email" class="w-full p-2 text-sm border rounded mb-2"><input type="password" id="new-admin-access-pass" placeholder="Nouveau Pass" class="w-full p-2 text-sm border rounded mb-2"><button onclick="updateAccess('admin')" class="w-full bg-blue-600 text-white text-xs py-2 rounded font-bold">Remplacer</button></div><div class="p-4 bg-green-50 rounded border border-green-100"><h4 class="text-xs font-bold text-green-800 uppercase mb-2">Vendeur</h4><p class="text-xs text-gray-600 mb-2">Actuel: <span id="current-seller-email" class="font-mono font-bold">...</span></p><input type="email" id="new-seller-access-email" placeholder="Nouvel Email" class="w-full p-2 text-sm border rounded mb-2"><input type="password" id="new-seller-access-pass" placeholder="Nouveau Pass" class="w-full p-2 text-sm border rounded mb-2"><button onclick="updateAccess('seller')" class="w-full bg-green-600 text-white text-xs py-2 rounded font-bold">Remplacer</button></div></div><div class="mt-4 text-right"><button onclick="document.getElementById('access-modal').classList.add('hidden')" class="text-gray-500 text-sm underline">Fermer</button></div></div></div>
+    <div id="scanner-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden flex flex-col items-center justify-center z-[250]">
+        <div class="w-full max-w-md bg-white rounded-xl overflow-hidden relative">
+            <button onclick="stopScanner()" class="absolute top-2 right-2 bg-white rounded-full p-2 z-10 text-red-600 font-bold"><i data-lucide="x"></i></button>
+            <div id="reader" class="w-full h-[300px] bg-black"></div>
+            <p class="text-center text-sm p-2 bg-gray-100">Pointez la caméra vers un code-barres</p>
+        </div>
+    </div>
+
+    <div id="barcode-assoc-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[260]">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <div class="text-center mb-4">
+                <i data-lucide="scan-barcode" class="w-12 h-12 mx-auto text-blue-500 mb-2"></i>
+                <h3 class="text-lg font-bold text-gray-800">Nouveau Code détecté !</h3>
+                <p class="text-xs text-gray-500 font-mono bg-gray-100 p-1 rounded mt-1" id="assoc-barcode-display">...</p>
+            </div>
+            <p class="text-sm text-gray-600 mb-3">Ce produit n'est pas reconnu. Sélectionnez-le dans la liste pour l'associer définitivement :</p>
+            
+            <div class="relative mb-4">
+                 <input type="text" id="assoc-search" placeholder="Rechercher produit..." class="w-full p-2 border rounded mb-2">
+                 <select id="assoc-product-select" class="w-full p-2 border rounded bg-white">
+                     <option value="">-- Choisir un produit --</option>
+                 </select>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button onclick="closeAssocModal()" class="px-4 py-2 text-gray-500">Annuler</button>
+                <button onclick="confirmBarcodeAssociation()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded shadow">Enregistrer & Ajouter</button>
+            </div>
+        </div>
+    </div>
 
     <div id="toast-container"></div>
     <script type="module" src="script.js"></script>
