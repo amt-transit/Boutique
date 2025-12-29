@@ -1745,21 +1745,32 @@ async function onScanSuccess(decodedText, decodedResult) {
         const inputCode = document.getElementById('prod-code');
         if(inputCode) inputCode.value = decodedText;
 
-        // 2. On regarde si le produit existe déjà pour pré-remplir les infos
+        // 2. On regarde si le produit existe déjà
         const existing = allProducts.find(p => p.codeBarre === decodedText && !p.deleted);
+        
         if (existing) {
-            showToast("Ce produit existe déjà !", "warning");
+            // CAS 1 : PRODUIT DÉJÀ EN STOCK -> On prépare l'ajout
+            showToast("Produit reconnu ! Combien en ajoutez-vous ?", "success");
+            
             document.getElementById('prod-nom').value = existing.nomDisplay;
             document.getElementById('prod-achat').value = existing.prixAchat;
             document.getElementById('prod-prix').value = existing.prixVente;
-            // On laisse le stock vide pour que l'utilisateur saisisse l'ajout
+            
+            // ASTUCE : On met le curseur directement dans la case Stock
+            // et on la vide pour que vous n'ayez plus qu'à taper "100"
+            const qteInput = document.getElementById('prod-qte');
+            qteInput.value = ""; 
+            qteInput.placeholder = "Quantité à ajouter ?";
+            qteInput.focus(); 
+
         } else {
-            showToast("Code scanné ! Remplissez le reste.", "success");
-            document.getElementById('prod-nom').focus(); // On met le focus sur le nom
+            // CAS 2 : NOUVEAU PRODUIT
+            showToast("Nouveau code ! Remplissez la fiche.", "success");
+            document.getElementById('prod-nom').focus(); 
         }
         
-        isScanningForNewProduct = false; // On désactive le mode après un scan réussi
-        return; // On arrête là
+        isScanningForNewProduct = false; 
+        return;
     } 
 
     // Recherche produit
