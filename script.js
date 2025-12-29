@@ -30,6 +30,7 @@ let isQuickAddMode = false;
 let currentAccessShopId = null;
 let allShopsList = []; 
 let loadedTransactions = [];
+let isScanningForNewProduct = false;
 
 // ================= INIT =================
 
@@ -489,6 +490,13 @@ function setupStockManagement() {
     const editForm = document.getElementById('form-edit-product');
     const searchInput = document.getElementById('stock-search-input');
     const sortSelect = document.getElementById('stock-sort-select');
+    const btnScanNew = document.getElementById('btn-scan-new-prod');
+    if (btnScanNew) {
+        btnScanNew.addEventListener('click', () => {
+            isScanningForNewProduct = true; // On active le mode "Nouveau Produit"
+            startScanner();
+        });
+    }
 
     const renderStockTable = () => {
         const tbody = document.getElementById('stock-table-body');
@@ -591,6 +599,9 @@ function setupStockManagement() {
     if(stockForm) {
         stockForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Récupération des données
+            const codeBarre = document.getElementById('prod-code').value.trim(); // <--- NOUVEAU
             const nomBrut = document.getElementById('prod-nom').value;
             const nom = nomBrut.toLowerCase().trim();
             const pAchat = parseFloat(document.getElementById('prod-achat').value)||0;
@@ -598,27 +609,69 @@ function setupStockManagement() {
             const qte = parseInt(document.getElementById('prod-qte').value);
 
             try {
+                // On vérifie si le nom existe déjà (votre code actuel)
                 const q = query(collection(db, "boutiques", currentBoutiqueId, "products"), where("nom", "==", nom), where("deleted", "==", false));
                 const snap = await getDocs(q);
+                
+                // On vérifie aussi si le CODE BARRE existe déjà (sécurité)
+                let existingByCode = null;
+                if(codeBarre) {
+                    existingByCode = allProducts.find(p => p.codeBarre === codeBarre && !p.deleted);
+                }
+
                 const batch = writeBatch(db);
                 let productId = null;
 
-                if (!snap.empty) {
-                    const docExist = snap.docs[0];
-                    productId = docExist.id;
-                    batch.update(docExist.ref, { stock: increment(qte), prixAchat: pAchat, prixVente: pVente, lastRestock: serverTimestamp() });
-                    showToast(`Stock mis à jour (+${qte})`);
+                if (!snap.empty || existingByCode) {
+                    // Produit existant (par nom ou par code)
+                    const docExist = snap.empty ? null : snap.docs[0];
+                    const existingData = existingByCode || (docExist ? {id: docExist.id, ...docExist.data()} : null);
+                    
+                    if(existingData) {
+                        productId = existingData.id;
+                        const ref = doc(db, "boutiques", currentBoutiqueId, "products", productId);
+                        
+                        // On met à jour le stock et on ajoute le code-barre si manquant
+                        batch.update(ref, { 
+                            stock: increment(qte), 
+                            prixAchat: pAchat, 
+                            prixVente: pVente, 
+                            codeBarre: codeBarre || existingData.codeBarre, // Mise à jour code
+                            lastRestock: serverTimestamp() 
+                        });
+                        showToast(`Stock mis à jour (+${qte})`);
+                    }
                 } else {
+                    // Création nouveau produit
                     const newRef = doc(collection(db, "boutiques", currentBoutiqueId, "products"));
                     productId = newRef.id;
-                    batch.set(newRef, { nom: nom, nomDisplay: nomBrut, prixVente: pVente, prixAchat: pAchat, stock: qte, quantiteVendue: 0, createdAt: serverTimestamp(), deleted: false });
-                    showToast("Produit créé");
+                    batch.set(newRef, { 
+                        nom: nom, 
+                        nomDisplay: nomBrut, 
+                        codeBarre: codeBarre, // <--- ENREGISTREMENT DU CODE
+                        prixVente: pVente, 
+                        prixAchat: pAchat, 
+                        stock: qte, 
+                        quantiteVendue: 0, 
+                        createdAt: serverTimestamp(), 
+                        deleted: false 
+                    });
+                    showToast("Produit créé avec succès");
                 }
+
+                // Historique Mouvement
                 const histRef = doc(collection(db, "boutiques", currentBoutiqueId, "mouvements_stock"));
                 batch.set(histRef, { productId: productId, nom: nomBrut, type: 'ajout', quantite: qte, prixAchat: pAchat, date: serverTimestamp(), user: userId });
+                
                 await batch.commit();
-                stockForm.reset(); document.getElementById('add-product-form').classList.add('hidden'); if(suggestionsDiv) suggestionsDiv.classList.add('hidden');
-            } catch (err) { showToast("Erreur ajout", "error"); }
+                
+                // Reset du formulaire
+                stockForm.reset(); 
+                document.getElementById('add-product-form').classList.add('hidden'); 
+                if(suggestionsDiv) suggestionsDiv.classList.add('hidden');
+                isScanningForNewProduct = false; // Reset du mode
+
+            } catch (err) { console.error(err); showToast("Erreur ajout", "error"); }
         });
     }
     
@@ -734,6 +787,11 @@ function setupSalesPage() {
     const btnCredit = document.getElementById('btn-open-credit-modal');
     const btnQuickAdd = document.getElementById('btn-quick-add-client');
     const dateDisplay = document.getElementById('current-date-display');
+    const btnScan = document.getElementById('btn-scan-product');
+    if (btnScan) {
+        // On attache la fonction ici, c'est beaucoup plus fiable qu'un onclick HTML
+        btnScan.addEventListener('click', startScanner);
+    }
     if(dateDisplay) dateDisplay.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
     searchInput.addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
@@ -1634,128 +1692,149 @@ window.saveCartAsOrder = async () => {
         if(confirm(`Confirmer la vente à CRÉDIT pour ${clientName} ?`)) {
             processDirectSale('credit', { id: clientId, nom: clientName });
         }
-    });
-    // ===============================================
-    // MODULE SCANNER & APPRENTISSAGE CODE-BARRES
-    // ===============================================
+    });   
+}
+// ===============================================
+// MODULE SCANNER (Désormais à l'extérieur, au niveau global)
+// ===============================================
 
-    let html5QrcodeScanner = null;
-    let currentScannedCode = null;
+let html5QrcodeScanner = null;
+let currentScannedCode = null;
 
-    // 1. Démarrer le scanner
-    window.startScanner = function() {
-        document.getElementById('scanner-modal').classList.remove('hidden');
-        
-        // Si déjà lancé, on ne relance pas
-        if (html5QrcodeScanner) return; 
+// 1. Démarrer le scanner
+window.startScanner = async function() {
+    const modal = document.getElementById('scanner-modal');
+    if(modal) modal.classList.remove('hidden');
+    
+    if (html5QrcodeScanner) return; 
 
+    if (typeof Html5QrcodeScanner === 'undefined') {
+        return showToast("Erreur: Librairie Scanner non chargée", "error");
+    }
+
+    try {
         html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
-        html5QrcodeScanner.render(onScanSuccess, (err) => { /* Ignorer les erreurs de lecture en boucle */ });
-    };
+        html5QrcodeScanner.render(onScanSuccess, (err) => { /* Ignorer erreurs */ });
+    } catch (e) {
+        console.error("Erreur init scanner:", e);
+        showToast("Impossible de démarrer la caméra", "error");
+    }
+};
 
-    // 2. Arrêter le scanner
-    window.stopScanner = function() {
-        document.getElementById('scanner-modal').classList.add('hidden');
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear().then(() => {
-                html5QrcodeScanner = null;
-                // On supprime le contenu du div pour éviter les bugs de redémarrage
-                document.getElementById('reader').innerHTML = ""; 
-            }).catch(err => console.error(err));
+// 2. Arrêter le scanner
+window.stopScanner = function() {
+    document.getElementById('scanner-modal').classList.add('hidden');
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().then(() => {
+            html5QrcodeScanner = null;
+            document.getElementById('reader').innerHTML = ""; 
+        }).catch(err => console.error(err));
+    }
+};
+
+// 3. Succès du scan
+async function onScanSuccess(decodedText, decodedResult) {
+    // Petit bip
+    new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e=>{});
+    console.log(`Code scanné : ${decodedText}`);
+    
+    window.stopScanner();
+    // --- CAS SPÉCIAL : AJOUT DE PRODUIT ---
+    if (isScanningForNewProduct) {
+        // 1. On remplit le champ Code Barre
+        const inputCode = document.getElementById('prod-code');
+        if(inputCode) inputCode.value = decodedText;
+
+        // 2. On regarde si le produit existe déjà pour pré-remplir les infos
+        const existing = allProducts.find(p => p.codeBarre === decodedText && !p.deleted);
+        if (existing) {
+            showToast("Ce produit existe déjà !", "warning");
+            document.getElementById('prod-nom').value = existing.nomDisplay;
+            document.getElementById('prod-achat').value = existing.prixAchat;
+            document.getElementById('prod-prix').value = existing.prixVente;
+            // On laisse le stock vide pour que l'utilisateur saisisse l'ajout
+        } else {
+            showToast("Code scanné ! Remplissez le reste.", "success");
+            document.getElementById('prod-nom').focus(); // On met le focus sur le nom
         }
-    };
-
-    // 3. Succès du scan
-    async function onScanSuccess(decodedText, decodedResult) {
-        // Petit bip sonore
-        new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e=>{});
-
-        console.log(`Code scanné : ${decodedText}`);
         
-        // Pause temporaire du scanner pour éviter les doubles lectures
-        window.stopScanner(); 
+        isScanningForNewProduct = false; // On désactive le mode après un scan réussi
+        return; // On arrête là
+    } 
 
-        // A. CHERCHER LE PRODUIT DANS LA LISTE LOCALE
-        // On cherche si un produit possède déjà ce 'codeBarre'
-        const productFound = allProducts.find(p => p.codeBarre === decodedText);
+    // Recherche produit
+    const productFound = allProducts.find(p => p.codeBarre === decodedText);
+    const isStockPage = !document.getElementById('page-stock').classList.contains('hidden');
 
-        if (productFound) {
-            // SCÉNARIO 1 : PRODUIT CONNU -> On ajoute au panier
+    if (productFound) {
+        if (isStockPage) {
+            const searchInput = document.getElementById('stock-search-input');
+            if(searchInput) {
+                searchInput.value = productFound.nom;
+                searchInput.dispatchEvent(new Event('input'));
+                showToast(`Trouvé : ${productFound.nomDisplay}`, "success");
+            }
+        } else {
             addToCart(productFound);
             showToast(`Produit scanné : ${productFound.nomDisplay}`, "success");
-        } else {
-            // SCÉNARIO 2 : CODE INCONNU -> On lance l'association (Apprentissage)
-            currentScannedCode = decodedText;
-            openAssociationModal(decodedText);
         }
+    } else {
+        currentScannedCode = decodedText;
+        openAssociationModal(decodedText);
     }
+}
 
-    // 4. Ouvrir la modale d'association
-    function openAssociationModal(code) {
-        const modal = document.getElementById('barcode-assoc-modal');
-        const display = document.getElementById('assoc-barcode-display');
-        const select = document.getElementById('assoc-product-select');
-        const searchInput = document.getElementById('assoc-search');
+// 4. Modale Association
+function openAssociationModal(code) {
+    const modal = document.getElementById('barcode-assoc-modal');
+    const display = document.getElementById('assoc-barcode-display');
+    const select = document.getElementById('assoc-product-select');
+    const searchInput = document.getElementById('assoc-search');
 
-        display.textContent = code;
-        modal.classList.remove('hidden');
+    display.textContent = code;
+    modal.classList.remove('hidden');
 
-        // Remplir le select avec tous les produits actifs
-        const populateSelect = (filter = "") => {
-            select.innerHTML = '<option value="">-- Choisir un produit --</option>';
-            const filtered = allProducts.filter(p => !p.deleted && p.nomDisplay.toLowerCase().includes(filter.toLowerCase()));
-            
-            // On trie par nom
-            filtered.sort((a,b) => a.nomDisplay.localeCompare(b.nomDisplay));
+    const populateSelect = (filter = "") => {
+        select.innerHTML = '<option value="">-- Choisir un produit --</option>';
+        const filtered = allProducts.filter(p => !p.deleted && p.nomDisplay.toLowerCase().includes(filter.toLowerCase()));
+        filtered.sort((a,b) => a.nomDisplay.localeCompare(b.nomDisplay));
+        filtered.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.nomDisplay;
+            select.appendChild(opt);
+        });
+    };
+    populateSelect();
+    searchInput.oninput = (e) => populateSelect(e.target.value);
+}
 
-            filtered.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.nomDisplay;
-                select.appendChild(opt);
-            });
-        };
+// 5. Confirmer Association
+window.confirmBarcodeAssociation = async function() {
+    const select = document.getElementById('assoc-product-select');
+    const productId = select.value;
+    if (!productId) return showToast("Veuillez choisir un produit.", "error");
 
-        populateSelect();
+    try {
+        const product = allProducts.find(p => p.id === productId);
+        // Update Firebase
+        const productRef = doc(db, "boutiques", currentBoutiqueId, "products", productId);
+        await updateDoc(productRef, { codeBarre: currentScannedCode });
+        
+        // Update Local
+        product.codeBarre = currentScannedCode;
 
-        // Filtre de recherche dans la modale
-        searchInput.oninput = (e) => populateSelect(e.target.value);
+        showToast("Code associé !", "success");
+        window.closeAssocModal();
+        addToCart(product);
+    } catch (error) {
+        console.error("Erreur:", error);
+        showToast("Erreur enregistrement", "error");
     }
+};
 
-    // 5. Confirmer l'association
-    window.confirmBarcodeAssociation = async function() {
-        const select = document.getElementById('assoc-product-select');
-        const productId = select.value;
-
-        if (!productId) return showToast("Veuillez choisir un produit.", "error");
-
-        try {
-            const product = allProducts.find(p => p.id === productId);
-            
-            // Mise à jour Firebase
-            const productRef = doc(db, "boutiques", currentBoutiqueId, "products", productId);
-            await updateDoc(productRef, { 
-                codeBarre: currentScannedCode 
-            });
-
-            // Mise à jour locale immédiate (pour ne pas attendre le snapshot)
-            product.codeBarre = currentScannedCode;
-
-            showToast("Code associé avec succès !", "success");
-            closeAssocModal();
-
-            // On ajoute directement le produit au panier pour gagner du temps
-            addToCart(product);
-
-        } catch (error) {
-            console.error("Erreur association:", error);
-            showToast("Erreur lors de l'enregistrement", "error");
-        }
-    };
-
-    window.closeAssocModal = function() {
-        document.getElementById('barcode-assoc-modal').classList.add('hidden');
-        currentScannedCode = null;
-    };
+window.closeAssocModal = function() {
+    document.getElementById('barcode-assoc-modal').classList.add('hidden');
+    currentScannedCode = null;
 };
 main();
