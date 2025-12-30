@@ -1759,9 +1759,11 @@ async function onScanSuccess(decodedText, decodedResult) {
             // ASTUCE : On met le curseur directement dans la case Stock
             // et on la vide pour que vous n'ayez plus qu'à taper "100"
             const qteInput = document.getElementById('prod-qte');
-            qteInput.value = ""; 
-            qteInput.placeholder = "Quantité à ajouter ?";
-            qteInput.focus(); 
+            if(qteInput) {
+                qteInput.value = ""; 
+                qteInput.focus(); // <--- Le curseur clignote ici !
+                qteInput.select();
+            } 
 
         } else {
             // CAS 2 : NOUVEAU PRODUIT
