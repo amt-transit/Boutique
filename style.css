@@ -32,7 +32,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     color: #64748b;
-    font-size: 0.75rem; /* Texte un peu plus lisible */
+    font-size: 0.85rem; /* Texte plus grand pour meilleure lisibilité */
     font-weight: 500;
     min-width: 60px;
     border: none;
@@ -135,7 +135,7 @@
     }
     
     .tab div {
-        font-size: 0.6rem; /* Texte plus petit sur mobile */
+        font-size: 0.7rem; /* Augmenté pour lisibilité sur mobile */
         display: none; /* OPTIONNEL : Décommentez pour cacher le texte sur mobile et gagner de la place */
     }
     
@@ -154,7 +154,7 @@
 
 /* Réduire le padding intérieur des cartes */
 .bg-white {
-    padding: 1rem !important; /* 16px au lieu de 20px ou 24px */
+    padding: 1.25rem !important; /* Un peu plus d'espace pour respirer */
     border-radius: 12px;      /* Coins un peu moins ronds pour s'emboiter mieux */
 }
 
@@ -170,14 +170,14 @@ h2.text-4xl {
 
 /* Condenser les tableaux */
 td, th {
-    padding: 8px 12px !important; /* Cellules de tableau moins hautes */
+    padding: 12px 12px !important; /* Plus facile à lire et à suivre la ligne */
 }
 
 /* Input plus compacts */
 input, select, button {
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
-    font-size: 0.9rem !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    font-size: 1rem !important; /* Taille standard (16px) pour éviter le zoom sur mobile */
 }
 
 /* Ajustement du container principal */

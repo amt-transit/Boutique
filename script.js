@@ -9,7 +9,7 @@ import {
 import { 
     getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, 
     onSnapshot, query, where, orderBy, limit, serverTimestamp, writeBatch, deleteDoc, 
-    increment, setLogLevel
+    increment, setLogLevel, initializeFirestore, persistentLocalCache
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -36,7 +36,11 @@ let isScanningForNewProduct = false;
 
 async function main() {
     const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
+    
+    // ACTIVATION DU MODE HORS-LIGNE (Nouvelle méthode v11+ pour éviter le warning deprecated)
+    db = initializeFirestore(app, {localCache: persistentLocalCache()});
+    console.log("Mode hors-ligne activé");
+
     auth = getAuth(app);
     setLogLevel('error');
 
@@ -1510,15 +1514,25 @@ async function loadShopsForImport() {
 }
 // ================= GESTION DES COMMANDES =================
 
-window.saveCartAsOrder = async () => {
+window.saveCartAsOrder = () => {
     // 1. Vérifications
     if (saleCart.length === 0) return showToast("Le panier est vide !", "error");
     
-    const clientName = prompt("Nom du client pour la commande :");
-    if (!clientName) return;
+    // Ouverture de la modale au lieu du prompt
+    document.getElementById('order-client-name').value = "";
+    document.getElementById('order-client-tel').value = "";
+    document.getElementById('order-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('order-client-name').focus(), 100);
+};
 
-    const tel = prompt("Téléphone (Optionnel) :");
-
+window.finalizeOrder = async () => {
+    const clientName = document.getElementById('order-client-name').value;
+    const tel = document.getElementById('order-client-tel').value;
+    
+    if (!clientName) return showToast("Le nom du client est obligatoire", "error");
+    
+    document.getElementById('order-modal').classList.add('hidden');
+    
     try {
         const batch = writeBatch(db);
         const cmdRef = doc(collection(db, "boutiques", currentBoutiqueId, "commandes"));
