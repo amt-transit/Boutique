@@ -87,12 +87,18 @@
                     <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
                         <h4 class="text-sm font-bold text-blue-800 mb-2">Propriétaire</h4>
                         <input type="email" id="admin-email" class="w-full p-2 border border-gray-300 rounded mb-2" placeholder="Email" required>
-                        <input type="password" id="admin-password" class="w-full p-2 border border-gray-300 rounded" placeholder="Pass (6 min)" required>
+                        <div class="relative">
+                            <input type="password" id="admin-password" class="w-full p-2 border border-gray-300 rounded pr-10" placeholder="Pass (6 min)" required>
+                            <button type="button" id="toggle-create-admin-pass" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                        </div>
                     </div>
                     <div class="p-4 bg-green-50 rounded-lg border border-green-100">
                         <h4 class="text-sm font-bold text-green-800 mb-2">Vendeur</h4>
                         <input type="email" id="seller-email" class="w-full p-2 border border-gray-300 rounded mb-2" placeholder="Email" required>
-                        <input type="password" id="seller-password" class="w-full p-2 border border-gray-300 rounded" placeholder="Pass (6 min)" required>
+                        <div class="relative">
+                            <input type="password" id="seller-password" class="w-full p-2 border border-gray-300 rounded pr-10" placeholder="Pass (6 min)" required>
+                            <button type="button" id="toggle-create-seller-pass" class="absolute right-2 top-2 text-gray-400 hover:text-green-600"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                        </div>
                     </div>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Créer</button>
@@ -110,12 +116,13 @@
             <button class="tab" onclick="switchTab('credits')"><i data-lucide="users"></i><div>Crédits</div></button>
             <button class="tab" onclick="switchTab('charges')"><i data-lucide="credit-card"></i><div>Charges</div></button>
             <button class="tab" onclick="switchTab('rapports')"><i data-lucide="bar-chart-3"></i><div>Rapports</div></button>
+            <button class="tab" onclick="switchTab('audit')"><i data-lucide="activity"></i><div>Audit</div></button>
             
             <button class="tab hidden" id="admin-tab-btn" onclick="switchTab('admin')">
                 <i data-lucide="settings" class="text-red-500"></i><div class="text-red-500">Admin</div>
             </button>
             <button class="tab hidden" id="admin-access-tab-btn" onclick="switchTab('admin-access')">
-                <i data-lucide="shield-alert" class="text-orange-500"></i><div class="text-orange-500">Secours</div>
+                <i data-lucide="users-2" class="text-purple-600"></i><div class="text-purple-600">Utilisateurs</div>
             </button>
             
             <div class="flex-1"></div>
@@ -550,6 +557,27 @@
                 </div>
             </div>
 
+            <div id="page-audit" class="page-content hidden h-full flex flex-col p-4 md:p-6">
+                <div class="flex-none mb-4">
+                    <h1 class="text-2xl font-bold text-gray-800">Audit Financier</h1>
+                    <p class="text-sm text-gray-500">Évolution de la trésorerie (Solde) dans le temps.</p>
+                </div>
+                <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-gray-200 relative min-h-[300px]">
+                    <canvas id="audit-chart"></canvas>
+                </div>
+                <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 min-h-0 flex flex-col">
+                    <div class="p-4 border-b bg-gray-50 font-bold text-gray-700">Journal des Mouvements de Trésorerie</div>
+                    <div class="overflow-auto flex-1">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-100 text-gray-600 sticky top-0 shadow-sm">
+                                <tr><th class="p-3">Date & Heure</th><th class="p-3">Type</th><th class="p-3 text-right">Montant</th><th class="p-3 text-right">Solde (Caisse)</th></tr>
+                            </thead>
+                            <tbody id="audit-table-body" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div id="page-admin" class="page-content hidden">
                 <h1 class="text-2xl font-bold mb-6">Super Admin</h1>
                 <div class="bg-white p-6 rounded-xl shadow mb-8"><h2 class="text-lg font-bold text-gray-700 mb-4">1. Gestion des Boutiques</h2><button id="open-admin-modal" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 flex items-center gap-2"><i data-lucide="plus"></i> Créer une Boutique</button></div>
@@ -571,14 +599,20 @@
             </div>
 
             <div id="page-admin-access" class="page-content hidden">
-                <h1 class="text-2xl font-bold mb-6">Gestion des Accès (Secours)</h1>
-                <div class="bg-white p-6 rounded-xl shadow border border-orange-200">
-                    <p class="text-sm text-gray-500 mb-4">Recherchez une boutique pour réinitialiser les accès.</p>
-                    <div class="mb-4 relative">
+                <h1 class="text-2xl font-bold mb-6">Gestion des Utilisateurs</h1>
+                <div class="bg-white p-6 rounded-xl shadow border border-purple-200 h-full flex flex-col">
+                    <div class="mb-4 relative flex-none">
                         <i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
-                        <input type="text" id="admin-access-search" placeholder="Rechercher une boutique..." class="w-full pl-10 p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                        <input type="text" id="admin-users-search" placeholder="Chercher par email, boutique ou rôle..." class="w-full pl-10 p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
                     </div>
-                    <div id="admin-access-list" class="space-y-2 max-h-[600px] overflow-y-auto"></div>
+                    <div class="overflow-auto flex-1">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-purple-50 text-purple-900 sticky top-0">
+                                <tr><th class="p-3">Boutique</th><th class="p-3">Email (Identifiant)</th><th class="p-3">Rôle</th><th class="p-3 text-right">Actions</th></tr>
+                            </thead>
+                            <tbody id="admin-users-list" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </main>
@@ -617,6 +651,10 @@
                                 <input type="number" id="edit-prod-stock" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
                                 <p class="text-[10px] text-gray-400 mt-1">Utilisez ceci pour corriger une erreur de comptage.</p>
                             </div>
+                            <div class="flex items-center gap-2 mt-2 p-3 bg-gray-100 rounded border border-gray-200">
+                                <input type="checkbox" id="edit-prod-discontinued" class="w-5 h-5 text-gray-600 rounded focus:ring-gray-500 cursor-pointer">
+                                <label for="edit-prod-discontinued" class="text-xs font-bold text-gray-700 cursor-pointer select-none">Ne plus approvisionner (Fin de série)</label>
+                            </div>
                             <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-bold shadow hover:bg-blue-700">Enregistrer les modifications</button>
                         </form>
                     </div>
@@ -652,12 +690,7 @@
             </div>
         </div>
     </div>
-    <div id="credit-sale-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[150]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"><h3 class="text-lg font-bold text-gray-800 mb-4">Client</h3><div class="mb-4"><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sélectionner</label><div class="flex gap-2"><select id="credit-client-select" class="w-full p-3 border rounded bg-gray-50"><option value="">Chargement...</option></select><button id="btn-quick-add-client" class="bg-green-600 text-white p-3 rounded shadow"><i data-lucide="plus"></i></button></div></div><div class="flex justify-end gap-3"><button onclick="document.getElementById('credit-sale-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-200 font-bold rounded">Annuler</button><button id="confirm-credit-sale-btn" class="px-4 py-2 bg-orange-600 text-white font-bold rounded shadow">Valider</button></div></div></div>
-    <div id="add-client-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[150]"><div class="bg-white p-6 rounded-xl w-full max-w-sm"><h3 class="text-lg font-bold text-lg mb-4">Nouveau Client</h3><form id="form-client" class="space-y-4"><input type="text" id="client-nom" placeholder="Nom" class="w-full border p-2 rounded" required><input type="tel" id="client-tel" placeholder="Tel" class="w-full border p-2 rounded"><div class="flex justify-end gap-2"><button type="button" onclick="document.getElementById('add-client-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600">Annuler</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Sauvegarder</button></div></form></div></div>
-    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[160]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"><h2 id="confirm-modal-title" class="text-lg font-bold text-gray-800 mb-2">Confirmation</h2><p id="confirm-modal-text" class="text-sm text-gray-600 mb-6">...</p><div class="flex justify-end gap-3"><button id="modal-cancel-btn" class="bg-gray-100 text-gray-800 font-bold py-2 px-4 rounded-lg">Non</button><button id="modal-confirm-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Oui</button></div></div></div>
-    <div id="invoice-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[200] backdrop-blur-sm"><div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform transition-all scale-100"><div class="text-center mb-6"><div class="mx-auto bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-3"><i data-lucide="check" class="text-green-600 w-6 h-6"></i></div><h2 class="text-2xl font-bold text-gray-800">Vente Réussie !</h2><p class="text-gray-500 text-sm">Le stock et la caisse ont été mis à jour.</p></div><div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 text-sm font-mono"><div class="flex justify-between border-b border-gray-200 pb-2 mb-2"><span class="font-bold">Total payé</span><span class="font-bold text-blue-600" id="invoice-amount">0 CFA</span></div><div class="text-xs text-gray-500" id="invoice-preview"></div></div><div class="space-y-3"><a id="btn-whatsapp-share" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-xl font-bold shadow-lg flex justify-center items-center gap-2 transition-transform hover:scale-105"><i data-lucide="message-circle" class="w-5 h-5 fill-current"></i> Envoyer Facture WhatsApp</a><button onclick="document.getElementById('invoice-modal').classList.add('hidden')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold">Fermer et Nouvelle Vente</button></div></div></div>
-    <div id="access-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[170]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full"><h3 class="text-lg font-bold text-gray-800 mb-4">Gestion Accès (Secours)</h3><p class="text-sm text-gray-500 mb-4">Boutique: <span id="access-shop-name" class="font-bold text-blue-600"></span></p><div class="space-y-4"><div class="p-4 bg-blue-50 rounded border border-blue-100"><h4 class="text-xs font-bold text-blue-800 uppercase mb-2">Propriétaire</h4><p class="text-xs text-gray-600 mb-2">Actuel: <span id="current-admin-email" class="font-mono font-bold">...</span></p><input type="email" id="new-admin-access-email" placeholder="Nouvel Email" class="w-full p-2 text-sm border rounded mb-2"><input type="password" id="new-admin-access-pass" placeholder="Nouveau Pass" class="w-full p-2 text-sm border rounded mb-2"><button onclick="updateAccess('admin')" class="w-full bg-blue-600 text-white text-xs py-2 rounded font-bold">Remplacer</button></div><div class="p-4 bg-green-50 rounded border border-green-100"><h4 class="text-xs font-bold text-green-800 uppercase mb-2">Vendeur</h4><p class="text-xs text-gray-600 mb-2">Actuel: <span id="current-seller-email" class="font-mono font-bold">...</span></p><input type="email" id="new-seller-access-email" placeholder="Nouvel Email" class="w-full p-2 text-sm border rounded mb-2"><input type="password" id="new-seller-access-pass" placeholder="Nouveau Pass" class="w-full p-2 text-sm border rounded mb-2"><button onclick="updateAccess('seller')" class="w-full bg-green-600 text-white text-xs py-2 rounded font-bold">Remplacer</button></div></div><div class="mt-4 text-right"><button onclick="document.getElementById('access-modal').classList.add('hidden')" class="text-gray-500 text-sm underline">Fermer</button></div></div></div>
-    <div id="scanner-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden flex flex-col items-center justify-center z-[250]">
+    <div id="credit-sale-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[150]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"><h3 class="text-lg font-bold text-gray-800 mb-4">Client</h3><div class="mb-4"><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sélectionner</label><div class="flex gap-2"><select id="credit-client-select" class="w-full p-3 border rounded bg-gray-50"><option value="">Chargement...</option></select><button id="btn-quick-add-client" class="bg-green-600 text-white p-3 rounded shadow"><i data-lucide="plus"></i></button></div></div><div class="flex justify-end gap-3"><button onclick="document.getElementById('credit-sale-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-200 font-bold rounded">Annuler</button><button id="confirm-credit-sale-btn" class="px-4 py-2 bg-orange-600 text-white font-bold rounded shadow">Valider</button></div></div></div><div id="add-client-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[150]"><div class="bg-white p-6 rounded-xl w-full max-w-sm"><h3 class="text-lg font-bold text-lg mb-4">Nouveau Client</h3><form id="form-client" class="space-y-4"><input type="text" id="client-nom" placeholder="Nom" class="w-full border p-2 rounded" required><input type="tel" id="client-tel" placeholder="Tel" class="w-full border p-2 rounded"><div class="flex justify-end gap-2"><button type="button" onclick="document.getElementById('add-client-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600">Annuler</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Sauvegarder</button></div></form></div></div><div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[160]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"><h2 id="confirm-modal-title" class="text-lg font-bold text-gray-800 mb-2">Confirmation</h2><p id="confirm-modal-text" class="text-sm text-gray-600 mb-6">...</p><div class="flex justify-end gap-3"><button id="modal-cancel-btn" class="bg-gray-100 text-gray-800 font-bold py-2 px-4 rounded-lg">Non</button><button id="modal-confirm-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Oui</button></div></div></div><div id="invoice-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[200] backdrop-blur-sm"><div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform transition-all scale-100"><div class="text-center mb-6"><div class="mx-auto bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-3"><i data-lucide="check" class="text-green-600 w-6 h-6"></i></div><h2 class="text-2xl font-bold text-gray-800">Vente Réussie !</h2><p class="text-gray-500 text-sm">Le stock et la caisse ont été mis à jour.</p></div><div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 text-sm font-mono"><div class="flex justify-between border-b border-gray-200 pb-2 mb-2"><span class="font-bold">Total payé</span><span class="font-bold text-blue-600" id="invoice-amount">0 CFA</span></div><div class="text-xs text-gray-500" id="invoice-preview"></div></div><div class="space-y-3"><a id="btn-whatsapp-share" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-xl font-bold shadow-lg flex justify-center items-center gap-2 transition-transform hover:scale-105"><i data-lucide="message-circle" class="w-5 h-5 fill-current"></i> Envoyer Facture WhatsApp</a><button onclick="document.getElementById('invoice-modal').classList.add('hidden')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold">Fermer et Nouvelle Vente</button></div></div></div><div id="access-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[170]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full"><h3 class="text-lg font-bold text-gray-800 mb-4">Gestion Accès (Secours)</h3><p class="text-sm text-gray-500 mb-4">Boutique: <span id="access-shop-name" class="font-bold text-blue-600"></span></p><div class="space-y-4"><div class="p-4 bg-blue-50 rounded border border-blue-100"><h4 class="text-xs font-bold text-blue-800 uppercase mb-2">Propriétaire</h4><p class="text-xs text-gray-600 mb-2">Actuel: <span id="current-admin-email" class="font-mono font-bold">...</span></p><input type="email" id="new-admin-access-email" placeholder="Nouvel Email" class="w-full p-2 text-sm border rounded mb-2"><div class="relative mb-2"><input type="password" id="new-admin-access-pass" placeholder="Nouveau Pass" class="w-full p-2 text-sm border rounded pr-10"><button type="button" id="toggle-admin-access-pass" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="w-4 h-4"></i></button></div><button onclick="updateAccess('admin')" class="w-full bg-blue-600 text-white text-xs py-2 rounded font-bold">Remplacer</button></div><div class="p-4 bg-green-50 rounded border border-green-100"><h4 class="text-xs font-bold text-green-800 uppercase mb-2">Vendeur</h4><p class="text-xs text-gray-600 mb-2">Actuel: <span id="current-seller-email" class="font-mono font-bold">...</span></p><input type="email" id="new-seller-access-email" placeholder="Nouvel Email" class="w-full p-2 text-sm border rounded mb-2"><div class="relative mb-2"><input type="password" id="new-seller-access-pass" placeholder="Nouveau Pass" class="w-full p-2 text-sm border rounded pr-10"><button type="button" id="toggle-seller-access-pass" class="absolute right-2 top-2 text-gray-400 hover:text-green-600"><i data-lucide="eye" class="w-4 h-4"></i></button></div><button onclick="updateAccess('seller')" class="w-full bg-green-600 text-white text-xs py-2 rounded font-bold">Remplacer</button></div></div><div class="mt-4 text-right"><button onclick="document.getElementById('access-modal').classList.add('hidden')" class="text-gray-500 text-sm underline">Fermer</button></div></div></div><div id="scanner-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden flex flex-col items-center justify-center z-[250]">
         <div class="w-full max-w-md bg-white rounded-xl overflow-hidden relative">
             <button onclick="stopScanner()" class="absolute top-2 right-2 bg-white rounded-full p-2 z-10 text-red-600 font-bold"><i data-lucide="x"></i></button>
             <div id="reader" class="w-full h-[300px] bg-black"></div>

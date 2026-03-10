@@ -194,7 +194,7 @@ function showSuperAdminInterface() {
     const accessTab = document.getElementById('admin-access-tab-btn');
     if(accessTab) accessTab.classList.remove('hidden');
 
-    ['dashboard','ventes','stock','caisse','credits','rapports','charges'].forEach(hideTab);
+    ['dashboard','ventes','stock','commandes','credits','rapports','charges','audit'].forEach(hideTab);
     showTab('admin');
     showTab('admin-access');
     switchTab('admin');
@@ -212,6 +212,7 @@ function initializeApplication() {
     setupCredits();
     setupExpenses();
     setupReports();
+    setupAudit();
     setupOrdersListener();
     if (window.lucide) window.lucide.createIcons();
 }
@@ -441,7 +442,8 @@ function setupDashboard() {
             };
         };
         setup('dash-low-stock-trigger', 'dashboard-generic-modal', 'Produits en Stock Faible', null, () => {
-            const low = allProducts.filter(p => !p.deleted && p.stock < 5).sort((a,b) => a.stock - b.stock);
+            // CORRECTION : On exclut les produits "discontinued"
+            const low = allProducts.filter(p => !p.deleted && !p.discontinued && p.stock < 5).sort((a,b) => a.stock - b.stock);
             return low.length === 0 ? '<p class="p-4 text-center">Aucun</p>' : `<table class="w-full text-sm"><thead><tr class="border-b"><th class="p-2 text-left">Produit</th><th class="p-2 text-right">Stock</th></tr></thead><tbody>${low.map(p => `<tr class="border-b last:border-0"><td class="p-2">${p.nomDisplay}</td><td class="p-2 text-right font-bold text-red-600">${p.stock}</td></tr>`).join('')}</tbody></table>`;
         });
         setup('dash-recent-sales-trigger', 'dashboard-generic-modal', 'Dernières Ventes', sales, (d) => {
@@ -512,8 +514,14 @@ function setupStockManagement() {
             const total = reste + vendu;
             const dateStr = p.createdAt ? new Date(p.createdAt.seconds*1000).toLocaleDateString() : '-';
 
+            // Indicateur visuel pour les produits arrêtés
+            let statusBadge = "";
+            if (p.discontinued) {
+                statusBadge = '<span class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold border border-gray-300 ml-2" title="Ce produit ne sera plus approvisionné">⛔ Fin</span>';
+            }
+
             tr.className = rowClass;
-            tr.innerHTML = `<td ${rowAction} class="p-4 text-xs text-gray-400">${dateStr}</td><td ${rowAction} class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom} ${p.deleted ? '(Archivé)' : ''}</td><td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td><td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td><td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td><td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td><td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td><td class="p-4 text-right">${deleteBtn}</td>`;
+            tr.innerHTML = `<td ${rowAction} class="p-4 text-xs text-gray-400">${dateStr}</td><td ${rowAction} class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom} ${statusBadge} ${p.deleted ? '(Archivé)' : ''}</td><td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td><td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td><td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td><td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td><td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td><td class="p-4 text-right">${deleteBtn}</td>`;
             tbody.appendChild(tr);
         });
         
@@ -537,7 +545,8 @@ function setupStockManagement() {
         // Mise à jour du badge "Stock Faible" sur le dashboard
         const lowStockBadge = document.getElementById('dash-low-stock-badge');
         if (lowStockBadge) {
-            const lowCount = allProducts.filter(p => !p.deleted && p.stock > 0 && p.stock < 5).length;
+            // CORRECTION : On exclut les produits "discontinued" (Fin de série)
+            const lowCount = allProducts.filter(p => !p.deleted && !p.discontinued && p.stock > 0 && p.stock < 5).length;
             lowStockBadge.textContent = lowCount;
             lowStockBadge.classList.toggle('hidden', lowCount === 0);
         }
@@ -665,6 +674,7 @@ function setupStockManagement() {
         document.getElementById('edit-prod-achat').value = p.prixAchat;
         document.getElementById('edit-prod-vente').value = p.prixVente;
         document.getElementById('edit-prod-stock').value = p.stock;
+        document.getElementById('edit-prod-discontinued').checked = p.discontinued || false; // Charger l'état de la case
         
         const form = document.getElementById('form-edit-product');
         if(form) { form.dataset.oldAchat = p.prixAchat; form.dataset.oldVente = p.prixVente; form.dataset.oldStock = p.stock; }
@@ -708,16 +718,18 @@ function setupStockManagement() {
             const oldAchat = parseFloat(editForm.dataset.oldAchat) || 0;
             const oldVente = parseFloat(editForm.dataset.oldVente) || 0;
             const oldStock = parseInt(editForm.dataset.oldStock) || 0;
+            const discontinued = document.getElementById('edit-prod-discontinued').checked;
 
             try {
                 const batch = writeBatch(db);
                 const prodRef = doc(db, "boutiques", currentBoutiqueId, "products", id);
-                batch.update(prodRef, { prixAchat: newAchat, prixVente: newVente, stock: newStock, lastModified: serverTimestamp() });
+                batch.update(prodRef, { prixAchat: newAchat, prixVente: newVente, stock: newStock, discontinued: discontinued, lastModified: serverTimestamp() });
                 
                 let changes = [];
                 if (newAchat !== oldAchat) changes.push(`Achat`);
                 if (newVente !== oldVente) changes.push(`Vente`);
                 if (newStock !== oldStock) changes.push(`Stock`);
+                if (discontinued) changes.push(`Arrêt Appro.`);
 
                 if (changes.length > 0) {
                     const traceRef = doc(collection(db, "boutiques", currentBoutiqueId, "mouvements_stock"));
@@ -1090,11 +1102,124 @@ function setupReports() {
     };
 }
 
+// ================= AUDIT =================
+function setupAudit() {
+    let auditChart = null;
+    const tableBody = document.getElementById('audit-table-body');
+
+    const loadAudit = async () => {
+        if(!currentBoutiqueId) return;
+        
+        // 1. Récupérer Caisse Initiale
+        const shopDoc = await getDoc(doc(db, "boutiques", currentBoutiqueId));
+        let balance = shopDoc.exists() ? (shopDoc.data().caisseInitiale || 0) : 0;
+
+        // 2. Récupérer TOUS les mouvements financiers
+        const salesSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "ventes"));
+        const expSnap = await getDocs(collection(db, "boutiques", currentBoutiqueId, "expenses"));
+        
+        let movements = [];
+
+        salesSnap.forEach(d => {
+            const s = d.data();
+            if(s.deleted) return;
+            // Seuls les mouvements CASH affectent le solde réel
+            if(s.type === 'cash' || s.type === 'cash_import' || s.type === 'remboursement') {
+                movements.push({ date: s.date?.toDate(), amount: s.total || 0, type: 'VENTE', details: s.clientName || 'Client' });
+            } else if (s.type === 'retour') {
+                movements.push({ date: s.date?.toDate(), amount: -(s.total || 0), type: 'RETOUR', details: 'Retour article' });
+            }
+        });
+
+        expSnap.forEach(d => {
+            const e = d.data();
+            if(!e.deleted) movements.push({ date: e.date?.toDate(), amount: -(e.montant || 0), type: 'DÉPENSE', details: e.motif });
+        });
+
+        // 3. Trier par date
+        movements.sort((a,b) => a.date - b.date);
+
+        // 4. Calculer l'évolution cumulée
+        const labels = [];
+        const dataPoints = [];
+        const tableRows = []; // Pour stocker les données du tableau
+        
+        // Point de départ
+        labels.push("Départ");
+        dataPoints.push(balance);
+
+        movements.forEach(m => {
+            balance += m.amount;
+            labels.push(m.date.toLocaleDateString('fr-FR'));
+            dataPoints.push(balance);
+            
+            // On prépare la ligne du tableau
+            tableRows.push({
+                date: m.date,
+                type: m.type,
+                amount: m.amount,
+                balance: balance,
+                details: m.details
+            });
+        });
+
+        // 5. Afficher le Graphique
+        const ctx = document.getElementById('audit-chart')?.getContext('2d');
+        if(ctx) {
+            if(auditChart) auditChart.destroy();
+            auditChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Solde Trésorerie (CFA)', data: dataPoints, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.1, pointRadius: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { y: { beginAtZero: true } } } });
+        }
+
+        // 6. Afficher le Tableau (Inversé : le plus récent en haut)
+        if(tableBody) {
+            tableBody.innerHTML = '';
+            // On inverse pour voir les derniers mouvements en premier
+            [...tableRows].reverse().forEach(row => {
+                const tr = document.createElement('tr');
+                const isPositive = row.amount >= 0;
+                const colorClass = isPositive ? 'text-green-600' : 'text-red-600';
+                const sign = isPositive ? '+' : '';
+                
+                tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
+                tr.innerHTML = `
+                    <td class="p-3 text-xs text-gray-500">${row.date.toLocaleString()}</td>
+                    <td class="p-3 text-xs font-bold text-gray-700">${row.type} <span class="font-normal text-gray-400">- ${row.details}</span></td>
+                    <td class="p-3 text-right font-mono font-bold ${colorClass}">${sign}${formatPrice(row.amount)}</td>
+                    <td class="p-3 text-right font-mono font-bold text-blue-800 bg-blue-50">${formatPrice(row.balance)}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+    };
+
+    const observer = new MutationObserver((mutations) => { mutations.forEach((mutation) => { if (!mutation.target.classList.contains('hidden')) loadAudit(); }); });
+    const page = document.getElementById('page-audit');
+    if(page) observer.observe(page, { attributes: true, attributeFilter: ['class'] });
+}
+
 // ================= ADMIN & EXPORTS =================
 function setupAdminFeatures() {
     const form = document.getElementById('create-boutique-form');
     document.getElementById('open-admin-modal')?.addEventListener('click', () => document.getElementById('admin-modal').classList.remove('hidden'));
     document.getElementById('admin-modal-close-btn')?.addEventListener('click', () => document.getElementById('admin-modal').classList.add('hidden'));
+
+    // Gestion visibilité mots de passe (Onglet Secours)
+    const setupPassToggle = (toggleId, inputId) => {
+        const toggle = document.getElementById(toggleId);
+        const input = document.getElementById(inputId);
+        if(toggle && input) {
+            toggle.addEventListener('click', () => {
+                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                input.setAttribute('type', type);
+                toggle.innerHTML = type === 'password' ? '<i data-lucide="eye" class="w-4 h-4"></i>' : '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+                if(window.lucide) window.lucide.createIcons();
+            });
+        }
+    };
+    setupPassToggle('toggle-admin-access-pass', 'new-admin-access-pass');
+    setupPassToggle('toggle-seller-access-pass', 'new-seller-access-pass');
+    setupPassToggle('toggle-create-admin-pass', 'admin-password');
+    setupPassToggle('toggle-create-seller-pass', 'seller-password');
 
     if(form) {
         form.addEventListener('submit', async (e) => {
@@ -1216,7 +1341,14 @@ function setupAdminFeatures() {
         } catch (e) {
             console.error("Erreur creation:", e);
             if (e.code === 'auth/email-already-in-use') {
-                showToast("ERREUR : Cet email existe déjà. Supprimez-le dans la console Firebase > Authentication avant de réessayer.", "error");
+                if(confirm("Cet email est déjà utilisé.\n\nImpossible de recréer le compte (Sécurité Firebase).\n\nVoulez-vous envoyer un email de réinitialisation de mot de passe à cette adresse ?")) {
+                    try {
+                        await sendPasswordResetEmail(auth, em);
+                        showToast("Email de réinitialisation envoyé !", "success");
+                    } catch(err) {
+                        showToast("Erreur envoi email: " + err.message, "error");
+                    }
+                }
             } else {
                 showToast("Erreur: " + e.message, "error");
             }
@@ -1230,26 +1362,60 @@ function setupAdminFeatures() {
 }
 
 async function setupAdminAccessPage() {
-    const searchInput = document.getElementById('admin-access-search');
-    const listContainer = document.getElementById('admin-access-list');
+    const searchInput = document.getElementById('admin-users-search');
+    const listContainer = document.getElementById('admin-users-list');
     if(!searchInput || !listContainer) return;
 
-    const boutiques = await getAvailableBoutiques();
-    const render = (filter = '') => { 
+    // On récupère TOUS les utilisateurs
+    const usersSnap = await getDocs(collection(db, "users"));
+    let allUsers = [];
+    usersSnap.forEach(d => allUsers.push({id: d.id, ...d.data()}));
+
+    const render = (filter = '') => {
         listContainer.innerHTML = ''; 
-        const filtered = boutiques.filter(b => b.nom.toLowerCase().includes(filter.toLowerCase())); 
-        if(filtered.length === 0) { listContainer.innerHTML = '<p class="text-gray-500 p-4 text-center">Aucune boutique.</p>'; return; } 
-        filtered.forEach(b => { 
-            const div = document.createElement('div'); 
-            div.className = "flex justify-between items-center p-4 border-b hover:bg-orange-50 transition bg-white rounded-lg mb-2"; 
-            div.innerHTML = `<div><span class="font-bold text-gray-800 block">${b.nom}</span></div><button onclick="openAccessManager('${b.id}', '${b.nom.replace(/'/g, "\\'")}')" class="bg-orange-100 text-orange-700 px-4 py-2 rounded font-bold flex gap-2"><i data-lucide="key"></i> Accès</button>`; 
-            listContainer.appendChild(div); 
-        }); 
-        if (window.lucide) window.lucide.createIcons(); 
+        const term = filter.toLowerCase();
+        
+        const filtered = allUsers.filter(u => 
+            (u.email && u.email.toLowerCase().includes(term)) || 
+            (u.boutiqueName && u.boutiqueName.toLowerCase().includes(term)) ||
+            (u.role && u.role.toLowerCase().includes(term))
+        );
+
+        if(filtered.length === 0) { listContainer.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Aucun utilisateur trouvé.</td></tr>'; return; }
+
+        filtered.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-purple-50 transition";
+            
+            const roleBadge = u.role === 'admin' 
+                ? '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">Propriétaire</span>' 
+                : '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">Vendeur</span>';
+
+            tr.innerHTML = `
+                <td class="p-3 font-medium text-gray-800">${u.boutiqueName || 'Inconnu'}</td>
+                <td class="p-3 font-mono text-gray-600 select-all">${u.email}</td>
+                <td class="p-3">${roleBadge}</td>
+                <td class="p-3 text-right">
+                    <button onclick="sendResetMail('${u.email}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold border border-gray-300 mr-2" title="Envoyer un email pour changer le mot de passe">📧 Reset Pass</button>
+                    <button onclick="openAccessManager('${u.boutiqueId}', '${(u.boutiqueName||'').replace(/'/g, "\\'")}')" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded text-xs font-bold border border-purple-200">🛠️ Modifier</button>
+                </td>
+            `;
+            listContainer.appendChild(tr);
+        });
     };
     render(); 
     searchInput.addEventListener('input', (e) => render(e.target.value));
 }
+
+window.sendResetMail = async (email) => {
+    if(!confirm(`Envoyer un email de réinitialisation de mot de passe à : ${email} ?\n\nL'utilisateur recevra un lien pour choisir un nouveau mot de passe.`)) return;
+    try {
+        await sendPasswordResetEmail(auth, email);
+        showToast("Email envoyé avec succès !", "success");
+    } catch(e) {
+        showToast("Erreur: " + e.message, "error");
+    }
+};
 
 window.openAccessManager = async (shopId, shopName) => {
     currentAccessShopId = shopId;
@@ -1693,6 +1859,7 @@ window.finalizeOrder = async () => {
 
 let html5QrcodeScanner = null;
 let currentScannedCode = null;
+let lastScanTimestamp = 0; // Pour l'anti-doublon
 
 // 1. Démarrer le scanner
 window.startScanner = async function() {
@@ -1706,7 +1873,15 @@ window.startScanner = async function() {
     }
 
     try {
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+        // Configuration améliorée inspirée du mode Livreur
+        const config = { 
+            fps: 20, // Plus fluide (20 images/sec au lieu de 10)
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            videoConstraints: { facingMode: "environment" } // Force la caméra arrière
+        };
+        
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
         html5QrcodeScanner.render(onScanSuccess, (err) => { /* Ignorer erreurs */ });
     } catch (e) {
         console.error("Erreur init scanner:", e);
@@ -1727,8 +1902,18 @@ window.stopScanner = function() {
 
 // 3. Succès du scan
 async function onScanSuccess(decodedText, decodedResult) {
-    // Petit bip
+    // Nettoyage du code (Majuscules + Trim)
+    decodedText = decodedText.trim().toUpperCase();
+
+    // Anti-doublon (Debounce 2 secondes)
+    const now = Date.now();
+    if (decodedText === currentScannedCode && now - lastScanTimestamp < 2000) return;
+    lastScanTimestamp = now;
+    
+    // Feedback Utilisateur (Son + Vibration)
     new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e=>{});
+    if (navigator.vibrate) navigator.vibrate(200); // Vibration 200ms
+    
     console.log(`Code scanné : ${decodedText}`);
     
     window.stopScanner();

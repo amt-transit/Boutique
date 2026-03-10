@@ -148,6 +148,9 @@ thead th {
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+#page-rapports thead th {
+    color: #ffffff;
+}
 
 /* =========================================
    FORMULAIRES (inputs, selects)
@@ -393,3 +396,12 @@ input[readonly] {
 .badge-orange { background: #fff7ed; color: #9a3412; }
 .badge-blue   { background: #dbeafe; color: #1e40af; }
 .badge-gray   { background: #f3f4f6; color: #374151; }
+
+/* =========================================
+   SCANNER (Html5Qrcode)
+   ========================================= */
+#reader,
+#reader a,
+#reader button {
+    color: #ffffff !important;
+}
