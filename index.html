@@ -280,7 +280,7 @@
                 </div>
             </div>
 
-            <div id="page-stock" class="page-content hidden h-full flex flex-col p-4 md:p-6">
+            <div id="page-stock" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
     
                 <div class="flex-none mb-4">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
@@ -363,8 +363,8 @@
                     </div>
                 </div>
 
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1"> <table class="w-full text-left border-collapse relative">
+                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
+                    <div class="md:overflow-auto flex-1"> <table class="w-full text-left border-collapse relative">
                             <thead class="bg-gray-100 border-b border-gray-200 sticky top-0 z-10 shadow-sm"> <tr>
                                     <th class="p-4 font-semibold text-gray-600 text-sm">Date</th>
                                     <th class="p-4 font-semibold text-gray-600 text-sm">Produit</th>
@@ -382,7 +382,7 @@
                 </div>
             </div>
 
-            <div id="page-credits" class="page-content hidden h-full flex flex-col p-4 md:p-6">
+            <div id="page-credits" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
     
                 <div class="flex-none space-y-4 mb-4">
                     <div class="flex justify-between items-center">
@@ -408,8 +408,8 @@
                     </div>
                 </div>
 
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1">
+                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
+                    <div class="md:overflow-auto flex-1">
                         <table class="w-full text-left text-sm border-collapse relative">
                             <thead class="bg-orange-50 text-orange-900 border-b border-orange-100 sticky top-0 z-10 shadow-sm">
                                 <tr>
@@ -426,7 +426,7 @@
                 </div>
             </div>
 
-            <div id="page-charges" class="page-content hidden h-full flex flex-col p-4 md:p-6">
+            <div id="page-charges" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
     
                 <div class="flex-none space-y-4 mb-4">
                     <h1 class="text-2xl font-bold text-gray-800">Charges & Dépenses</h1>
@@ -462,8 +462,8 @@
                     </div>
                 </div>
 
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1"> <table class="w-full text-left text-sm relative border-collapse">
+                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
+                    <div class="md:overflow-auto flex-1"> <table class="w-full text-left text-sm relative border-collapse">
                             <thead class="bg-red-50 text-red-900 border-b border-red-100 sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th class="p-4 font-semibold whitespace-nowrap">Date</th>
@@ -479,7 +479,7 @@
                 </div>
             </div>
 
-            <div id="page-rapports" class="page-content hidden h-full flex flex-col p-4 md:p-6">
+            <div id="page-rapports" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
     
                 <div class="flex-none space-y-4 mb-4">
                     
@@ -539,8 +539,8 @@
                     </div>
                 </div>
 
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1"> <table class="w-full text-left text-sm relative border-collapse">
+                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
+                    <div class="md:overflow-auto flex-1"> <table class="w-full text-left text-sm relative border-collapse">
                             <thead class="bg-teal-700 text-white sticky top-0 z-10 shadow-md"> <tr>
                                     <th class="p-3 font-medium whitespace-nowrap">Date</th>
                                     <th class="p-3 font-medium">Description</th>
@@ -557,7 +557,7 @@
                 </div>
             </div>
 
-            <div id="page-audit" class="page-content hidden h-full flex flex-col p-4 md:p-6">
+            <div id="page-audit" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
                 <div class="flex-none mb-4">
                     <h1 class="text-2xl font-bold text-gray-800">Audit Financier</h1>
                     <p class="text-sm text-gray-500">Évolution de la trésorerie (Solde) dans le temps.</p>
@@ -565,9 +565,9 @@
                 <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-gray-200 relative min-h-[300px]">
                     <canvas id="audit-chart"></canvas>
                 </div>
-                <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 min-h-0 flex flex-col">
+                <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex-1 min-h-0 flex flex-col">
                     <div class="p-4 border-b bg-gray-50 font-bold text-gray-700">Journal des Mouvements de Trésorerie</div>
-                    <div class="overflow-auto flex-1">
+                    <div class="md:overflow-auto flex-1">
                         <table class="w-full text-left text-sm">
                             <thead class="bg-gray-100 text-gray-600 sticky top-0 shadow-sm">
                                 <tr><th class="p-3">Date & Heure</th><th class="p-3">Type</th><th class="p-3 text-right">Montant</th><th class="p-3 text-right">Solde (Caisse)</th></tr>

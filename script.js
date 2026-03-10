@@ -1873,12 +1873,30 @@ window.startScanner = async function() {
     }
 
     try {
-        // Configuration améliorée inspirée du mode Livreur
+        // Configuration OPTIMISÉE pour les codes-barres (EAN/UPC)
         const config = { 
-            fps: 20, // Plus fluide (20 images/sec au lieu de 10)
-            qrbox: { width: 250, height: 250 },
+            fps: 30, // Maximum de fluidité
+            qrbox: { width: 250, height: 150 }, // Rectangulaire = Mieux pour les codes-barres
             aspectRatio: 1.0,
-            videoConstraints: { facingMode: "environment" } // Force la caméra arrière
+            // On restreint aux formats utiles pour accélérer la détection
+            formatsToSupport: [ 
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.QR_CODE 
+            ],
+            videoConstraints: { 
+                facingMode: "environment",
+                focusMode: "continuous", // Tentative de focus auto
+                width: { min: 640, ideal: 1280, max: 1920 }, // HD nécessaire pour les codes-barres
+                height: { min: 480, ideal: 720, max: 1080 }
+            },
+            experimentalFeatures: {
+                useBarCodeDetectorIfSupported: true // Utilise la détection native Android/iOS (Ultra rapide)
+            },
+            showTorchButtonIfSupported: true
         };
         
         html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
