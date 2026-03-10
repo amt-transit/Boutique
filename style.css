@@ -1,0 +1,395 @@
+/* =========================================
+   VARIABLES CSS GLOBALES
+   Avantage : changer une couleur ici = mis à jour partout
+   ========================================= */
+:root {
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-primary-light: #eff6ff;
+    --color-danger: #dc2626;
+    --color-danger-light: #fee2e2;
+    --color-text-main: #1e293b;
+    --color-text-muted: #64748b;
+    --color-border: #e5e7eb;
+    --color-bg-app: #f8fafc;
+    --color-bg-card: #ffffff;
+    --nav-width-desktop: 200px;
+    --nav-height-mobile: 60px;
+    --radius-card: 12px;
+    --radius-btn: 8px;
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-nav: 2px 0 8px rgba(0,0,0,0.06);
+}
+
+
+/* =========================================
+   RESET & BASE
+   ========================================= */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    color: var(--color-text-main);
+    /* PREMIUM ANIMATED GRADIENT (Effet Aurore Boréale Pastel) */
+    background: linear-gradient(-45deg, #E0C3FC, #8EC5FC, #C2E9FB, #FBC2EB);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    background-attachment: fixed;
+    min-height: 100vh;
+    margin: 0;
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Scrollbar globale (jolie sur desktop) */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+
+/* =========================================
+   TYPOGRAPHIE
+   ========================================= */
+
+/* Titres principaux des pages */
+h1.text-2xl {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--color-text-main);
+}
+
+/* Grands chiffres (KPI dashboard) */
+h2.text-4xl {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+
+/* =========================================
+   CARTES (bg-white)
+
+   PROBLEME D'AVANT : `.bg-white { padding: 1.25rem !important }`
+   ecrasait TOUTES les div blanches (modales, boutons, inputs...)
+
+   SOLUTION : on cible uniquement les vraies cartes
+   avec `.bg-white.rounded-xl`
+   ========================================= */
+
+.bg-white,
+.bg-white.rounded-xl {
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    /* Bordures lumineuses pour effet 3D (Lumière vient d'en haut à gauche) */
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.8) !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15) !important;
+    border-radius: 16px !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.bg-white:hover, .bg-white.rounded-xl:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25) !important;
+}
+
+/* Les inputs et boutons blancs ne doivent PAS heriter du padding des cartes */
+input.bg-white,
+select.bg-white,
+button.bg-white {
+    padding: revert;
+    border-radius: revert;
+    box-shadow: none;
+}
+
+
+/* =========================================
+   ESPACEMENT / GRILLE
+
+   PROBLEME D'AVANT : `.gap-4 { gap: 0.75rem !important }`
+   modifiait TOUS les elements avec gap-4 dans toute l'app.
+
+   SOLUTION : on retire ces surcharges globales.
+   Tailwind gere gap-4 (16px) et gap-6 (24px) nativement —
+   ce sont de bonnes valeurs, aucune raison de les ecraser.
+   ========================================= */
+
+/* Rien ici = on laisse Tailwind faire son travail */
+
+
+/* =========================================
+   TABLEAUX
+   ========================================= */
+
+th,
+td {
+    padding: 10px 12px;
+    font-size: 0.875rem;
+}
+
+thead th {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    background-color: rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+
+/* =========================================
+   FORMULAIRES (inputs, selects)
+
+   PROBLEME D'AVANT : `input, select, button { padding: 10px !important }`
+   ecrasait tous les boutons icones, petits boutons, etc.
+
+   SOLUTION : on cible uniquement les champs de saisie de formulaire,
+   pas les boutons
+   ========================================= */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="search"],
+select {
+    padding: 10px 12px;
+    font-size: 1rem; /* 16px = evite le zoom automatique sur iOS */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: var(--radius-btn);
+    background-color: rgba(255, 255, 255, 0.3);
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.05); /* Effet creusé */
+    backdrop-filter: blur(5px);
+    color: var(--color-text-main);
+    transition: all 0.3s ease;
+    width: 100%;
+    line-height: 1.5;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+select:focus {
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 0 1px rgba(255,255,255,0.5);
+}
+
+input[readonly] {
+    background-color: #f8fafc;
+    color: var(--color-text-muted);
+    cursor: default;
+}
+
+
+/* =========================================
+   NAVIGATION (Sidebar Desktop / Bottom Bar Mobile)
+   ========================================= */
+
+.top-tabs {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0 4px;
+    z-index: 50;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.top-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 10px;
+    margin: 2px;
+    border-radius: var(--radius-btn);
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    min-width: 60px;
+    border: none;
+    background: transparent;
+    white-space: nowrap;
+}
+
+.tab i,
+.tab svg {
+    width: 18px;
+    height: 18px;
+    margin-bottom: 3px;
+    flex-shrink: 0;
+}
+
+.tab:hover {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.tab.active {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+#bottom-logout-btn {
+    margin-top: auto;
+}
+
+#bottom-logout-btn:hover {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger);
+}
+
+
+/* =========================================
+   RESPONSIVE : DESKTOP (> 768px)
+   ========================================= */
+
+@media (min-width: 768px) {
+    .top-tabs {
+        flex-direction: column;
+        width: var(--nav-width-desktop);
+        height: 100vh;
+        padding: 16px 8px;
+        border-right: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: var(--shadow-nav);
+        overflow-x: visible;
+        overflow-y: auto;
+    }
+
+    .tab {
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 10px 12px;
+        width: 100%;
+        margin-bottom: 2px;
+        font-size: 0.85rem;
+    }
+
+    .tab i,
+    .tab svg {
+        margin-bottom: 0;
+        margin-right: 10px;
+    }
+
+    .top-tabs .flex-1 {
+        display: block;
+        flex-grow: 1;
+    }
+
+    main {
+        padding: 1.5rem;
+    }
+}
+
+
+/* =========================================
+   RESPONSIVE : MOBILE (< 768px)
+   ========================================= */
+
+@media (max-width: 767px) {
+    .top-tabs {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: var(--nav-height-mobile);
+        border-top: 1px solid rgba(255, 255, 255, 0.4);
+        justify-content: space-around;
+        padding: 0 8px;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+
+    main {
+        padding-bottom: calc(var(--nav-height-mobile) + 12px);
+        padding-top: 12px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .tab div {
+        font-size: 0.68rem;
+        margin-top: 2px;
+    }
+
+    .top-tabs .flex-1 {
+        display: none;
+    }
+}
+
+
+/* =========================================
+   LIGNES ARCHIVEES / SUPPRIMEES
+   ========================================= */
+
+.deleted-row {
+    background-color: #f9fafb;
+    color: #9ca3af;
+    text-decoration: line-through;
+    font-style: italic;
+    pointer-events: none;
+}
+
+.deleted-row button {
+    display: none;
+}
+
+
+/* =========================================
+   UTILITAIRES CUSTOM
+   ========================================= */
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.2s ease forwards;
+}
+
+/* Badges de statut (usage: <span class="badge badge-green">En stock</span>) */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.badge-green  { background: #dcfce7; color: #166534; }
+.badge-red    { background: #fee2e2; color: #991b1b; }
+.badge-orange { background: #fff7ed; color: #9a3412; }
+.badge-blue   { background: #dbeafe; color: #1e40af; }
+.badge-gray   { background: #f3f4f6; color: #374151; }
