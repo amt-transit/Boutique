@@ -1905,18 +1905,21 @@ window.startScanner = async function() {
         codeReader = new ZXing.BrowserMultiFormatReader();
         const videoElement = document.getElementById('video-preview');
         
-        // La méthode la plus robuste : laisser ZXing choisir la caméra.
-        // Il essaiera 'environment' (arrière) en premier, et se rabattra sur 'user' (avant) si elle n'existe pas.
-        // Cela corrige l'erreur "Requested device not found" sur les PC.
-        codeReader.decodeFromVideoDevice(undefined, videoElement, (result, err) => {
-            if (result) {
-                onScanSuccess(result.getText());
+        // CORRECTION : On utilise decodeFromConstraints comme dans livreurscan
+        // Cela force la caméra arrière (environment) et une bonne résolution pour les codes-barres
+        codeReader.decodeFromConstraints(
+            { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
+            videoElement,
+            (result, err) => {
+                if (result) {
+                    onScanSuccess(result.getText());
+                }
+                // On ignore les erreurs "NotFound" qui arrivent 30 fois par seconde quand il n'y a pas de code
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.error('Erreur de scan non-gérée:', err);
+                }
             }
-            // On ignore les erreurs de type "non trouvé" qui sont normales en scan continu
-            if (err && !(err instanceof ZXing.NotFoundException)) {
-                console.error('Erreur de scan non-gérée:', err);
-            }
-        });
+        );
 
         console.log(`Scanner démarré. En attente d'un code...`);
 
@@ -1925,7 +1928,7 @@ window.startScanner = async function() {
         if (e.name === 'NotAllowedError') {
             showToast("L'accès à la caméra a été refusé.", "error");
         } else {
-            showToast("Impossible de démarrer la caméra. Vérifiez les permissions.", "error");
+            showToast("Impossible de démarrer la caméra.", "error");
         }
         stopScanner();
     }
