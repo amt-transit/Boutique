@@ -1,0 +1,146 @@
+/* print.css */
+@media print {
+    /* Hide everything by default */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Override Tailwind's .hidden (display:none) and force printable area visible */
+    #printable-area {
+        display: block !important;
+        visibility: visible !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        color: #000;
+        background: #fff;
+    }
+
+    #printable-area, #printable-area * {
+        visibility: visible !important;
+    }
+
+    /* Reset display for children so they render correctly */
+    #printable-area .label-sheet {
+        display: grid !important;
+    }
+
+    #printable-area .label {
+        display: block !important;
+    }
+
+    #printable-area svg {
+        display: block !important;
+    }
+
+    /* --- Receipt Styles --- */
+    .receipt-header, .receipt-footer, .receipt-items, .receipt-total {
+        font-family: 'Courier New', Courier, monospace;
+    }
+
+    @page {
+        margin: 2mm;
+    }
+
+    .receipt-header, .receipt-footer {
+        text-align: center;
+    }
+
+    .receipt-header h1 {
+        font-size: 14pt;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .receipt-header p {
+        font-size: 8pt;
+        margin: 1mm 0;
+    }
+
+    .receipt-items {
+        margin-top: 5mm;
+        border-top: 1px dashed #000;
+        border-bottom: 1px dashed #000;
+        padding: 3mm 0;
+    }
+    
+    .receipt-items table {
+        width: 100%;
+        font-size: 9pt;
+        border-collapse: collapse;
+    }
+
+    .receipt-items th {
+        text-align: left;
+        border-bottom: 1px solid #000;
+        padding-bottom: 1mm;
+    }
+
+    .receipt-items td {
+        padding: 1mm 0;
+    }
+
+    .receipt-items .col-qty {
+        width: 15%;
+        text-align: center;
+    }
+    .receipt-items .col-price {
+        width: 30%;
+        text-align: right;
+    }
+
+    .receipt-total {
+        margin-top: 3mm;
+        font-size: 12pt;
+        font-weight: bold;
+        text-align: right;
+    }
+
+    .receipt-footer {
+        margin-top: 5mm;
+        font-size: 8pt;
+    }
+
+    /* --- Label Sheet Styles --- */
+    .label-sheet {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(60mm, 1fr));
+        gap: 2mm;
+        padding: 5mm;
+        width: 100%;
+    }
+
+    .label {
+        display: block !important;
+        border: 1px solid #ccc;
+        padding: 3mm;
+        text-align: center;
+        font-family: Arial, sans-serif;
+        page-break-inside: avoid;
+        overflow: hidden;
+    }
+
+    .label-product-name {
+        font-size: 8pt;
+        font-weight: bold;
+        margin: 0 0 1mm 0;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .label-product-price {
+        font-size: 10pt;
+        font-weight: bold;
+        margin: 0 0 2mm 0;
+    }
+
+    .label .barcode {
+        display: block !important;
+        margin: 0 auto;
+        max-width: 100%;
+        height: 25mm;
+    }
+}
