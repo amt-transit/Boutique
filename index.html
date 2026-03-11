@@ -144,8 +144,11 @@
         </div>
 
         <main class="flex-1 w-full bg-gray-50 h-auto md:h-full md:flex md:flex-col relative overflow-y-auto">
-            <div id="global-search-container" class="sticky top-0 bg-gray-100/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 z-30 border-b border-gray-200 dark:border-slate-800">
-                <div class="relative">
+            <div id="global-search-container" class="sticky top-0 bg-gray-100/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 z-30 border-b border-gray-200 dark:border-slate-800 flex items-center gap-2">
+                <button id="hamburger-btn" class="text-gray-500 hover:text-blue-600 md:hidden">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div class="relative flex-1">
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6"></i>
                     <input type="text" id="global-search-input" placeholder="Rechercher un produit, un client..." class="w-full pl-14 pr-4 py-3 bg-white/70 dark:bg-slate-800/70 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-lg outline-none transition duration-300">
                     <div id="global-search-results" class="hidden absolute w-full mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-96 overflow-y-auto">
@@ -155,9 +158,7 @@
             </div>
             <div id="global-shop-header" class="bg-white border-b border-gray-200 px-4 py-3 hidden flex justify-between items-center shadow-sm z-40 relative">
                 <div class="flex items-center gap-3">
-                    <button id="hamburger-btn" class="text-gray-500 hover:text-blue-600 md:hidden">
-                        <i data-lucide="menu" class="w-6 h-6"></i>
-                    </button>
+                    
                     <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shadow-sm">
                         <i data-lucide="store" class="w-4 h-4"></i>
                     </div>
