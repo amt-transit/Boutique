@@ -1903,21 +1903,28 @@ window.startScanner = async function() {
         codeReader = new ZXing.BrowserMultiFormatReader();
         const videoElement = document.getElementById('video-preview');
         
-        // Demande la caméra et commence le scan en continu
+        // La méthode la plus robuste : laisser ZXing choisir la caméra.
+        // Il essaiera 'environment' (arrière) en premier, et se rabattra sur 'user' (avant) si elle n'existe pas.
+        // Cela corrige l'erreur "Requested device not found" sur les PC.
         codeReader.decodeFromVideoDevice(undefined, videoElement, (result, err) => {
             if (result) {
-                // On a un résultat, on le traite
                 onScanSuccess(result.getText());
             }
             // On ignore les erreurs de type "non trouvé" qui sont normales en scan continu
             if (err && !(err instanceof ZXing.NotFoundException)) {
-                console.error('Erreur de scan:', err);
+                console.error('Erreur de scan non-gérée:', err);
             }
         });
 
+        console.log(`Scanner démarré. En attente d'un code...`);
+
     } catch (e) {
         console.error("Erreur init scanner:", e);
-        showToast("Impossible de démarrer la caméra", "error");
+        if (e.name === 'NotAllowedError') {
+            showToast("L'accès à la caméra a été refusé.", "error");
+        } else {
+            showToast("Impossible de démarrer la caméra. Vérifiez les permissions.", "error");
+        }
         stopScanner();
     }
 };
