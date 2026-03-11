@@ -179,6 +179,8 @@ function setupAuthListener() {
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('top-nav-bar').classList.add('hidden');
             currentBoutiqueId = null;
+            // On s'assure que les icônes de la page de connexion sont bien dessinées
+            if (window.lucide) window.lucide.createIcons();
         }
     });
 }
