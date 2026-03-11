@@ -4,6 +4,7 @@ import { showToast } from '../ui.js';
 import * as state from '../state.js';
 import { firebaseConfig } from '../firebase.js'; // Need the config for secondary app
 
+
 async function getAvailableBoutiques() {
     try {
         const s = await getDocs(collection(db, "boutiques"));

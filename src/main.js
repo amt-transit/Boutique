@@ -13,10 +13,12 @@ import { setupSuppliersPage } from './pages/suppliers.js';
 import { setupAdminFeatures, setupSuperAdminDashboard, setupAdminAccessPage, loadBoutiquesList } from './admin/main.js';
 import { setupImport } from './admin/import.js';
 import { setupGlobalSearch } from './globalSearch.js';
+import { setupHamburgerMenu, closeHamburgerMenu } from './hamburger.js';
 
 // Make some functions globally available for onclick attributes
 window.switchTab = switchTab;
-window.renderCart = renderCart; // Make renderCart global for scanner access
+window.renderCart = renderCart;
+window.closeHamburgerMenu = closeHamburgerMenu;
 
 // This function is called after a user is authenticated and is not a super admin
 function initializeApplication() {
@@ -47,7 +49,8 @@ function showSuperAdminInterface() {
         }
     });
 
-    ['admin', 'admin-access'].forEach(showTab);
+    showTab('admin');
+    showTab('admin-access');
     switchTab('admin');
     
     // Initialize all admin-related functionalities
@@ -69,6 +72,7 @@ function main() {
     setupModalListeners();
     setupThemeToggle();
     setupScrollToTop();
+    setupHamburgerMenu();
 }
 
 // Start the application
