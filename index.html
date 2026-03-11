@@ -124,13 +124,13 @@
             </div>
             <button class="tab active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i><div>Dashboard</div></button>
             <button class="tab" onclick="switchTab('ventes')"><i data-lucide="shopping-cart"></i><div>Vente</div></button>
-            <button class="tab" onclick="switchTab('commandes')"><i data-lucide="clipboard-list"></i><div>Commandes</div></button>
+            <button class="tab secondary-tab" onclick="switchTab('commandes')"><i data-lucide="clipboard-list"></i><div>Commandes</div></button>
             <button class="tab" onclick="switchTab('stock')"><i data-lucide="package"></i><div>Stock</div></button>
-            <button class="tab" onclick="switchTab('fournisseurs')"><i data-lucide="truck"></i><div>Fournisseurs</div></button>
+            <button class="tab secondary-tab" onclick="switchTab('fournisseurs')"><i data-lucide="truck"></i><div>Fournisseurs</div></button>
             <button class="tab" onclick="switchTab('credits')"><i data-lucide="users"></i><div>Crédits</div></button>
             <button class="tab" onclick="switchTab('charges')"><i data-lucide="credit-card"></i><div>Charges</div></button>
-            <button class="tab" onclick="switchTab('rapports')"><i data-lucide="bar-chart-3"></i><div>Rapports</div></button>
-            <button class="tab" onclick="switchTab('audit')"><i data-lucide="activity"></i><div>Audit</div></button>
+            <button class="tab secondary-tab" onclick="switchTab('rapports')"><i data-lucide="bar-chart-3"></i><div>Rapports</div></button>
+            <button class="tab secondary-tab" onclick="switchTab('audit')"><i data-lucide="activity"></i><div>Audit</div></button>
             
             <button class="tab hidden" id="admin-tab-btn" onclick="switchTab('admin')">
                 <i data-lucide="settings" class="text-red-500"></i><div class="text-red-500">Admin</div>
@@ -155,6 +155,9 @@
             </div>
             <div id="global-shop-header" class="bg-white border-b border-gray-200 px-4 py-3 hidden flex justify-between items-center shadow-sm z-40 relative">
                 <div class="flex items-center gap-3">
+                    <button id="hamburger-btn" class="text-gray-500 hover:text-blue-600 md:hidden">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
                     <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shadow-sm">
                         <i data-lucide="store" class="w-4 h-4"></i>
                     </div>
@@ -168,6 +171,34 @@
                     <span id="global-user-role" class="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-bold border border-blue-100"></span>
                     <button id="theme-toggle" class="text-gray-500 hover:text-blue-600 transition-colors duration-300 focus:outline-none">
                         <i data-lucide="moon" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="hamburger-overlay" class="hamburger-overlay"></div>
+            <div id="hamburger-drawer" class="hamburger-drawer">
+                <div class="hamburger-drawer-header">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:-0.02em;color:#0f172a;" class="dark:text-white">Ma Boutique</span>
+                    </div>
+                    <button onclick="closeHamburgerMenu()" class="hamburger-close-btn">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="hamburger-drawer-body">
+                    <p class="hamburger-section-label">Navigation</p>
+                    <button class="drawer-tab" onclick="switchTab('commandes'); closeHamburgerMenu();"><i data-lucide="clipboard-list"></i><span>Commandes</span></button>
+                    <button class="drawer-tab" onclick="switchTab('fournisseurs'); closeHamburgerMenu();"><i data-lucide="truck"></i><span>Fournisseurs</span></button>
+                    <button class="drawer-tab" onclick="switchTab('audit'); closeHamburgerMenu();"><i data-lucide="activity"></i><span>Audit</span></button>
+                    <button class="drawer-tab" onclick="switchTab('rapports'); closeHamburgerMenu();"><i data-lucide="bar-chart-3"></i><span>Rapports</span></button>
+                    
+                    <p class="hamburger-section-label mt-4">Préférences</p>
+                    <button id="drawer-theme-toggle" class="drawer-tab">
+                        <i id="drawer-theme-icon" data-lucide="moon"></i>
+                        <span id="drawer-theme-label">Mode sombre</span>
                     </button>
                 </div>
             </div>
