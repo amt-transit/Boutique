@@ -146,10 +146,67 @@ function setupAuthListener() {
                 const userDoc = await getDoc(doc(db, "users", userId));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
-                    if (!data.boutiqueId) { showToast("Erreur compte", "error"); await signOut(auth); return; }
-                    currentBoutiqueId = data.boutiqueId;
-                    userRole = data.role;
-                    // --- NOUVEAU : VÉRIFICATION DE L'ABONNEMENT ---
+                    
+                    // --- MIGRATION MULTI-BOUTIQUE ---
+                    let allowedShops = data.allowedShops;
+                    let shopIds = data.shopIds; // NOUVEAU : Liste simple pour les Règles Firebase
+                    let needsUpdate = false;
+
+                    if (!allowedShops) {
+                        allowedShops = [{ id: data.boutiqueId, name: data.boutiqueName, role: data.role }];
+                        needsUpdate = true;
+                    }
+                    // Si shopIds n'existe pas ou n'est pas à jour avec allowedShops
+                    if (!shopIds || shopIds.length !== allowedShops.length) {
+                        shopIds = allowedShops.map(s => s.id);
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) {
+                        // Mise à jour invisible en arrière-plan pour réparer la base de données
+                        updateDoc(userDoc.ref, { allowedShops: allowedShops, shopIds: shopIds });
+                    }
+
+                    // 1. Déterminer quelle boutique afficher (Celle sauvegardée en mémoire ou la première par défaut)
+                    let savedShopId = localStorage.getItem('activeShopId');
+                    let activeShop = allowedShops.find(s => s.id === savedShopId);
+                    
+                    if (!activeShop) {
+                        activeShop = allowedShops[0]; // On prend la première par défaut
+                        localStorage.setItem('activeShopId', activeShop.id);
+                    }
+
+                    currentBoutiqueId = activeShop.id;
+                    userRole = activeShop.role;
+
+                    // 2. Gestion de l'interface UI (Menu déroulant Multi-Boutique)
+                    const shopHeader = document.getElementById('global-shop-header');
+                    const shopSelect = document.getElementById('global-shop-select');
+                    const roleBadge = document.getElementById('global-user-role');
+                    
+                    if (allowedShops.length > 1) {
+                        shopHeader.classList.remove('hidden');
+                        shopSelect.innerHTML = allowedShops.map(s => 
+                            `<option value="${s.id}" ${s.id === currentBoutiqueId ? 'selected' : ''}>${s.name}</option>`
+                        ).join('');
+                        
+                        // Nettoyage d'anciens écouteurs pour éviter les bugs
+                        const newShopSelect = shopSelect.cloneNode(true);
+                        shopSelect.parentNode.replaceChild(newShopSelect, shopSelect);
+                        
+                        // Changement de boutique = Rechargement propre de l'application
+                        newShopSelect.addEventListener('change', (e) => {
+                            localStorage.setItem('activeShopId', e.target.value);
+                            window.location.reload(); 
+                        });
+                    } else {
+                        shopHeader.classList.add('hidden');
+                    }
+
+                    if(roleBadge) roleBadge.textContent = userRole === 'admin' ? 'Gérant' : 'Vendeur';
+                    // ---------------------------------
+
+                    // --- VÉRIFICATION DE L'ABONNEMENT ---
                     const shopDoc = await getDoc(doc(db, "boutiques", currentBoutiqueId));
                     if (shopDoc.exists()) {
                         const shopData = shopDoc.data();
@@ -157,35 +214,29 @@ function setupAuthListener() {
                         
                         let isExpired = false;
                         if (shopData.expireAt) {
-                            // On gère à la fois le format Firebase (Timestamp) et le format JS classique (Date)
                             const expireDate = shopData.expireAt.toDate ? shopData.expireAt.toDate() : new Date(shopData.expireAt);
-                            if (new Date() > expireDate) {
-                                isExpired = true;
-                            }
+                            if (new Date() > expireDate) isExpired = true;
                         }
 
-                        // Si la boutique est bloquée OU que la date est dépassée
                         if (status === 'suspendu' || isExpired) {
                             document.getElementById('auth-container').classList.add('hidden');
                             document.getElementById('app-container').classList.add('hidden');
                             document.getElementById('subscription-blocked-screen').classList.remove('hidden');
                             
-                            // Bouton de déconnexion de secours
                             document.getElementById('btn-logout-blocked').onclick = () => {
                                 document.getElementById('subscription-blocked-screen').classList.add('hidden');
                                 signOut(auth);
                             };
-                            
                             if (window.lucide) window.lucide.createIcons();
-                            return; // 🛑 ON STOPPE TOUT ICI ! Ils n'entrent pas dans l'application.
+                            return; 
                         } else {
                             document.getElementById('subscription-blocked-screen').classList.add('hidden');
                         }
                     }
-                    // ----------------------------------------------
-                    
+
+                    // Affichage des infos
                     const dashName = document.getElementById('dashboard-user-name');
-                    if(dashName) dashName.textContent = `${data.boutiqueName}`;
+                    if(dashName) dashName.textContent = activeShop.name; // Utilise le nom de la boutique active
                     
                     const adminTab = document.getElementById('admin-tab-btn');
                     if(adminTab) adminTab.classList.add('hidden'); 
@@ -200,8 +251,7 @@ function setupAuthListener() {
                     if (userRole === 'seller') { 
                         hideTab('dashboard'); hideTab('admin'); hideTab('admin-access'); 
                         switchTab('ventes'); 
-                    } 
-                    else { 
+                    } else { 
                         hideTab('admin'); hideTab('admin-access'); 
                         switchTab('dashboard'); 
                     }
@@ -573,8 +623,11 @@ function setupStockManagement() {
                 statusBadge = '<span class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold border border-gray-300 ml-2" title="Ce produit ne sera plus approvisionné">⛔ Fin</span>';
             }
 
+            // Indicateur visuel pour les Variantes
+            let variantBadge = p.isVariant ? '<span class="bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded text-[9px] font-bold ml-2 uppercase tracking-wide">Variante</span>' : '';
+
             tr.className = rowClass;
-            tr.innerHTML = `<td ${rowAction} class="p-4 text-xs text-gray-400">${dateStr}</td><td ${rowAction} class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom} ${statusBadge} ${p.deleted ? '(Archivé)' : ''}</td><td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td><td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td><td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td><td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td><td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td><td class="p-4 text-right">${deleteBtn}</td>`;
+            tr.innerHTML = `<td ${rowAction} class="p-4 text-xs text-gray-400">${dateStr}</td><td ${rowAction} class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom} ${variantBadge} ${statusBadge} ${p.deleted ? '(Archivé)' : ''}</td><td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td><td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td><td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td><td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td><td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td><td class="p-4 text-right">${deleteBtn}</td>`;
             tbody.appendChild(tr);
         });
         
@@ -641,82 +694,167 @@ function setupStockManagement() {
         document.addEventListener('click', (e) => { if(e.target !== nameInput && e.target !== suggestionsDiv) suggestionsDiv.classList.add('hidden'); });
     }
 
+    // --- NOUVEAU : GESTION UI VARIANTES ---
+    const checkboxVariants = document.getElementById('has-variants-checkbox');
+    const zoneStandard = document.getElementById('standard-inputs-zone');
+    const zoneVariants = document.getElementById('variants-inputs-zone');
+    const btnAddVariant = document.getElementById('btn-add-variant');
+    const variantsList = document.getElementById('variants-list');
+
+    if(checkboxVariants) {
+        checkboxVariants.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                zoneStandard.classList.add('hidden');
+                zoneVariants.classList.remove('hidden');
+                document.getElementById('prod-qte').required = false; // Désactive l'obligation du stock global
+            } else {
+                zoneStandard.classList.remove('hidden');
+                zoneVariants.classList.add('hidden');
+                document.getElementById('prod-qte').required = true;
+            }
+        });
+    }
+
+    if(btnAddVariant) {
+        btnAddVariant.addEventListener('click', () => {
+            const row = document.createElement('div');
+            row.className = "flex gap-2 items-center variant-row animate-fade-in-up mt-2";
+            row.innerHTML = `
+                <input type="text" placeholder="Ex: 43 Rouge" class="var-nom p-2 border rounded flex-1 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-blue-300" required>
+                <input type="text" placeholder="Code barre (opt.)" class="var-code p-2 border rounded w-1/3 text-sm bg-gray-50 outline-none">
+                <input type="number" placeholder="Qté" class="var-qte p-2 border rounded w-20 text-sm font-bold text-center border-green-300 outline-none" required min="0">
+                <button type="button" class="text-gray-400 hover:text-red-500 p-1" onclick="if(document.querySelectorAll('.variant-row').length>1) this.parentElement.remove()"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
+            `;
+            variantsList.appendChild(row);
+            if(window.lucide) window.lucide.createIcons();
+        });
+    }
+
+    // --- SAUVEGARDE INTELLIGENTE ---
     if(stockForm) {
         stockForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Récupération des données
-            const codeBarre = document.getElementById('prod-code').value.trim(); // <--- NOUVEAU
-            const nomBrut = document.getElementById('prod-nom').value;
-            const nom = nomBrut.toLowerCase().trim();
+            const nomBaseBrut = document.getElementById('prod-nom').value.trim();
             const pAchat = parseFloat(document.getElementById('prod-achat').value)||0;
             const pVente = parseFloat(document.getElementById('prod-prix').value)||0;
-            const qte = parseInt(document.getElementById('prod-qte').value);
+            const isVariantMode = checkboxVariants.checked;
 
             try {
-                // On vérifie si le nom existe déjà (votre code actuel)
-                const q = query(collection(db, "boutiques", currentBoutiqueId, "products"), where("nom", "==", nom), where("deleted", "==", false));
-                const snap = await getDocs(q);
-                
-                // On vérifie aussi si le CODE BARRE existe déjà (sécurité)
-                let existingByCode = null;
-                if(codeBarre) {
-                    existingByCode = allProducts.find(p => p.codeBarre === codeBarre && !p.deleted);
-                }
-
                 const batch = writeBatch(db);
-                let productId = null;
+                let productsToCreate = [];
 
-                if (!snap.empty || existingByCode) {
-                    // Produit existant (par nom ou par code)
-                    const docExist = snap.empty ? null : snap.docs[0];
-                    const existingData = existingByCode || (docExist ? {id: docExist.id, ...docExist.data()} : null);
-                    
-                    if(existingData) {
-                        productId = existingData.id;
-                        const ref = doc(db, "boutiques", currentBoutiqueId, "products", productId);
+                if (isVariantMode) {
+                    // MOTEUR DE VARIANTES : Crée une liste de produits à injecter
+                    const rows = document.querySelectorAll('.variant-row');
+                    rows.forEach(row => {
+                        const vNom = row.querySelector('.var-nom').value.trim();
+                        const vCode = row.querySelector('.var-code').value.trim();
+                        const vQte = parseInt(row.querySelector('.var-qte').value) || 0;
                         
-                        // On met à jour le stock et on ajoute le code-barre si manquant
-                        batch.update(ref, { 
-                            stock: increment(qte), 
-                            prixAchat: pAchat, 
-                            prixVente: pVente, 
-                            codeBarre: codeBarre || existingData.codeBarre, // Mise à jour code
-                            lastRestock: serverTimestamp() 
-                        });
-                        showToast(`Stock mis à jour (+${qte})`);
-                    }
-                } else {
-                    // Création nouveau produit
-                    const newRef = doc(collection(db, "boutiques", currentBoutiqueId, "products"));
-                    productId = newRef.id;
-                    batch.set(newRef, { 
-                        nom: nom, 
-                        nomDisplay: nomBrut, 
-                        codeBarre: codeBarre, // <--- ENREGISTREMENT DU CODE
-                        prixVente: pVente, 
-                        prixAchat: pAchat, 
-                        stock: qte, 
-                        quantiteVendue: 0, 
-                        createdAt: serverTimestamp(), 
-                        deleted: false 
+                        if(vNom) {
+                            const fullName = `${nomBaseBrut} - ${vNom}`;
+                            productsToCreate.push({
+                                nomBrut: fullName,
+                                nom: fullName.toLowerCase(),
+                                codeBarre: vCode,
+                                qte: vQte,
+                                isVariant: true,
+                                parentName: nomBaseBrut // Pour le lier au modèle de base
+                            });
+                        }
                     });
-                    showToast("Produit créé avec succès");
+                } else {
+                    // MODE CLASSIQUE (1 seul produit)
+                    const codeBarre = document.getElementById('prod-code').value.trim();
+                    const qte = parseInt(document.getElementById('prod-qte').value) || 0;
+                    productsToCreate.push({
+                        nomBrut: nomBaseBrut,
+                        nom: nomBaseBrut.toLowerCase(),
+                        codeBarre: codeBarre,
+                        qte: qte,
+                        isVariant: false,
+                        parentName: null
+                    });
                 }
 
-                // Historique Mouvement
-                const histRef = doc(collection(db, "boutiques", currentBoutiqueId, "mouvements_stock"));
-                batch.set(histRef, { productId: productId, nom: nomBrut, type: 'ajout', quantite: qte, prixAchat: pAchat, date: serverTimestamp(), user: userId });
-                
+                // 3. Boucle d'enregistrement Firebase (Batch)
+                for (const item of productsToCreate) {
+                    let existingByCode = null;
+                    if (item.codeBarre) {
+                        existingByCode = allProducts.find(p => p.codeBarre === item.codeBarre && !p.deleted);
+                    }
+                    
+                    const q = query(collection(db, "boutiques", currentBoutiqueId, "products"), where("nom", "==", item.nom), where("deleted", "==", false));
+                    const snap = await getDocs(q);
+
+                    let productId = null;
+
+                    if (!snap.empty || existingByCode) {
+                        // Produit existant : Mise à jour du stock
+                        const docExist = snap.empty ? null : snap.docs[0];
+                        const existingData = existingByCode || (docExist ? {id: docExist.id, ...docExist.data()} : null);
+                        
+                        if (existingData) {
+                            productId = existingData.id;
+                            const ref = doc(db, "boutiques", currentBoutiqueId, "products", productId);
+                            batch.update(ref, { 
+                                stock: increment(item.qte), 
+                                prixAchat: pAchat, 
+                                prixVente: pVente, 
+                                codeBarre: item.codeBarre || existingData.codeBarre,
+                                lastRestock: serverTimestamp() 
+                            });
+                        }
+                    } else {
+                        // Nouveau produit ou nouvelle variante
+                        const newRef = doc(collection(db, "boutiques", currentBoutiqueId, "products"));
+                        productId = newRef.id;
+                        batch.set(newRef, { 
+                            nom: item.nom, 
+                            nomDisplay: item.nomBrut, 
+                            codeBarre: item.codeBarre, 
+                            prixVente: pVente, 
+                            prixAchat: pAchat, 
+                            stock: item.qte, 
+                            quantiteVendue: 0, 
+                            isVariant: item.isVariant, // Tag visuel
+                            parentName: item.parentName,
+                            createdAt: serverTimestamp(), 
+                            deleted: false 
+                        });
+                    }
+
+                    // Tracer chaque mouvement dans l'historique
+                    if (item.qte > 0) {
+                        const histRef = doc(collection(db, "boutiques", currentBoutiqueId, "mouvements_stock"));
+                        batch.set(histRef, { productId: productId, nom: item.nomBrut, type: 'ajout', quantite: item.qte, prixAchat: pAchat, date: serverTimestamp(), user: userId });
+                    }
+                }
+
                 await batch.commit();
                 
-                // Reset du formulaire
+                showToast(`${productsToCreate.length} article(s) enregistré(s) avec succès !`);
+                
+                // --- RESET DU FORMULAIRE ---
                 stockForm.reset(); 
                 document.getElementById('add-product-form').classList.add('hidden'); 
+                if (checkboxVariants) checkboxVariants.checked = false;
+                zoneStandard.classList.remove('hidden');
+                zoneVariants.classList.add('hidden');
+                
+                // Nettoyer les lignes de variantes ajoutées
+                const rows = document.querySelectorAll('.variant-row');
+                for (let i = 1; i < rows.length; i++) rows[i].remove();
+                
+                const suggestionsDiv = document.getElementById('prod-nom-suggestions');
                 if(suggestionsDiv) suggestionsDiv.classList.add('hidden');
-                isScanningForNewProduct = false; // Reset du mode
+                isScanningForNewProduct = false;
 
-            } catch (err) { console.error(err); showToast("Erreur ajout", "error"); }
+            } catch (err) { 
+                console.error(err); 
+                showToast("Erreur lors de l'enregistrement", "error"); 
+            }
         });
     }
     
@@ -857,6 +995,51 @@ function setupSalesPage() {
             });
         } else { resultsDiv.classList.add('hidden'); }
     });
+    // --- GESTION MOBILE MONEY ---
+    const btnMomo = document.getElementById('btn-open-momo-modal');
+    const momoModal = document.getElementById('momo-modal');
+    const momoNetBtns = document.querySelectorAll('.momo-net-btn');
+    const momoNetworkInput = document.getElementById('momo-selected-network');
+    const btnConfirmMomo = document.getElementById('btn-confirm-momo');
+
+    if(btnMomo) {
+        btnMomo.addEventListener('click', () => {
+            if (saleCart.length === 0) return showToast("Le panier est vide", "error");
+            momoModal.classList.remove('hidden');
+            // Reset des sélections
+            momoNetworkInput.value = "";
+            document.getElementById('momo-client-phone').value = "";
+            momoNetBtns.forEach(b => b.classList.remove('border-teal-500', 'bg-teal-50'));
+        });
+    }
+
+    // Sélection de l'opérateur (Visuel)
+    momoNetBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            momoNetBtns.forEach(b => b.classList.remove('border-teal-500', 'bg-teal-50'));
+            this.classList.add('border-teal-500', 'bg-teal-50');
+            momoNetworkInput.value = this.getAttribute('data-net');
+        });
+    });
+
+    if(btnConfirmMomo) {
+        btnConfirmMomo.addEventListener('click', async () => {
+            const network = momoNetworkInput.value;
+            const phone = document.getElementById('momo-client-phone').value.trim();
+
+            if(!network) return showToast("Veuillez choisir un opérateur (Wave, Orange...)", "error");
+            if(!phone || phone.length < 8) return showToast("Numéro de téléphone invalide", "error");
+
+            // Optionnel : Ici vous appellerez plus tard votre API CinetPay/PayDunya
+            // const apiResponse = await callMobileMoneyAPI(network, phone, totalSale);
+            // if(apiResponse.status !== 'success') return showToast("Paiement échoué", "error");
+
+            momoModal.classList.add('hidden');
+            
+            // On utilise la même fonction de vente, mais avec le type "mobile_money"
+            processDirectSale('mobile_money', { id: 'momo', nom: `Client ${network} (${phone})`, phone: phone, network: network });
+        });
+    }
     document.addEventListener('click', (e) => { if (!searchInput.contains(e.target)) resultsDiv.classList.add('hidden'); });
     btnCash.addEventListener('click', () => { if (saleCart.length === 0) return showToast("Vide", "error"); showConfirmModal("Encaisser ?", `Total: ${document.getElementById('cart-total-display').textContent}`, async () => await processSale('cash', null, null)); });
     btnCredit.addEventListener('click', async () => { if (saleCart.length === 0) return showToast("Vide", "error"); await loadClientsIntoSelect(); document.getElementById('credit-sale-modal').classList.remove('hidden'); });
@@ -1060,6 +1243,8 @@ function setupReports() {
             if (t.type === 'RETOUR' || t.type === 'RETOUR_CR') { classMontant = 'text-red-600 font-bold'; classType = 'text-red-500'; } 
             else if (t.isExpense) { classMontant = 'text-red-600 font-bold'; classType = 'text-red-400'; } 
             else if (t.isCreditSale) { classMontant = 'text-orange-400 italic'; classType = 'text-orange-400'; } 
+            // Trouvez cette ligne et ajoutez la condition pour MOMO :
+            else if (t.type === 'MOMO') { classMontant = 'text-teal-600 font-bold'; classType = 'text-teal-600'; }
             else { classMontant = 'text-green-600 font-bold'; classType = 'text-green-600'; } 
 
             let returnBtn = "";
@@ -1100,14 +1285,33 @@ function setupReports() {
                 const s = doc.data();
                 if(s.deleted) return; 
                 let desc = ""; let typeLabel = "VENTE"; let isEffectiveEntry = false; let isCreditSale = false; let isExpense = false;
-                if (s.type === 'remboursement') { desc = `💰 <strong>Remboursement</strong> (${s.clientName || 'Client'})`; typeLabel = "REMB."; isEffectiveEntry = true; } 
-                else if (s.type === 'retour') { desc = `↩️ <strong>Retour Marchandise</strong>`; typeLabel = "RETOUR"; isExpense = true; }
-                else if (s.type === 'retour_credit') { desc = `↩️ <strong>Retour Crédit</strong>`; typeLabel = "RETOUR_CR"; isExpense = false; }
+                
+                if (s.type === 'remboursement') { 
+                    desc = `💰 <strong>Remboursement</strong> (${s.clientName || 'Client'})`; typeLabel = "REMB."; isEffectiveEntry = true; 
+                } 
+                else if (s.type === 'retour') { 
+                    desc = `↩️ <strong>Retour Marchandise</strong>`; typeLabel = "RETOUR"; isExpense = true; 
+                }
+                else if (s.type === 'retour_credit') { 
+                    desc = `↩️ <strong>Retour Crédit</strong>`; typeLabel = "RETOUR_CR"; isExpense = false; 
+                }
                 else { 
                     let pList = s.items ? s.items.map(i => `${i.nomDisplay||i.nom} (${i.qty}x${formatPrice(i.prixVente)})`).join(', ') : 'Vente'; 
-                    if (s.clientName) desc = `👤 <strong>${s.clientName}</strong> : ` + pList; else desc = pList; 
-                    if (s.type === 'credit') { desc += ' <span class="text-xs bg-orange-100 text-orange-600 px-1 rounded">Non Payé</span>'; typeLabel = "CRÉDIT"; isCreditSale = true; } 
-                    else { typeLabel = "VENTE"; isEffectiveEntry = true; } 
+                    
+                    if (s.type === 'credit') { 
+                        desc = `👤 <strong>${s.clientName}</strong> : ` + pList + ' <span class="text-xs bg-orange-100 text-orange-600 px-1 rounded ml-1">Non Payé</span>'; 
+                        typeLabel = "CRÉDIT"; isCreditSale = true; 
+                    } 
+                    else if (s.type === 'mobile_money') {
+                        // Affichage spécifique pour le Mobile Money
+                        desc = `📱 <strong class="text-teal-700">${s.momoNetwork} (${s.momoPhone})</strong> : ` + pList;
+                        typeLabel = "MOMO"; isEffectiveEntry = true;
+                    }
+                    else { 
+                        // Cash classique
+                        desc = s.clientName ? `👤 <strong>${s.clientName}</strong> : ` + pList : pList;
+                        typeLabel = "CASH"; isEffectiveEntry = true; 
+                    } 
                 }
                 loadedTransactions.push({ 
                     id: doc.id, date: s.date?.toDate(), desc, type: typeLabel, 
@@ -1295,12 +1499,8 @@ function setupAdminFeatures() {
                     logoStr = await convertBase64(logoFile);
                 }
 
-                const secApp = initializeApp(firebaseConfig, "Sec");
-                const secAuth = getAuth(secApp);
+                // 1. Création de la boutique (Inchangé)
                 const ref = doc(collection(db, "boutiques"));
-                await setDoc(ref, { nom: nom, logo: logoStr, createdAt: serverTimestamp(), createdBy: userId });
-                await logAdminAction("NOUVELLE_BOUTIQUE", `Création de la boutique : ${nom}`);
-                // Par défaut, on donne 14 jours d'essai gratuit
                 const dateFin = new Date();
                 dateFin.setDate(dateFin.getDate() + 14);
 
@@ -1312,22 +1512,63 @@ function setupAdminFeatures() {
                     statut: 'essai', 
                     expireAt: dateFin 
                 });
-                const adm = await createUserWithEmailAndPassword(secAuth, aEm, aPs);
-                await setDoc(doc(db, "users", adm.user.uid), { email: aEm, role: 'admin', boutiqueId: ref.id, boutiqueName: nom });
-                await signOut(secAuth);
+                await logAdminAction("NOUVELLE_BOUTIQUE", `Création de la boutique : ${nom}`);
 
-                const sell = await createUserWithEmailAndPassword(secAuth, sEm, sPs);
-                await setDoc(doc(db, "users", sell.user.uid), { email: sEm, role: 'seller', boutiqueId: ref.id, boutiqueName: nom });
-                await signOut(secAuth);
+                // --- 2. NOUVELLE FONCTION : Gestion intelligente des accès ---
+                const assignOrUpdateUser = async (email, pass, role, shopId, shopName) => {
+                    const q = query(collection(db, "users"), where("email", "==", email));
+                    const snap = await getDocs(q);
+                    
+                    if (!snap.empty) {
+                        // L'UTILISATEUR EXISTE DÉJÀ : On ajoute la boutique à sa liste !
+                        const userDocRef = snap.docs[0].ref;
+                        const userData = snap.docs[0].data();
+                        let shops = userData.allowedShops || [{id: userData.boutiqueId, name: userData.boutiqueName, role: userData.role}];
+                        let sIds = userData.shopIds || [userData.boutiqueId]; // NOUVEAU
+                        
+                        // Sécurité : éviter les doublons
+                        if (!shops.find(s => s.id === shopId)) {
+                            shops.push({id: shopId, name: shopName, role: role});
+                            sIds.push(shopId); // NOUVEAU
+                            await updateDoc(userDocRef, { allowedShops: shops, shopIds: sIds }); // MODIFIÉ
+                        }
+                    } else {
+                        // NOUVEL UTILISATEUR : Création via l'application de secours
+                        const secApp = initializeApp(firebaseConfig, "SecApp_" + Date.now() + Math.random());
+                        const secAuth = getAuth(secApp);
+                        try {
+                            const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
+                            await setDoc(doc(db, "users", cred.user.uid), {
+                                email: email,
+                                role: role, 
+                                boutiqueId: shopId, 
+                                boutiqueName: shopName,
+                                allowedShops: [{id: shopId, name: shopName, role: role}], 
+                                shopIds: [shopId] // NOUVEAU POUR LES RÈGLES FIREBASE
+                            });
+                        } finally {
+                            await signOut(secAuth);
+                            await deleteApp(secApp);
+                        }
+                    }
+                };
 
-                showToast("Créé !");
+                // On exécute la fonction intelligente pour le Gérant ET le vendeur
+                await assignOrUpdateUser(aEm, aPs, 'admin', ref.id, nom);
+                await assignOrUpdateUser(sEm, sPs, 'seller', ref.id, nom);
+                // -----------------------------------------------------------
+
+                showToast("Boutique créée et accès configurés !");
                 form.reset();
                 document.getElementById('admin-modal').classList.add('hidden');
-                setupSuperAdminDashboard(); // Refresh stats
+                setupSuperAdminDashboard();
                 loadBoutiquesList();
                 loadShopsForImport();
                 setupAdminAccessPage();
-            } catch(err) { showToast(err.message, "error"); }
+            } catch(err) { 
+                showToast(err.message, "error"); 
+                console.error("Création erreur :", err);
+            }
         });
     }
 
@@ -2067,7 +2308,7 @@ window.finalizeOrder = async () => {
             items: saleCart,
             total: totalSale,
             profit: totalProfit,
-            type: type, // 'cash' ou 'credit'
+            type: type, // 'cash', 'credit', ou 'mobile_money'
             vendeurId: userId,
             deleted: false
         };
@@ -2075,12 +2316,13 @@ window.finalizeOrder = async () => {
         if (type === 'credit' && clientInfo) {
             saleData.clientId = clientInfo.id;
             saleData.clientName = clientInfo.nom;
-            
-            // Augmentation de la dette client
             const clientRef = doc(db, "boutiques", currentBoutiqueId, "clients", clientInfo.id);
-            batch.update(clientRef, {
-                dette: increment(totalSale)
-            });
+            batch.update(clientRef, { dette: increment(totalSale) });
+        } else if (type === 'mobile_money' && clientInfo) {
+            // On sauvegarde les infos spécifiques au paiement mobile
+            saleData.clientName = clientInfo.nom;
+            saleData.momoNetwork = clientInfo.network;
+            saleData.momoPhone = clientInfo.phone;
         }
 
         batch.set(saleRef, saleData);

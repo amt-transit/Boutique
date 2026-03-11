@@ -130,6 +130,19 @@
         </div>
 
         <main class="flex-1 w-full bg-gray-50 h-auto md:h-full md:flex md:flex-col relative overflow-y-auto">
+            <div id="global-shop-header" class="bg-white border-b border-gray-200 px-4 py-3 hidden flex justify-between items-center shadow-sm z-40 relative">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <i data-lucide="store" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Boutique Active</p>
+                        <select id="global-shop-select" class="font-bold text-gray-800 bg-transparent outline-none cursor-pointer hover:text-blue-600 transition appearance-none text-sm pr-4">
+                            </select>
+                    </div>
+                </div>
+                <span id="global-user-role" class="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-bold border border-blue-100"></span>
+            </div>
 
             <div id="immersion-banner" class="bg-purple-600 text-white p-2 text-center text-xs font-bold hidden flex justify-between items-center px-4 z-[60] sticky top-0">
                 <span>🕵️ MODE IMMERSION : <span id="immersion-shop-name"></span></span>
@@ -245,6 +258,10 @@
                                     <i data-lucide="banknote"></i> Espèces
                                 </button>
                                 
+                                <button id="btn-open-momo-modal" class="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-xl font-bold border border-teal-600 flex justify-center items-center gap-2 transition mt-1">
+                                    <i data-lucide="smartphone"></i> Mobile Money
+                                </button>
+                                
                                 <button id="btn-open-credit-modal" class="w-full bg-orange-50 hover:bg-orange-100 text-orange-700 py-3 rounded-xl font-bold border border-orange-200 flex justify-center items-center gap-2 transition">
                                     <i data-lucide="user-plus"></i> Crédit Client
                                 </button>
@@ -299,39 +316,59 @@
                     <div id="add-product-form" class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-4 hidden">
                         <h3 class="font-bold text-lg mb-4 text-gray-700">Ajouter / Modifier</h3>
                         <form id="form-stock" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-    
-                            <div class="lg:col-span-2">
-                                <label class="text-xs font-bold text-gray-500 uppercase">Code Barre</label>
-                                <div class="flex gap-1 mt-1">
-                                    <input type="text" id="prod-code" class="w-full border p-2 rounded outline-none bg-gray-50" placeholder="Scanner..." autocomplete="off">
-                                    <button type="button" id="btn-scan-new-prod" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">
-                                        <i data-lucide="scan-barcode" class="w-5 h-5"></i>
-                                    </button>
-                                </div>
-                            </div>
-
                             <div class="lg:col-span-4 relative">
-                                <label class="text-xs font-bold text-gray-500 uppercase">Nom du Produit</label>
-                                <input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded outline-none" required autocomplete="off">
+                                <label class="text-xs font-bold text-gray-500 uppercase">Nom du Produit (Modèle de base)</label>
+                                <input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded outline-none" placeholder="Ex: Basket Air Force 1" required autocomplete="off">
                                 <div id="prod-nom-suggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg max-h-48 overflow-y-auto top-full left-0"></div>
                             </div>
-
-                            <div class="lg:col-span-2">
+                            <div class="lg:col-span-1">
                                 <label class="text-xs font-bold text-gray-500 uppercase">Prix Achat</label>
                                 <input type="number" id="prod-achat" class="w-full mt-1 border p-2 rounded">
                             </div>
-
-                            <div class="lg:col-span-2">
+                            <div class="lg:col-span-1">
                                 <label class="text-xs font-bold text-gray-500 uppercase">Prix Vente</label>
                                 <input type="number" id="prod-prix" class="w-full mt-1 border p-2 rounded">
                             </div>
-                            
-                            <div class="lg:col-span-2 bg-green-50 p-2 rounded border border-green-200">
-                                <label class="text-xs font-bold text-green-800 uppercase">Stock à Ajouter</label>
-                                <input type="number" id="prod-qte" class="w-full mt-1 border-2 border-green-500 p-2 rounded font-bold text-lg text-center text-green-700" placeholder="0" required>
+
+                            <div class="lg:col-span-6 bg-blue-50 border border-blue-100 p-2 rounded-lg mt-1">
+                                <label class="flex items-center gap-2 cursor-pointer text-sm font-bold text-blue-800">
+                                    <input type="checkbox" id="has-variants-checkbox" class="w-5 h-5 text-blue-600 rounded">
+                                    Ce produit possède des variantes (Tailles, Couleurs...)
+                                </label>
                             </div>
 
-                            <div class="lg:col-span-6 flex justify-end gap-3 mt-2 border-t pt-3">
+                            <div id="standard-inputs-zone" class="lg:col-span-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 w-full">
+                                <div class="lg:col-span-2">
+                                    <label class="text-xs font-bold text-gray-500 uppercase">Code Barre</label>
+                                    <div class="flex gap-1 mt-1">
+                                        <input type="text" id="prod-code" class="w-full border p-2 rounded outline-none bg-gray-50" placeholder="Scanner..." autocomplete="off">
+                                        <button type="button" id="btn-scan-new-prod" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">
+                                            <i data-lucide="scan-barcode" class="w-5 h-5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="lg:col-span-2 bg-green-50 p-2 rounded border border-green-200">
+                                    <label class="text-xs font-bold text-green-800 uppercase">Stock à Ajouter</label>
+                                    <input type="number" id="prod-qte" class="w-full mt-1 border-2 border-green-500 p-2 rounded font-bold text-lg text-center text-green-700" placeholder="0">
+                                </div>
+                            </div>
+
+                            <div id="variants-inputs-zone" class="lg:col-span-6 hidden bg-white border border-gray-200 p-4 rounded-lg shadow-inner">
+                                <div class="flex justify-between items-center mb-3 border-b pb-2">
+                                    <h4 class="text-sm font-bold text-gray-700">Détails des variantes</h4>
+                                    <button type="button" id="btn-add-variant" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold hover:bg-blue-200 transition shadow-sm">+ Ajouter Ligne</button>
+                                </div>
+                                <div id="variants-list" class="space-y-2">
+                                    <div class="flex gap-2 items-center variant-row">
+                                        <input type="text" placeholder="Ex: 42 Rouge" class="var-nom p-2 border rounded flex-1 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-blue-300" required>
+                                        <input type="text" placeholder="Code barre (opt.)" class="var-code p-2 border rounded w-1/3 text-sm bg-gray-50 outline-none">
+                                        <input type="number" placeholder="Qté" class="var-qte p-2 border rounded w-20 text-sm font-bold text-center border-green-300 outline-none" required min="0">
+                                        <button type="button" class="text-gray-400 hover:text-red-500 p-1" onclick="if(document.querySelectorAll('.variant-row').length>1) this.parentElement.remove()"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-6 flex justify-end gap-3 mt-2 pt-3 border-t">
                                 <button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
                                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-bold shadow-lg">Enregistrer</button>
                             </div>
@@ -940,6 +977,45 @@
                 <div class="flex justify-end gap-2 pt-2">
                     <button onclick="document.getElementById('subscription-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Annuler</button>
                     <button id="btn-save-subscription" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow">Appliquer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="momo-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[155] backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i data-lucide="smartphone" class="text-teal-500"></i> Paiement Mobile
+            </h3>
+            
+            <div class="space-y-4">
+                <p class="text-xs text-gray-500 uppercase font-bold">1. Choisir l'opérateur</p>
+                <div class="grid grid-cols-2 gap-3" id="momo-network-container">
+                    <button type="button" class="momo-net-btn border-2 border-gray-200 rounded-xl p-3 text-center transition focus:outline-none" data-net="Wave">
+                        <span class="block font-bold text-blue-500 text-lg">Wave</span>
+                    </button>
+                    <button type="button" class="momo-net-btn border-2 border-gray-200 rounded-xl p-3 text-center transition focus:outline-none" data-net="Orange">
+                        <span class="block font-bold text-orange-500 text-lg">Orange</span>
+                    </button>
+                    <button type="button" class="momo-net-btn border-2 border-gray-200 rounded-xl p-3 text-center transition focus:outline-none" data-net="MTN">
+                        <span class="block font-bold text-yellow-500 text-lg">MTN</span>
+                    </button>
+                    <button type="button" class="momo-net-btn border-2 border-gray-200 rounded-xl p-3 text-center transition focus:outline-none" data-net="Moov">
+                        <span class="block font-bold text-green-600 text-lg">Moov</span>
+                    </button>
+                </div>
+                
+                <input type="hidden" id="momo-selected-network" value="">
+
+                <div class="mt-4">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">2. Numéro du client</label>
+                    <input type="tel" id="momo-client-phone" class="w-full border-2 p-3 rounded-lg outline-none focus:border-teal-500 bg-gray-50 font-bold text-lg tracking-wider" placeholder="Ex: 0707070707">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t mt-2">
+                    <button onclick="document.getElementById('momo-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition">Annuler</button>
+                    <button id="btn-confirm-momo" class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-md flex items-center gap-2 transition disabled:opacity-50">
+                        Encaisser <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    </button>
                 </div>
             </div>
         </div>
