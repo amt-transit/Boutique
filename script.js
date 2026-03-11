@@ -1865,6 +1865,10 @@ let lastScanTimestamp = 0; // Pour l'anti-doublon
 window.startScanner = async function() {
     const modal = document.getElementById('scanner-modal');
     if(modal) modal.classList.remove('hidden');
+
+    // Réinitialiser l'état pour le scan continu
+    currentScannedCode = null;
+    lastScanTimestamp = 0;
     
     if (html5QrcodeScanner) return; 
 
