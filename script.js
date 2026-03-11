@@ -1854,200 +1854,157 @@ window.finalizeOrder = async () => {
     });   
 }
 // ===============================================
-// MODULE SCANNER (Désormais à l'extérieur, au niveau global)
+// MODULE SCANNER (Inspiré de livreurscan.html)
 // ===============================================
 
-let html5QrcodeScanner = null;
+let codeReader = null;
 let currentScannedCode = null;
-let lastScanTimestamp = 0; // Pour l'anti-doublon
+let lastScanTimestamp = 0;
+
+// --- NOUVEAU : Feedback visuel pendant le scan ---
+function showScanFeedback(message, type = 'success') {
+    const readerDiv = document.getElementById('reader');
+    if (!readerDiv) return;
+
+    // Supprimer les anciens feedbacks pour éviter l'accumulation
+    const existingFeedback = readerDiv.querySelector('.scan-feedback');
+    if (existingFeedback) existingFeedback.remove();
+
+    const feedbackEl = document.createElement('div');
+    feedbackEl.className = `scan-feedback`;
+    feedbackEl.textContent = message;
+    
+    // Style du feedback
+    const bgColor = type === 'success' ? 'rgba(22, 163, 74, 0.8)' : 'rgba(220, 38, 38, 0.8)';
+    feedbackEl.style.backgroundColor = bgColor;
+    
+    readerDiv.appendChild(feedbackEl);
+
+    // Faire disparaître et supprimer l'élément
+    setTimeout(() => {
+        feedbackEl.style.opacity = '0';
+        setTimeout(() => feedbackEl.remove(), 500);
+    }, 1500); // Le message reste visible 1.5s
+}
 
 // 1. Démarrer le scanner
 window.startScanner = async function() {
     const modal = document.getElementById('scanner-modal');
     if(modal) modal.classList.remove('hidden');
 
-    // Réinitialiser l'état pour le scan continu
     currentScannedCode = null;
     lastScanTimestamp = 0;
     
-    if (html5QrcodeScanner) return; 
-
-    if (typeof Html5QrcodeScanner === 'undefined') {
-        return showToast("Erreur: Librairie Scanner non chargée", "error");
+    if (typeof ZXing === 'undefined') {
+        return showToast("Erreur: Librairie Scanner (ZXing) non chargée", "error");
     }
 
     try {
-        // Configuration OPTIMISÉE pour les codes-barres (EAN/UPC)
-        const config = { 
-            fps: 30, // Maximum de fluidité
-            qrbox: { width: 250, height: 150 }, // Rectangulaire = Mieux pour les codes-barres
-            aspectRatio: 1.0,
-            // On restreint aux formats utiles pour accélérer la détection
-            formatsToSupport: [ 
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E,
-                Html5QrcodeSupportedFormats.QR_CODE 
-            ],
-            videoConstraints: { 
-                facingMode: "environment",
-                focusMode: "continuous", // Tentative de focus auto
-                width: { min: 640, ideal: 1280, max: 1920 }, // HD nécessaire pour les codes-barres
-                height: { min: 480, ideal: 720, max: 1080 }
-            },
-            experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true // Utilise la détection native Android/iOS (Ultra rapide)
-            },
-            showTorchButtonIfSupported: true
-        };
+        codeReader = new ZXing.BrowserMultiFormatReader();
+        const videoElement = document.getElementById('video-preview');
         
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
-        html5QrcodeScanner.render(onScanSuccess, (err) => { /* Ignorer erreurs */ });
+        // Demande la caméra et commence le scan en continu
+        codeReader.decodeFromVideoDevice(undefined, videoElement, (result, err) => {
+            if (result) {
+                // On a un résultat, on le traite
+                onScanSuccess(result.getText());
+            }
+            // On ignore les erreurs de type "non trouvé" qui sont normales en scan continu
+            if (err && !(err instanceof ZXing.NotFoundException)) {
+                console.error('Erreur de scan:', err);
+            }
+        });
+
     } catch (e) {
         console.error("Erreur init scanner:", e);
         showToast("Impossible de démarrer la caméra", "error");
+        stopScanner();
     }
 };
 
 // 2. Arrêter le scanner
 window.stopScanner = function() {
-    document.getElementById('scanner-modal').classList.add('hidden');
-    if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear().then(() => {
-            html5QrcodeScanner = null;
-            document.getElementById('reader').innerHTML = ""; 
-        }).catch(err => console.error(err));
+    const modal = document.getElementById('scanner-modal');
+    if(modal) modal.classList.add('hidden');
+    
+    if (codeReader) {
+        codeReader.reset(); // Arrête la caméra et libère les ressources
+        codeReader = null;
     }
 };
 
-// 3. Succès du scan
-async function onScanSuccess(decodedText, decodedResult) {
-    // Nettoyage du code (Majuscules + Trim)
-    decodedText = decodedText.trim().toUpperCase();
+// 3. Succès du scan (appelé en continu par le scanner)
+async function onScanSuccess(decodedText) {
+    // --- 1. EXTRACTION & NETTOYAGE (Inspiré de livreurscan.html) ---
+    let rawCode = decodedText.trim();
+    // Tentative d'extraction d'un code EAN-13 ou UPC-A (12-13 chiffres)
+    const eanMatch = rawCode.match(/\b(\d{12,13})\b/);
+    if (eanMatch) {
+        decodedText = eanMatch[1];
+    } else {
+        // Pour les autres codes, on met en majuscules
+        decodedText = rawCode.toUpperCase();
+    }
 
-    // Anti-doublon (Debounce 2 secondes)
+    // --- 2. ANTI-DOUBLON (DEBOUNCE) ---
     const now = Date.now();
-    if (decodedText === currentScannedCode && now - lastScanTimestamp < 2000) return;
+    if (decodedText === currentScannedCode && (now - lastScanTimestamp) < 2500) { // 2.5 secondes
+        return; // Ignorer le même scan trop rapproché
+    }
     lastScanTimestamp = now;
+    currentScannedCode = decodedText;
+
+    // --- 3. FEEDBACK UTILISATEUR ---
+    if (navigator.vibrate) navigator.vibrate(100); // Vibration courte
     
-    // Feedback Utilisateur (Son + Vibration)
-    new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e=>{});
-    if (navigator.vibrate) navigator.vibrate(200); // Vibration 200ms
-    
-    console.log(`Code scanné : ${decodedText}`);
-    
-    window.stopScanner();
-    // --- CAS SPÉCIAL : AJOUT DE PRODUIT ---
+    console.log(`Code traité : ${decodedText}`);
+
+    // --- 4. LOGIQUE SPÉCIFIQUE À L'APPLICATION ---
+
+    // CAS A : On est en train d'ajouter un nouveau produit
     if (isScanningForNewProduct) {
-        // 1. On remplit le champ Code Barre
+        window.stopScanner(); // On arrête le scan pour remplir la fiche
+        
         const inputCode = document.getElementById('prod-code');
         if(inputCode) inputCode.value = decodedText;
 
-        // 2. On regarde si le produit existe déjà
         const existing = allProducts.find(p => p.codeBarre === decodedText && !p.deleted);
-        
         if (existing) {
-            // CAS 1 : PRODUIT DÉJÀ EN STOCK -> On prépare l'ajout
             showToast("Produit reconnu ! Combien en ajoutez-vous ?", "success");
-            
             document.getElementById('prod-nom').value = existing.nomDisplay;
             document.getElementById('prod-achat').value = existing.prixAchat;
             document.getElementById('prod-prix').value = existing.prixVente;
-            
-            // ASTUCE : On met le curseur directement dans la case Stock
-            // et on la vide pour que vous n'ayez plus qu'à taper "100"
             const qteInput = document.getElementById('prod-qte');
-            if(qteInput) {
-                qteInput.value = ""; 
-                qteInput.focus(); // <--- Le curseur clignote ici !
-                qteInput.select();
-            } 
-
+            if(qteInput) { qteInput.value = ""; qteInput.focus(); qteInput.select(); } 
         } else {
-            // CAS 2 : NOUVEAU PRODUIT
             showToast("Nouveau code ! Remplissez la fiche.", "success");
             document.getElementById('prod-nom').focus(); 
         }
-        
         isScanningForNewProduct = false; 
         return;
     } 
 
-    // Recherche produit
-    const productFound = allProducts.find(p => p.codeBarre === decodedText);
-    const isStockPage = !document.getElementById('page-stock').classList.contains('hidden');
-
+    // CAS B : Scan normal (Vente ou recherche)
+    const productFound = allProducts.find(p => p.codeBarre === decodedText && !p.deleted);
+    
     if (productFound) {
-        if (isStockPage) {
-            const searchInput = document.getElementById('stock-search-input');
-            if(searchInput) {
-                searchInput.value = productFound.nom;
-                searchInput.dispatchEvent(new Event('input'));
-                showToast(`Trouvé : ${productFound.nomDisplay}`, "success");
-            }
-        } else {
+        // Jouer le son uniquement si le produit est trouvé
+        new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e=>{});
+        
+        // Le scan est sur la page de vente
+        const isVentePage = !document.getElementById('page-ventes').classList.contains('hidden');
+        if (isVentePage) {
             addToCart(productFound);
-            showToast(`Produit scanné : ${productFound.nomDisplay}`, "success");
+            showScanFeedback(`✅ ${productFound.nomDisplay}`, 'success');
+        } else {
+            // Si on est sur une autre page (ex: stock), on arrête et on affiche un toast
+            window.stopScanner();
+            showToast(`Produit trouvé : ${productFound.nomDisplay}`, "success");
         }
     } else {
-        currentScannedCode = decodedText;
+        // Produit inconnu, on arrête le scan pour proposer l'association
+        window.stopScanner();
         openAssociationModal(decodedText);
     }
 }
-
-// 4. Modale Association
-function openAssociationModal(code) {
-    const modal = document.getElementById('barcode-assoc-modal');
-    const display = document.getElementById('assoc-barcode-display');
-    const select = document.getElementById('assoc-product-select');
-    const searchInput = document.getElementById('assoc-search');
-
-    display.textContent = code;
-    modal.classList.remove('hidden');
-
-    const populateSelect = (filter = "") => {
-        select.innerHTML = '<option value="">-- Choisir un produit --</option>';
-        const filtered = allProducts.filter(p => !p.deleted && p.nomDisplay.toLowerCase().includes(filter.toLowerCase()));
-        filtered.sort((a,b) => a.nomDisplay.localeCompare(b.nomDisplay));
-        filtered.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.nomDisplay;
-            select.appendChild(opt);
-        });
-    };
-    populateSelect();
-    searchInput.oninput = (e) => populateSelect(e.target.value);
-}
-
-// 5. Confirmer Association
-window.confirmBarcodeAssociation = async function() {
-    const select = document.getElementById('assoc-product-select');
-    const productId = select.value;
-    if (!productId) return showToast("Veuillez choisir un produit.", "error");
-
-    try {
-        const product = allProducts.find(p => p.id === productId);
-        // Update Firebase
-        const productRef = doc(db, "boutiques", currentBoutiqueId, "products", productId);
-        await updateDoc(productRef, { codeBarre: currentScannedCode });
-        
-        // Update Local
-        product.codeBarre = currentScannedCode;
-
-        showToast("Code associé !", "success");
-        window.closeAssocModal();
-        addToCart(product);
-    } catch (error) {
-        console.error("Erreur:", error);
-        showToast("Erreur enregistrement", "error");
-    }
-};
-
-window.closeAssocModal = function() {
-    document.getElementById('barcode-assoc-modal').classList.add('hidden');
-    currentScannedCode = null;
-};
 main();
