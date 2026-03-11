@@ -129,7 +129,7 @@
             <button class="tab" id="bottom-logout-btn"><i data-lucide="log-out" class="text-red-400"></i><div class="text-red-400">Sortir</div></button>
         </div>
 
-        <main class="flex-1 w-full bg-gray-50 h-auto md:h-full md:flex md:flex-col md:overflow-hidden relative overflow-y-auto md:overflow-y-hidden">
+        <main class="flex-1 w-full bg-gray-50 h-auto md:h-full md:flex md:flex-col relative overflow-y-auto">
 
             <div id="page-dashboard" class="page-content">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6">
@@ -579,10 +579,120 @@
             </div>
 
             <div id="page-admin" class="page-content hidden">
-                <h1 class="text-2xl font-bold mb-6">Super Admin</h1>
-                <div class="bg-white p-6 rounded-xl shadow mb-8"><h2 class="text-lg font-bold text-gray-700 mb-4">1. Gestion des Boutiques</h2><button id="open-admin-modal" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 flex items-center gap-2"><i data-lucide="plus"></i> Créer une Boutique</button></div>
-                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
-                    <h2 class="text-lg font-bold text-gray-700 mb-2">2. Importation de Données</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Tableau de Bord Admin</h1>
+                    <span class="text-xs font-mono text-gray-400">AdminLTE v4 Style</span>
+                </div>
+
+                <!-- AdminLTE v4 Dashboard v1 Style - Small Boxes -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Box 1: Boutiques -->
+                    <div class="bg-blue-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
+                        <div class="p-5">
+                            <h3 class="text-4xl font-bold" id="admin-stat-boutiques">0</h3>
+                            <p class="font-semibold text-blue-100">Boutiques Actives</p>
+                        </div>
+                        <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
+                            <i data-lucide="shopping-bag" class="w-20 h-20"></i>
+                        </div>
+                        <a href="#admin-tools" onclick="document.querySelector('#admin-tools').scrollIntoView({behavior: 'smooth'})" class="block bg-black/10 hover:bg-black/20 text-center py-2 text-sm font-medium transition backdrop-blur-sm cursor-pointer">
+                            Gérer les boutiques <i data-lucide="arrow-right-circle" class="w-4 h-4 inline ml-1"></i>
+                        </a>
+                    </div>
+
+                    <!-- Box 2: Utilisateurs -->
+                    <div class="bg-green-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
+                        <div class="p-5">
+                            <h3 class="text-4xl font-bold" id="admin-stat-users">0</h3>
+                            <p class="font-semibold text-green-100">Utilisateurs</p>
+                        </div>
+                        <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
+                            <i data-lucide="users" class="w-20 h-20"></i>
+                        </div>
+                        <button onclick="switchTab('admin-access')" class="w-full block bg-black/10 hover:bg-black/20 text-center py-2 text-sm font-medium transition backdrop-blur-sm cursor-pointer">
+                            Voir les accès <i data-lucide="arrow-right-circle" class="w-4 h-4 inline ml-1"></i>
+                        </button>
+                    </div>
+
+                    <!-- Box 3: Activité (Audit) -->
+                    <div class="bg-yellow-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
+                        <div class="p-5">
+                            <h3 class="text-4xl font-bold" id="admin-stat-logs">0</h3>
+                            <p class="font-semibold text-yellow-100">Actions Récentes</p>
+                        </div>
+                        <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
+                            <i data-lucide="activity" class="w-20 h-20"></i>
+                        </div>
+                        <span class="block bg-black/10 text-center py-2 text-sm font-medium backdrop-blur-sm">
+                            Journal d'audit global
+                        </span>
+                    </div>
+
+                    <!-- Box 4: Alertes (Placeholder) -->
+                    <div class="bg-red-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
+                        <div class="p-5">
+                            <h3 class="text-4xl font-bold">RAS</h3>
+                            <p class="font-semibold text-red-100">État Système</p>
+                        </div>
+                        <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
+                            <i data-lucide="shield-check" class="w-20 h-20"></i>
+                        </div>
+                        <span class="block bg-black/10 text-center py-2 text-sm font-medium backdrop-blur-sm">
+                            Tout est opérationnel
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Main Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+                    <!-- Left Col (Charts) -->
+                    <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+                        <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg flex justify-between items-center">
+                            <h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-5 h-5 text-blue-500"></i> Création de Boutiques</h3>
+                        </div>
+                        <div class="p-4 flex-1">
+                            <div class="h-64 w-full"><canvas id="admin-chart-shops"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- Right Col (Latest Logs/Members) -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+                        <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
+                            <h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="list" class="w-5 h-5 text-gray-500"></i> Dernières Boutiques</h3>
+                        </div>
+                        <div class="p-0 flex-1 overflow-y-auto max-h-[300px]" id="admin-latest-shops-list">
+                            <!-- Liste injectée par JS -->
+                            <div class="p-4 text-center text-gray-400">Chargement...</div>
+                        </div>
+                        <div class="p-3 border-t border-gray-100 text-center bg-gray-50 rounded-b-lg">
+                            <button onclick="document.querySelector('#admin-tools').scrollIntoView({behavior: 'smooth'})" class="text-sm text-blue-600 font-bold hover:underline">Voir toutes les boutiques</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Outils existants (Déplacés ici) -->
+                <div id="admin-tools" class="border-t-2 border-gray-200 pt-8">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="settings" class="w-6 h-6"></i> Outils de Gestion
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <!-- Gestion Boutiques -->
+                        <div class="bg-white p-6 rounded-xl shadow border border-blue-100">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-lg font-bold text-gray-700">1. Gestion des Boutiques</h2>
+                                <button id="open-admin-modal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 transition">
+                                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Créer
+                                </button>
+                            </div>
+                            <div id="admin-boutiques-list" class="max-h-60 overflow-y-auto divide-y divide-gray-100 border rounded-lg bg-gray-50">
+                                <!-- Liste complète injectée ici -->
+                            </div>
+                        </div>
+
+                        <!-- Importation -->
+                        <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
+                            <h2 class="text-lg font-bold text-gray-700 mb-4">2. Importation de Données</h2>
                     
                     <div class="mb-6">
                         <label class="block text-sm font-bold text-gray-700 mb-1">Boutique Cible</label>
@@ -595,7 +705,10 @@
                             </button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="package" class="text-blue-600"></i> Stock</h3><p class="text-xs text-gray-400 mb-3">Cols: Nom, PrixVente, PrixAchat, Quantite</p><input type="file" id="csv-stock" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/><button onclick="processImport('products')" class="mt-2 w-full bg-blue-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="users" class="text-orange-600"></i> Clients</h3><p class="text-xs text-gray-400 mb-3">Cols: Nom, Telephone, Dette</p><input type="file" id="csv-clients" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/><button onclick="processImport('clients')" class="mt-2 w-full bg-orange-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="credit-card" class="text-red-600"></i> Charges</h3><p class="text-xs text-gray-400 mb-3">Cols: Date, Motif, Montant</p><input type="file" id="csv-expenses" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/><button onclick="processImport('expenses')" class="mt-2 w-full bg-red-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="shopping-cart" class="text-green-600"></i> Ventes</h3><p class="text-xs text-gray-400 mb-3">Cols: Date, Produit, Quantite, PrixUnitaire, Profit</p><input type="file" id="csv-sales" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/><button onclick="processImport('ventes')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-purple-50 transition border-purple-100"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="image" class="text-purple-600"></i> Logo</h3><p class="text-xs text-gray-400 mb-3">Mise à jour logo (Max 100 Ko)</p><input type="file" id="file-logo-update" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/><button onclick="processLogoUpdate()" class="mt-2 w-full bg-purple-600 text-white text-xs font-bold py-2 rounded shadow-sm hover:bg-purple-700">Mettre à jour</button></div></div></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="package" class="text-blue-600"></i> Stock</h3><p class="text-xs text-gray-400 mb-3">Cols: Nom, PrixVente, PrixAchat, Quantite</p><input type="file" id="csv-stock" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/><button onclick="processImport('products')" class="mt-2 w-full bg-blue-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="users" class="text-orange-600"></i> Clients</h3><p class="text-xs text-gray-400 mb-3">Cols: Nom, Telephone, Dette</p><input type="file" id="csv-clients" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/><button onclick="processImport('clients')" class="mt-2 w-full bg-orange-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="credit-card" class="text-red-600"></i> Charges</h3><p class="text-xs text-gray-400 mb-3">Cols: Date, Motif, Montant</p><input type="file" id="csv-expenses" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/><button onclick="processImport('expenses')" class="mt-2 w-full bg-red-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="shopping-cart" class="text-green-600"></i> Ventes</h3><p class="text-xs text-gray-400 mb-3">Cols: Date, Produit, Quantite, PrixUnitaire, Profit</p><input type="file" id="csv-sales" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/><button onclick="processImport('ventes')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-purple-50 transition border-purple-100"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="image" class="text-purple-600"></i> Logo</h3><p class="text-xs text-gray-400 mb-3">Mise à jour logo (Max 100 Ko)</p><input type="file" id="file-logo-update" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/><button onclick="processLogoUpdate()" class="mt-2 w-full bg-purple-600 text-white text-xs font-bold py-2 rounded shadow-sm hover:bg-purple-700">Mettre à jour</button></div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="page-admin-access" class="page-content hidden">

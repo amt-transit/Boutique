@@ -203,6 +203,7 @@ function showSuperAdminInterface() {
     loadShopsForImport();  // <--- Le bon nom de la fonction
     loadBoutiquesList(); 
     setupAdminAccessPage(); 
+    setupSuperAdminDashboard(); // <--- Nouvelle fonction Stats
     if (window.lucide) window.lucide.createIcons();
 }
 
@@ -1259,6 +1260,7 @@ function setupAdminFeatures() {
                 showToast("Créé !");
                 form.reset();
                 document.getElementById('admin-modal').classList.add('hidden');
+                setupSuperAdminDashboard(); // Refresh stats
                 loadBoutiquesList();
                 loadShopsForImport();
                 setupAdminAccessPage();
@@ -1338,6 +1340,7 @@ function setupAdminFeatures() {
             showToast("Compte recréé et accès mis à jour !", "success");
             
             // Rafraîchir l'affichage
+            setupSuperAdminDashboard();
             openAccessManager(currentAccessShopId, shopName);
 
         } catch (e) {
@@ -1361,6 +1364,69 @@ function setupAdminFeatures() {
             }
         }
     };
+}
+
+// ================= STATS SUPER ADMIN (Dashboard v1) =================
+async function setupSuperAdminDashboard() {
+    // 1. Compteurs
+    const boutiquesSnap = await getDocs(collection(db, "boutiques"));
+    const usersSnap = await getDocs(collection(db, "users"));
+    
+    // On anime les chiffres (optionnel, simple textContent ici)
+    document.getElementById('admin-stat-boutiques').textContent = boutiquesSnap.size;
+    document.getElementById('admin-stat-users').textContent = usersSnap.size;
+    document.getElementById('admin-stat-logs').textContent = "50+"; // Placeholder ou requête logs
+
+    // 2. Liste Dernières Boutiques (Widget Right)
+    const listWidget = document.getElementById('admin-latest-shops-list');
+    if(listWidget) {
+        const latestShops = [];
+        boutiquesSnap.forEach(doc => latestShops.push(doc.data()));
+        // Tri par date (si createdAt existe, sinon approximatif)
+        latestShops.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        
+        listWidget.innerHTML = latestShops.slice(0, 5).map(b => `
+            <div class="flex items-center gap-3 p-3 border-b last:border-0 hover:bg-gray-50">
+                <div class="w-10 h-10 rounded bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
+                    ${b.nom ? b.nom.charAt(0).toUpperCase() : '?'}
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-800 text-sm">${b.nom}</h4>
+                    <p class="text-xs text-gray-500">Ajouté le ${b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</p>
+                </div>
+            </div>
+        `).join('') || '<div class="p-4 text-center text-gray-400">Aucune boutique</div>';
+    }
+
+    // 3. Graphique Création Boutiques (Widget Left)
+    const ctx = document.getElementById('admin-chart-shops');
+    if (ctx && typeof Chart !== 'undefined') {
+        // Grouper par mois
+        const months = {};
+        boutiquesSnap.forEach(doc => {
+            const d = doc.data().createdAt ? new Date(doc.data().createdAt.seconds * 1000) : new Date();
+            const key = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+            months[key] = (months[key] || 0) + 1;
+        });
+
+        // Préparer données Chart.js
+        const labels = Object.keys(months).reverse(); // Ordre chrono inverse
+        const data = Object.values(months).reverse();
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nouvelles Boutiques',
+                    data: data,
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
 }
 
 async function setupAdminAccessPage() {
@@ -1906,15 +1972,22 @@ window.startScanner = async function() {
         const videoElement = document.getElementById('video-preview');
         
         // CORRECTION : On utilise decodeFromConstraints comme dans livreurscan
-        // Cela force la caméra arrière (environment) et une bonne résolution pour les codes-barres
+        // CORRECTION : Forcer la HD et l'Autofocus en continu
         codeReader.decodeFromConstraints(
-            { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
+            { 
+                video: { 
+                    facingMode: 'environment', 
+                    width: { ideal: 1920 }, // Passage en Full HD pour plus de détails
+                    height: { ideal: 1080 },
+                    // Cette ligne force l'autofocus sur Chrome Android (Samsung S24)
+                    advanced: [{ focusMode: "continuous" }] 
+                } 
+            },
             videoElement,
             (result, err) => {
                 if (result) {
                     onScanSuccess(result.getText());
                 }
-                // On ignore les erreurs "NotFound" qui arrivent 30 fois par seconde quand il n'y a pas de code
                 if (err && !(err instanceof ZXing.NotFoundException)) {
                     console.error('Erreur de scan non-gérée:', err);
                 }
@@ -2019,4 +2092,120 @@ async function onScanSuccess(decodedText) {
         openAssociationModal(decodedText);
     }
 }
+// ===============================================
+// MODULE : ASSOCIATION DE CODE-BARRES INCONNU
+// ===============================================
+
+let pendingBarcode = null;
+
+// 1. Ouvrir la modale
+window.openAssociationModal = function(barcode) {
+    pendingBarcode = barcode;
+    document.getElementById('assoc-barcode-display').textContent = barcode;
+    
+    // Réinitialiser la recherche
+    const searchInput = document.getElementById('assoc-search');
+    if(searchInput) {
+        searchInput.value = '';
+        // Écouteur pour filtrer la liste en direct
+        searchInput.oninput = (e) => populateAssocSelect(e.target.value);
+    }
+
+    // Charger les produits
+    populateAssocSelect();
+    
+    // Afficher la modale
+    document.getElementById('barcode-assoc-modal').classList.remove('hidden');
+};
+
+// 2. Fermer la modale
+window.closeAssocModal = function() {
+    pendingBarcode = null;
+    document.getElementById('barcode-assoc-modal').classList.add('hidden');
+};
+
+// 3. Remplir la liste déroulante (Select)
+function populateAssocSelect(searchTerm = '') {
+    const select = document.getElementById('assoc-product-select');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">-- Choisir un produit existant --</option>';
+    
+    // L'option magique pour créer un nouveau produit
+    select.innerHTML += '<option value="CREATE_NEW" class="font-bold text-blue-600">➕ Créer un NOUVEAU produit</option>';
+
+    // On ne prend que les produits non supprimés
+    let filtered = allProducts.filter(p => !p.deleted);
+    
+    // On filtre par la recherche si l'utilisateur a tapé quelque chose
+    if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        filtered = filtered.filter(p => p.nomDisplay.toLowerCase().includes(term));
+    }
+
+    // On trie par ordre alphabétique
+    filtered.sort((a, b) => a.nomDisplay.localeCompare(b.nomDisplay));
+
+    // On ajoute les options au select
+    filtered.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        const hasCode = p.codeBarre ? ` (Code existant écrasé)` : '';
+        option.textContent = `${p.nomDisplay} - Stock: ${p.stock} ${hasCode}`;
+        select.appendChild(option);
+    });
+}
+
+// 4. Confirmer l'association
+window.confirmBarcodeAssociation = async function() {
+    if (!pendingBarcode) return closeAssocModal();
+    if (!currentBoutiqueId) return showToast("Erreur: Boutique non définie", "error");
+
+    const select = document.getElementById('assoc-product-select');
+    const selectedValue = select.value;
+
+    if (!selectedValue) {
+        return showToast("Veuillez sélectionner un produit ou choisir d'en créer un.", "error");
+    }
+
+    // CAS A : L'utilisateur veut créer un nouveau produit
+    if (selectedValue === "CREATE_NEW") {
+        closeAssocModal();
+        switchTab('stock'); // Bascule sur l'onglet stock
+        document.getElementById('add-product-form').classList.remove('hidden');
+        document.getElementById('prod-code').value = pendingBarcode;
+        document.getElementById('prod-nom').focus();
+        return showToast("Remplissez les infos pour ce nouveau produit.", "success");
+    }
+
+    // CAS B : L'utilisateur associe un produit existant
+    try {
+        const pRef = doc(db, "boutiques", currentBoutiqueId, "products", selectedValue);
+        
+        // Mise à jour sur Firebase
+        await updateDoc(pRef, {
+            codeBarre: pendingBarcode,
+            lastModified: serverTimestamp()
+        });
+
+        // Mise à jour immédiate en mémoire locale pour que le prochain scan marche tout de suite
+        const productIndex = allProducts.findIndex(p => p.id === selectedValue);
+        if (productIndex !== -1) {
+            allProducts[productIndex].codeBarre = pendingBarcode;
+        }
+
+        showToast("Code-barres associé avec succès !", "success");
+        closeAssocModal();
+
+        // Bonus : Si on était sur la page de vente, on ajoute le produit direct au panier !
+        const isVentePage = !document.getElementById('page-ventes').classList.contains('hidden');
+        if (isVentePage && productIndex !== -1) {
+            addToCart(allProducts[productIndex]);
+        }
+
+    } catch (e) {
+        console.error("Erreur association code barre:", e);
+        showToast("Erreur lors de l'association", "error");
+    }
+};
 main();
