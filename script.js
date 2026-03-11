@@ -149,6 +149,40 @@ function setupAuthListener() {
                     if (!data.boutiqueId) { showToast("Erreur compte", "error"); await signOut(auth); return; }
                     currentBoutiqueId = data.boutiqueId;
                     userRole = data.role;
+                    // --- NOUVEAU : VÉRIFICATION DE L'ABONNEMENT ---
+                    const shopDoc = await getDoc(doc(db, "boutiques", currentBoutiqueId));
+                    if (shopDoc.exists()) {
+                        const shopData = shopDoc.data();
+                        const status = shopData.statut || 'actif';
+                        
+                        let isExpired = false;
+                        if (shopData.expireAt) {
+                            // On gère à la fois le format Firebase (Timestamp) et le format JS classique (Date)
+                            const expireDate = shopData.expireAt.toDate ? shopData.expireAt.toDate() : new Date(shopData.expireAt);
+                            if (new Date() > expireDate) {
+                                isExpired = true;
+                            }
+                        }
+
+                        // Si la boutique est bloquée OU que la date est dépassée
+                        if (status === 'suspendu' || isExpired) {
+                            document.getElementById('auth-container').classList.add('hidden');
+                            document.getElementById('app-container').classList.add('hidden');
+                            document.getElementById('subscription-blocked-screen').classList.remove('hidden');
+                            
+                            // Bouton de déconnexion de secours
+                            document.getElementById('btn-logout-blocked').onclick = () => {
+                                document.getElementById('subscription-blocked-screen').classList.add('hidden');
+                                signOut(auth);
+                            };
+                            
+                            if (window.lucide) window.lucide.createIcons();
+                            return; // 🛑 ON STOPPE TOUT ICI ! Ils n'entrent pas dans l'application.
+                        } else {
+                            document.getElementById('subscription-blocked-screen').classList.add('hidden');
+                        }
+                    }
+                    // ----------------------------------------------
                     
                     const dashName = document.getElementById('dashboard-user-name');
                     if(dashName) dashName.textContent = `${data.boutiqueName}`;
@@ -415,23 +449,39 @@ function setupDashboard() {
 
     function renderDashboardCharts(sales, productStats) {
         if (typeof Chart === 'undefined') return;
-        const salesCtx = document.getElementById('sales-over-time-chart')?.getContext('2d');
-        if (salesCtx) {
+        const salesCanvas = document.getElementById('sales-over-time-chart');
+        if (salesCanvas) {
+            const salesCtx = salesCanvas.getContext('2d');
             const last30days = {};
             for (let i = 29; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); last30days[d.toISOString().split('T')[0]] = 0; }
             sales.forEach(s => { if (s.type === 'cash' || s.type === 'cash_import' || s.type === 'remboursement') { const key = s.date.toDate().toISOString().split('T')[0]; if (last30days.hasOwnProperty(key)) last30days[key] += s.total; }});
             const labels = Object.keys(last30days).map(d => new Date(d).toLocaleDateString('fr-FR', {day:'2-digit', month:'short'}));
             const data = Object.values(last30days);
-            if (salesChartInstance) { salesChartInstance.data.labels = labels; salesChartInstance.data.datasets[0].data = data; salesChartInstance.update(); } 
-            else { salesChartInstance = new Chart(salesCtx, { type: 'line', data: { labels, datasets: [{ label: 'CA', data, backgroundColor: 'rgba(37, 99, 235, 0.1)', borderColor: '#2563eb', borderWidth: 2, tension: 0.3, fill: true }] }, options: { responsive: true, maintainAspectRatio: false } }); }
+            if (salesChartInstance) { 
+                salesChartInstance.data.labels = labels; 
+                salesChartInstance.data.datasets[0].data = data; 
+                salesChartInstance.update(); 
+            } else { 
+                const existing = Chart.getChart(salesCanvas);
+                if (existing) existing.destroy();
+                salesChartInstance = new Chart(salesCtx, { type: 'line', data: { labels, datasets: [{ label: 'CA', data, backgroundColor: 'rgba(37, 99, 235, 0.1)', borderColor: '#2563eb', borderWidth: 2, tension: 0.3, fill: true }] }, options: { responsive: true, maintainAspectRatio: false } }); 
+            }
         }
-        const topProductsCtx = document.getElementById('top-products-chart')?.getContext('2d');
-        if (topProductsCtx) {
+        const topCanvas = document.getElementById('top-products-chart');
+        if (topCanvas) {
+            const topProductsCtx = topCanvas.getContext('2d');
             const top5 = Object.values(productStats).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
             const labels = top5.map(p => p.name);
             const data = top5.map(p => p.revenue);
-            if (topProductsChartInstance) { topProductsChartInstance.data.labels = labels; topProductsChartInstance.data.datasets[0].data = data; topProductsChartInstance.update(); } 
-            else { topProductsChartInstance = new Chart(topProductsCtx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); }
+            if (topProductsChartInstance) { 
+                topProductsChartInstance.data.labels = labels; 
+                topProductsChartInstance.data.datasets[0].data = data; 
+                topProductsChartInstance.update(); 
+            } else { 
+                const existing = Chart.getChart(topCanvas);
+                if (existing) existing.destroy();
+                topProductsChartInstance = new Chart(topProductsCtx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); 
+            }
         }
     }
 
@@ -1039,6 +1089,7 @@ function setupReports() {
     if(sortSelect) sortSelect.addEventListener('change', renderReportsTable);
 
     const loadData = async () => {
+        if (!currentBoutiqueId) return; // Correction Erreur 'null' (indexOf)
         const tbody = document.getElementById('reports-table-body');
         tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Chargement...</td></tr>';
         try {
@@ -1248,7 +1299,19 @@ function setupAdminFeatures() {
                 const secAuth = getAuth(secApp);
                 const ref = doc(collection(db, "boutiques"));
                 await setDoc(ref, { nom: nom, logo: logoStr, createdAt: serverTimestamp(), createdBy: userId });
+                await logAdminAction("NOUVELLE_BOUTIQUE", `Création de la boutique : ${nom}`);
+                // Par défaut, on donne 14 jours d'essai gratuit
+                const dateFin = new Date();
+                dateFin.setDate(dateFin.getDate() + 14);
 
+                await setDoc(ref, { 
+                    nom: nom, 
+                    logo: logoStr, 
+                    createdAt: serverTimestamp(), 
+                    createdBy: userId,
+                    statut: 'essai', 
+                    expireAt: dateFin 
+                });
                 const adm = await createUserWithEmailAndPassword(secAuth, aEm, aPs);
                 await setDoc(doc(db, "users", adm.user.uid), { email: aEm, role: 'admin', boutiqueId: ref.id, boutiqueName: nom });
                 await signOut(secAuth);
@@ -1338,6 +1401,7 @@ function setupAdminFeatures() {
             await signOut(secAuth);
             
             showToast("Compte recréé et accès mis à jour !", "success");
+            await logAdminAction("RESET_ACCES_SECOURS", `Remplacement accès ${role} pour la boutique : ${shopName}`);
             
             // Rafraîchir l'affichage
             setupSuperAdminDashboard();
@@ -1368,21 +1432,50 @@ function setupAdminFeatures() {
 
 // ================= STATS SUPER ADMIN (Dashboard v1) =================
 async function setupSuperAdminDashboard() {
-    // 1. Compteurs
+    // 1. Récupération des données de base
     const boutiquesSnap = await getDocs(collection(db, "boutiques"));
     const usersSnap = await getDocs(collection(db, "users"));
     
-    // On anime les chiffres (optionnel, simple textContent ici)
+    // Affichage des compteurs globaux
     document.getElementById('admin-stat-boutiques').textContent = boutiquesSnap.size;
     document.getElementById('admin-stat-users').textContent = usersSnap.size;
-    document.getElementById('admin-stat-logs').textContent = "50+"; // Placeholder ou requête logs
 
-    // 2. Liste Dernières Boutiques (Widget Right)
+    // 2. NOUVEAU : Calcul des Boutiques Bloquées / Expirées
+    let blockedCount = 0;
+    const now = new Date();
+    
+    const latestShops = []; // On prépare aussi le tableau pour la liste des dernières boutiques
+    
+    boutiquesSnap.forEach(doc => {
+        const b = doc.data();
+        latestShops.push(b); // Ajout pour le widget de droite
+        
+        let isExpired = false;
+        if(b.expireAt) {
+            const expDate = b.expireAt.toDate ? b.expireAt.toDate() : new Date(b.expireAt);
+            if(now > expDate) isExpired = true;
+        }
+        if(b.statut === 'suspendu' || isExpired) {
+            blockedCount++;
+        }
+    });
+
+    const alertStatBox = document.getElementById('admin-stat-alerts');
+    if (alertStatBox) alertStatBox.textContent = blockedCount;
+
+    // 3. NOUVEAU : Récupération du nombre de Logs (Actions Administratives)
+    try {
+        const logsSnap = await getDocs(collection(db, "admin_logs"));
+        const logsStatBox = document.getElementById('admin-stat-logs');
+        if (logsStatBox) logsStatBox.textContent = logsSnap.size;
+    } catch(e) {
+        console.log("Aucun log trouvé ou erreur de lecture.");
+    }
+
+    // 4. Liste Dernières Boutiques (Widget Right)
     const listWidget = document.getElementById('admin-latest-shops-list');
     if(listWidget) {
-        const latestShops = [];
-        boutiquesSnap.forEach(doc => latestShops.push(doc.data()));
-        // Tri par date (si createdAt existe, sinon approximatif)
+        // Tri par date (le plus récent en premier)
         latestShops.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         
         listWidget.innerHTML = latestShops.slice(0, 5).map(b => `
@@ -1392,28 +1485,33 @@ async function setupSuperAdminDashboard() {
                 </div>
                 <div>
                     <h4 class="font-bold text-gray-800 text-sm">${b.nom}</h4>
-                    <p class="text-xs text-gray-500">Ajouté le ${b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</p>
+                    <p class="text-xs text-gray-500">Ajouté le ${b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleDateString('fr-FR') : 'N/A'}</p>
                 </div>
             </div>
         `).join('') || '<div class="p-4 text-center text-gray-400">Aucune boutique</div>';
     }
 
-    // 3. Graphique Création Boutiques (Widget Left)
+    // 5. Graphique Création Boutiques (Widget Left)
     const ctx = document.getElementById('admin-chart-shops');
     if (ctx && typeof Chart !== 'undefined') {
         // Grouper par mois
         const months = {};
-        boutiquesSnap.forEach(doc => {
-            const d = doc.data().createdAt ? new Date(doc.data().createdAt.seconds * 1000) : new Date();
+        latestShops.forEach(b => {
+            const d = b.createdAt ? new Date(b.createdAt.seconds * 1000) : new Date();
             const key = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
             months[key] = (months[key] || 0) + 1;
         });
 
+        // Si Chart existe déjà, on le détruit pour éviter les bugs de superposition
+        if(window.adminChartInstance) window.adminChartInstance.destroy();
+        const existing = Chart.getChart(ctx);
+        if (existing) existing.destroy();
+
         // Préparer données Chart.js
-        const labels = Object.keys(months).reverse(); // Ordre chrono inverse
+        const labels = Object.keys(months).reverse(); // Ordre chrono
         const data = Object.values(months).reverse();
 
-        new Chart(ctx, {
+        window.adminChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
@@ -1506,22 +1604,36 @@ window.openAccessManager = async (shopId, shopName) => {
 
 
 window.processImport = async function(n) {
-    // 1. Récupérer l'ID de la boutique sélectionnée
     const shopSelect = document.getElementById('import-target-shop');
     const id = shopSelect.value;
     
-    // 2. VÉRIFICATION CRITIQUE
     if(!id || id === "") {
         return showToast("ERREUR : Aucune boutique sélectionnée ! Cliquez sur 🔄 et choisissez une boutique.", "error");
     }
     
-    // 3. Vérifier le fichier
-    const fileInput = document.getElementById(n==='products'?'csv-stock':n==='clients'?'csv-clients':n==='expenses'?'csv-expenses':'csv-sales');
+    const fileInput = document.getElementById(n==='products'?'csv-stock':n==='clients'?'csv-clients':n==='expenses'?'csv-expenses':n==='ventes'?'csv-sales':'');
+    if(!fileInput) return;
     const f = fileInput.files[0];
     
     if(!f) return showToast("Veuillez sélectionner un fichier CSV.", "error");
     
-    console.log(`Démarrage import vers boutique ID: ${id}`); // Pour le débogage
+    // --- RESET DE L'INTERFACE DE PROGRESSION ---
+    const progressContainer = document.getElementById('import-progress-container');
+    const reportArea = document.getElementById('import-report-area');
+    const reportBody = document.getElementById('import-report-body');
+    const progressBar = document.getElementById('import-progress-bar');
+    const progressText = document.getElementById('import-progress-text');
+    const statusTitle = document.getElementById('import-status-title');
+    
+    if(progressContainer) progressContainer.classList.remove('hidden');
+    if(reportArea) reportArea.classList.add('hidden');
+    if(reportBody) reportBody.innerHTML = '';
+    if(progressBar) progressBar.style.width = '0%';
+    if(progressText) progressText.textContent = 'Préparation...';
+    if(statusTitle) statusTitle.innerHTML = '<i data-lucide="loader-2" class="animate-spin text-blue-500 w-5 h-5"></i> Importation en cours...';
+    if (window.lucide) window.lucide.createIcons();
+
+    console.log(`Démarrage import vers boutique ID: ${id}`);
 
     Papa.parse(f, { 
         header: true, 
@@ -1529,8 +1641,15 @@ window.processImport = async function(n) {
         complete: async (r) => { 
             if(confirm(`Confirmer l'import de ${r.data.length} lignes dans la boutique sélectionnée ?`)) {
                 await uploadBatchData(id, n, r.data); 
+                fileInput.value = ""; // Vider l'input après succès
+            } else {
+                if(progressContainer) progressContainer.classList.add('hidden');
             }
-        } 
+        },
+        error: (err) => {
+            showToast("Erreur de lecture du fichier CSV.", "error");
+            if(progressContainer) progressContainer.classList.add('hidden');
+        }
     });
 };
 
@@ -1540,36 +1659,24 @@ async function uploadBatchData(id, n, d) {
         return;
     }
 
-    console.log(`Début import intelligent ${n} pour la boutique ${id}...`);
-
-    // --- 1. PRÉPARATION MASSIVE (Chargement en une seule fois) ---
-    // On charge tout ce dont on a besoin AVANT la boucle pour ne jamais faire de "await" DANS la boucle.
-    
     let productMap = {};
-    let existingIds = new Set(); // Pour stocker les IDs qui existent déjà
+    let existingIds = new Set();
+    let errors = []; // NOUVEAU : Tableau pour stocker les erreurs
 
     try {
-        // A. Charger les produits (pour le stock)
         if (n === 'ventes') {
-            showToast("Analyse du stock...");
             const productsSnapshot = await getDocs(collection(db, "boutiques", id, "products"));
             productsSnapshot.forEach(doc => {
                 const data = doc.data();
                 if (data.nom) productMap[data.nom.toLowerCase().trim()] = doc.id;
             });
         }
-
-        // B. Charger les IDs existants (pour éviter les doublons sans faire 1000 requêtes)
-        if (n !== 'expenses') { // On suppose que 'expenses' n'a pas besoin de check doublon strict
-            showToast("Vérification des doublons...");
-            // Optimisation : On ne récupère que les IDs (select()) pour économiser la bande passante
-            // Note : Si la collection est énorme (+10k items), cette stratégie devra être adaptée.
+        if (n !== 'expenses') {
             const existingSnapshot = await getDocs(collection(db, "boutiques", id, n));
             existingSnapshot.forEach(doc => {
                 existingIds.add(doc.id);
             });
         }
-
     } catch (e) {
         console.error(e);
         return showToast("Erreur lecture pré-import. Import annulé.", "error");
@@ -1581,9 +1688,25 @@ async function uploadBatchData(id, n, d) {
     let countSkipped = 0;
     let countStock = 0;
 
-    // --- 2. TRAITEMENT RAPIDE (Tout se passe en mémoire locale) ---
+    const totalLines = d.length;
+    const progressBar = document.getElementById('import-progress-bar');
+    const progressText = document.getElementById('import-progress-text');
+
     for (const [i, r] of d.entries()) {
-        if (!r.Nom && !r.Produit && !r.Motif) continue;
+        const excelLineNumber = i + 2; // Ligne Excel (i commence à 0 + 1 pour l'en-tête + 1 pour la vraie ligne)
+
+        // --- MISE À JOUR UI TOUTES LES 50 LIGNES ---
+        if (i % 50 === 0 && progressBar && progressText) {
+            const percent = Math.round((i / totalLines) * 100);
+            progressBar.style.width = `${percent}%`;
+            progressText.textContent = `${i} / ${totalLines} lignes traitées...`;
+        }
+
+        // Vérification de base (Ligne vide)
+        if (!r.Nom && !r.Produit && !r.Motif) {
+            errors.push({ ligne: excelLineNumber, msg: "Ligne ignorée : Données clés (Nom/Produit/Motif) manquantes." });
+            continue;
+        }
 
         let docId = null;
         let o = {};
@@ -1594,10 +1717,10 @@ async function uploadBatchData(id, n, d) {
                 const q_id = parseInt(r.Quantite) || 1;
                 const p_id = parseFloat(r.PrixUnitaire) || 0;
                 const total_calc = q_id * p_id;
-                // CORRECTION ICI : Ajout de _L${i} pour rendre l'ID unique même si la vente est identique
                 const rawId = `${r.Date}_${r.Produit}_${total_calc}_L${i}`;
                 docId = "imp_" + rawId.replace(/[^a-zA-Z0-9]/g, '_');
             } else if (n === 'products') {
+                if (!r.Nom) throw new Error("Le champ 'Nom' est obligatoire pour un produit.");
                 docId = "imp_prod_" + r.Nom.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
             } else if (n === 'clients') {
                 docId = "imp_client_" + r.Nom.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
@@ -1606,16 +1729,16 @@ async function uploadBatchData(id, n, d) {
             }
 
             // --- VÉRIFICATION ANTI-DOUBLON INSTANTANÉE ---
-            // On vérifie dans le Set (mémoire) au lieu de faire un appel réseau
             if (n !== 'expenses' && existingIds.has(docId)) {
                 countSkipped++;
-                continue; // Doublon détecté localement, on passe
+                continue;
             }
 
             // --- PRÉPARATION DES DONNÉES ---
             if (n === 'products') {
                 let pv = parseFloat(r.PrixVente?.replace(',', '.')) || 0;
                 let pa = parseFloat(r.PrixAchat?.replace(',', '.')) || 0;
+                if (pv <= 0) errors.push({ ligne: excelLineNumber, msg: `Attention : Le produit '${r.Nom}' a un prix de vente à 0.` });
                 o = { nom: r.Nom.toLowerCase().trim(), nomDisplay: r.Nom.trim(), prixVente: pv, prixAchat: pa, stock: parseInt(r.Quantite) || 0, quantiteVendue: 0, createdAt: serverTimestamp(), deleted: false };
             } else if (n === 'clients') {
                 o = { nom: r.Nom, telephone: r.Telephone || '', dette: parseFloat(r.Dette) || 0, createdAt: serverTimestamp(), deleted: false };
@@ -1630,32 +1753,29 @@ async function uploadBatchData(id, n, d) {
                 const searchName = (r.Produit || '').trim().toLowerCase();
                 const prodId = productMap[searchName];
 
-                // Mise à jour Stock
-                if (prodId) {
+                if (!prodId) {
+                    errors.push({ ligne: excelLineNumber, msg: `Stock non mis à jour : Le produit '${r.Produit}' est inconnu dans la base de données.` });
+                } else {
                     const prodRef = doc(db, "boutiques", id, "products", prodId);
                     batch.update(prodRef, {
                         stock: increment(-q),
                         quantiteVendue: increment(q)
                     });
                     countStock++;
-                    batchSize++; // Compte comme une opération dans le batch
+                    batchSize++; 
                 }
 
                 const fi = { id: prodId || 'imp_unknown', nom: searchName, nomDisplay: r.Produit, qty: q, prixVente: p, prixAchat: 0 };
                 o = { date: r.Date ? new Date(r.Date) : serverTimestamp(), total: ft, profit: prof, items: [fi], type: 'cash_import', vendeurId: userId, deleted: false };
             }
 
-            // --- AJOUT AU BATCH ---
             const ref = doc(db, "boutiques", id, n, docId);
             batch.set(ref, o);
 
             countNew++;
             batchSize++;
 
-            // --- ENVOI PAR PAQUETS DE 400 ---
-            // On laisse une marge de sécurité (400 au lieu de 500)
             if (batchSize >= 400) {
-                console.log("Envoi intermédiaire...");
                 await batch.commit();
                 batch = writeBatch(db);
                 batchSize = 0;
@@ -1663,15 +1783,49 @@ async function uploadBatchData(id, n, d) {
 
         } catch (e) {
             console.error("Erreur ligne CSV:", e, r);
+            errors.push({ ligne: excelLineNumber, msg: e.message || "Erreur de formatage." });
         }
     }
 
-    // Envoi du reste
     if (batchSize > 0) await batch.commit();
 
-    let msg = `Terminé : ${countNew} ajoutés. ${countSkipped} doublons ignorés.`;
-    if (n === 'ventes') msg += ` (${countStock} stocks mis à jour)`;
-    showToast(msg, countNew > 0 ? "success" : "warning");
+    // --- FIN DE L'IMPORT : FINALISATION UI ---
+    if (progressBar) progressBar.style.width = '100%';
+    if (progressText) progressText.textContent = `${totalLines} / ${totalLines} lignes analysées.`;
+    
+    const titleStatus = document.getElementById('import-status-title');
+    if (titleStatus) {
+        const icon = errors.length > 0 ? 'alert-triangle' : 'check-circle';
+        const color = errors.length > 0 ? 'text-orange-500' : 'text-green-500';
+        titleStatus.innerHTML = `<i data-lucide="${icon}" class="${color} w-5 h-5"></i> Import Terminé`;
+    }
+    if (window.lucide) window.lucide.createIcons();
+
+    // Affichage des erreurs dans le tableau
+    if (errors.length > 0) {
+        const reportArea = document.getElementById('import-report-area');
+        const reportBody = document.getElementById('import-report-body');
+        if (reportArea && reportBody) {
+            reportArea.classList.remove('hidden');
+            reportBody.innerHTML = errors.map(err => `
+                <tr class="hover:bg-orange-100 transition">
+                    <td class="p-2 font-bold text-orange-900 border-r border-orange-100">Ligne ${err.ligne}</td>
+                    <td class="p-2 text-orange-800">${err.msg}</td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    // Sauvegarde de l'action pour vos stats
+    if (typeof logAdminAction === "function") {
+        logAdminAction("IMPORT_CSV", `Type: ${n} | Ajoutés: ${countNew} | Erreurs: ${errors.length} | Cible: ${id}`);
+    }
+
+    let msg = `Terminé : ${countNew} ajoutés, ${countSkipped} doublons évités.`;
+    if (n === 'ventes') msg += ` (${countStock} stocks liés)`;
+    if (errors.length > 0) msg += ` - Voir rapport d'erreurs.`;
+    
+    showToast(msg, errors.length > 0 ? "warning" : "success");
 }
 
 // Fonctions UI
@@ -1708,9 +1862,85 @@ async function loadBoutiquesList() {
     try {
         const l = await getAvailableBoutiques(); 
         const d = document.getElementById('admin-boutiques-list'); 
-        if(d) d.innerHTML = l.map(b => `<div class="p-2 border-b flex justify-between"><span>${b.nom}</span><span class="text-xs text-gray-400">${b.id}</span></div>`).join(''); 
+        if(d) {
+            d.innerHTML = l.map(b => {
+                // Analyse de l'abonnement
+                let expStr = "À vie";
+                let isExpired = false;
+                let rawDate = "";
+                
+                if(b.expireAt) {
+                    const dateObj = b.expireAt.toDate ? b.expireAt.toDate() : new Date(b.expireAt);
+                    expStr = dateObj.toLocaleDateString('fr-FR');
+                    rawDate = dateObj.toISOString().split('T')[0]; // Format pour l'input type="date"
+                    isExpired = new Date() > dateObj;
+                }
+                
+                // Création du badge couleur
+                let badge = '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">Actif</span>';
+                if (b.statut === 'suspendu' || isExpired) {
+                    badge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">Bloqué</span>';
+                } else if (b.statut === 'essai') {
+                    badge = '<span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-bold">Essai</span>';
+                }
+
+                // Dans loadBoutiquesList, modifiez le bouton d'action ou ajoutez-en un :
+                return `
+                <div class="p-4 border-b flex justify-between items-center bg-white hover:bg-gray-50 transition">
+                    <div>
+                        <div class="font-bold text-gray-800 text-sm flex items-center gap-2">${b.nom} ${badge}</div>
+                        <div class="text-xs text-gray-500 mt-1">Exp: <strong>${expStr}</strong></div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="enterImmersionMode('${b.id}', '${b.nom.replace(/'/g, "\\'")}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-200 transition" title="Voir comme le client">
+                            👁️ Immersion
+                        </button>
+                        <button onclick="openSubscriptionManager('${b.id}', '${b.nom.replace(/'/g, "\\'")}', '${b.statut||'actif'}', '${rawDate}')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-purple-200 transition">
+                            🛠️ Accès
+                        </button>
+                    </div>
+                </div>`;
+            }).join(''); 
+        }
+        if (window.lucide) window.lucide.createIcons();
     } catch(e) { console.error(e); }
 }
+
+// Fonction pour ouvrir la modale et sauvegarder
+window.openSubscriptionManager = function(id, nom, statut, dateString) {
+    document.getElementById('sub-shop-name').textContent = nom;
+    document.getElementById('sub-status-select').value = statut;
+    document.getElementById('sub-date-input').value = dateString;
+
+    document.getElementById('subscription-modal').classList.remove('hidden');
+
+    const btn = document.getElementById('btn-save-subscription');
+    // Technique pour réinitialiser le clic du bouton
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    newBtn.addEventListener('click', async () => {
+        const newStatus = document.getElementById('sub-status-select').value;
+        const newDateStr = document.getElementById('sub-date-input').value;
+        
+        try {
+            let updateData = { statut: newStatus };
+            if(newDateStr) {
+                // Firebase préfère les vrais objets Date
+                updateData.expireAt = new Date(newDateStr);
+            }
+            
+            await updateDoc(doc(db, "boutiques", id), updateData);
+            showToast("Abonnement de la boutique mis à jour !");
+            await logAdminAction("MAJ_ABONNEMENT", `Boutique ${nom} passée au statut : ${newStatus}`);
+            document.getElementById('subscription-modal').classList.add('hidden');
+            loadBoutiquesList(); // On rafraichit la liste visuellement
+        } catch(e) {
+            showToast("Erreur lors de la mise à jour", "error");
+            console.error(e);
+        }
+    });
+};
 
 async function loadShopsForImport() { 
     const s = document.getElementById('import-target-shop'); 
@@ -2207,5 +2437,61 @@ window.confirmBarcodeAssociation = async function() {
         console.error("Erreur association code barre:", e);
         showToast("Erreur lors de l'association", "error");
     }
+};
+// ===============================================
+// MODULE : JOURNAL D'AUDIT ADMIN
+// ===============================================
+async function logAdminAction(actionType, details) {
+    try {
+        await addDoc(collection(db, "admin_logs"), {
+            action: actionType,
+            details: details,
+            date: serverTimestamp(),
+            adminId: userId
+        });
+    } catch (e) {
+        console.error("Erreur enregistrement log:", e);
+    }
+}
+// VARIABLES DE SAUVEGARDE
+let originalBoutiqueId = null;
+
+window.enterImmersionMode = async function(shopId, shopName) {
+    if(!confirm(`Voulez-vous entrer dans la boutique "${shopName}" ?\nVous verrez ses données en temps réel.`)) return;
+
+    // 1. Sauvegarder l'état admin
+    originalBoutiqueId = currentBoutiqueId; 
+    
+    // 2. Changer l'identité de la session
+    currentBoutiqueId = shopId;
+    userRole = 'admin'; // On prend le rôle admin pour tout voir
+
+    // 3. UI : Afficher le bandeau et masquer les onglets super admin
+    document.getElementById('immersion-banner').classList.remove('hidden');
+    document.getElementById('immersion-shop-name').textContent = shopName;
+    document.getElementById('admin-tab-btn').classList.add('hidden');
+    document.getElementById('admin-access-tab-btn').classList.add('hidden');
+
+    // 4. Réinitialiser l'application avec les données de la cible
+    showAllTabs(); 
+    switchTab('dashboard');
+    initializeApplication();
+
+    logAdminAction("IMMERSION_START", `Début immersion dans : ${shopName}`);
+    showToast(`Immersion dans ${shopName}`);
+};
+
+window.exitImmersionMode = function() {
+    // 1. Restaurer l'ID (null ou l'ID super admin si vous en aviez un)
+    currentBoutiqueId = null; 
+    userRole = null;
+
+    // 2. UI : Nettoyage
+    document.getElementById('immersion-banner').classList.add('hidden');
+    
+    // 3. Retour à l'interface Super Admin
+    showSuperAdminInterface();
+    
+    showToast("Retour à l'interface Super Admin");
 };
 main();

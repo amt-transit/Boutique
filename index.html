@@ -131,6 +131,11 @@
 
         <main class="flex-1 w-full bg-gray-50 h-auto md:h-full md:flex md:flex-col relative overflow-y-auto">
 
+            <div id="immersion-banner" class="bg-purple-600 text-white p-2 text-center text-xs font-bold hidden flex justify-between items-center px-4 z-[60] sticky top-0">
+                <span>🕵️ MODE IMMERSION : <span id="immersion-shop-name"></span></span>
+                <button onclick="exitImmersionMode()" class="bg-white text-purple-600 px-3 py-1 rounded shadow-lg">Quitter l'immersion</button>
+            </div>
+
             <div id="page-dashboard" class="page-content">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6">
                     <div class="flex items-center gap-3">
@@ -614,11 +619,10 @@
                         </button>
                     </div>
 
-                    <!-- Box 3: Activité (Audit) -->
                     <div class="bg-yellow-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
                         <div class="p-5">
                             <h3 class="text-4xl font-bold" id="admin-stat-logs">0</h3>
-                            <p class="font-semibold text-yellow-100">Actions Récentes</p>
+                            <p class="font-semibold text-yellow-100">Actions Administratives</p>
                         </div>
                         <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
                             <i data-lucide="activity" class="w-20 h-20"></i>
@@ -628,17 +632,16 @@
                         </span>
                     </div>
 
-                    <!-- Box 4: Alertes (Placeholder) -->
                     <div class="bg-red-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
                         <div class="p-5">
-                            <h3 class="text-4xl font-bold">RAS</h3>
-                            <p class="font-semibold text-red-100">État Système</p>
+                            <h3 class="text-4xl font-bold" id="admin-stat-alerts">0</h3>
+                            <p class="font-semibold text-red-100">Boutiques Bloquées</p>
                         </div>
                         <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
-                            <i data-lucide="shield-check" class="w-20 h-20"></i>
+                            <i data-lucide="shield-alert" class="w-20 h-20"></i>
                         </div>
                         <span class="block bg-black/10 text-center py-2 text-sm font-medium backdrop-blur-sm">
-                            Tout est opérationnel
+                            Abonnements expirés ou suspendus
                         </span>
                     </div>
                 </div>
@@ -706,6 +709,35 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="package" class="text-blue-600"></i> Stock</h3><p class="text-xs text-gray-400 mb-3">Cols: Nom, PrixVente, PrixAchat, Quantite</p><input type="file" id="csv-stock" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/><button onclick="processImport('products')" class="mt-2 w-full bg-blue-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="users" class="text-orange-600"></i> Clients</h3><p class="text-xs text-gray-400 mb-3">Cols: Nom, Telephone, Dette</p><input type="file" id="csv-clients" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/><button onclick="processImport('clients')" class="mt-2 w-full bg-orange-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="credit-card" class="text-red-600"></i> Charges</h3><p class="text-xs text-gray-400 mb-3">Cols: Date, Motif, Montant</p><input type="file" id="csv-expenses" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/><button onclick="processImport('expenses')" class="mt-2 w-full bg-red-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="shopping-cart" class="text-green-600"></i> Ventes</h3><p class="text-xs text-gray-400 mb-3">Cols: Date, Produit, Quantite, PrixUnitaire, Profit</p><input type="file" id="csv-sales" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/><button onclick="processImport('ventes')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-purple-50 transition border-purple-100"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="image" class="text-purple-600"></i> Logo</h3><p class="text-xs text-gray-400 mb-3">Mise à jour logo (Max 100 Ko)</p><input type="file" id="file-logo-update" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/><button onclick="processLogoUpdate()" class="mt-2 w-full bg-purple-600 text-white text-xs font-bold py-2 rounded shadow-sm hover:bg-purple-700">Mettre à jour</button></div></div>
+
+                        </div>
+                    </div>
+                    <div id="import-progress-container" class="mt-6 bg-white p-5 rounded-xl shadow-inner border border-blue-200 hidden">
+                        <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2" id="import-status-title">
+                            <i data-lucide="loader-2" class="animate-spin text-blue-500"></i> Importation en cours...
+                        </h4>
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-4 mb-2 overflow-hidden shadow-inner">
+                            <div id="import-progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <p class="text-sm font-mono text-gray-500 mb-4" id="import-progress-text">0 / 0 lignes traitées</p>
+
+                        <div id="import-report-area" class="hidden">
+                            <h5 class="font-bold text-sm text-orange-800 mb-2 border-b border-orange-200 pb-1 flex items-center gap-1">
+                                <i data-lucide="alert-triangle" class="w-4 h-4"></i> Rapport d'anomalies
+                            </h5>
+                            <div class="max-h-48 overflow-y-auto bg-orange-50 rounded border border-orange-100 text-xs">
+                                <table class="w-full text-left">
+                                    <thead class="bg-orange-100 text-orange-800 sticky top-0">
+                                        <tr>
+                                            <th class="p-2 w-20">Ligne Excel</th>
+                                            <th class="p-2">Détail de l'Erreur</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="import-report-body" class="divide-y divide-orange-100">
+                                        </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -872,6 +904,44 @@
                 <button onclick="document.getElementById('dashboard-generic-modal').classList.add('hidden')" class="p-2 hover:bg-gray-100 rounded-full text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div id="dashboard-generic-modal-body" class="p-4 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="subscription-blocked-screen" class="fixed inset-0 bg-gray-900 bg-opacity-95 z-[999] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
+            <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="lock" class="w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Abonnement Expiré</h2>
+            <p class="text-gray-600 mb-6">L'accès à votre boutique a été suspendu car votre abonnement est arrivé à terme. Veuillez contacter l'administrateur pour renouveler votre accès.</p>
+            <button id="btn-logout-blocked" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg transition w-full shadow-sm">
+                Se déconnecter
+            </button>
+        </div>
+    </div>
+
+    <div id="subscription-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[170]">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="calendar-clock"></i> Gérer l'Abonnement</h3>
+            <p class="text-sm text-gray-500 mb-4 border-b pb-2">Boutique: <span id="sub-shop-name" class="font-bold text-blue-600"></span></p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Statut d'accès</label>
+                    <select id="sub-status-select" class="w-full p-3 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="actif">🟢 Actif (Paiement OK)</option>
+                        <option value="essai">🟠 Période d'essai</option>
+                        <option value="suspendu">🔴 Suspendu (Bloqué)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Date de fin d'accès</label>
+                    <input type="date" id="sub-date-input" class="w-full p-3 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="document.getElementById('subscription-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Annuler</button>
+                    <button id="btn-save-subscription" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow">Appliquer</button>
+                </div>
+            </div>
         </div>
     </div>
 
