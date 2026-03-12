@@ -1,6 +1,6 @@
 // src/admin/main.js
 import { db, collection, getDocs, doc, setDoc, serverTimestamp, updateDoc, addDoc, query, where, getAuth, deleteApp, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, initializeApp } from '../firebase.js';
-import { showToast } from '../ui.js';
+import { showToast, showTab, hideTab, switchTab } from '../ui.js';
 import * as state from '../state.js';
 import { firebaseConfig } from '../firebase.js'; // Need the config for secondary app
 
@@ -388,6 +388,9 @@ const enterImmersionMode = async function(shopId, shopName) {
     document.getElementById('admin-tab-btn').classList.add('hidden');
     document.getElementById('admin-access-tab-btn').classList.add('hidden');
 
+    // Afficher les onglets de la boutique pour l'immersion
+    ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => showTab(t));
+
     // Correction: Vérifier si la fonction existe avant de l'appeler
     if (typeof window.initializeApplication === 'function') {
         window.initializeApplication();
@@ -395,7 +398,7 @@ const enterImmersionMode = async function(shopId, shopName) {
         console.warn("window.initializeApplication introuvable. Assurez-vous que le script principal est chargé.");
     }
     
-    if (window.switchTab) window.switchTab('dashboard');
+    switchTab('dashboard');
     showToast(`Immersion dans ${shopName}`);
 };
 
@@ -410,6 +413,10 @@ window.exitImmersionMode = function() {
     document.getElementById('admin-tab-btn').classList.remove('hidden');
     document.getElementById('admin-access-tab-btn').classList.remove('hidden');
     
+    // Masquer les onglets de la boutique
+    ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => hideTab(t));
+
+    switchTab('admin');
     setupSuperAdminDashboard();
     loadBoutiquesList();
     setupAdminAccessPage();

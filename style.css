@@ -77,10 +77,11 @@ h1, h2, h3, h4, h5 {
 }
 
 h1.text-2xl {
-    font-size: 1.375rem;
-    font-weight: 800;
+    font-size: 1.5rem;
+    font-weight: 800; /* ExtraBold */
     margin-bottom: 1.25rem;
-    color: var(--color-text-main);
+    color: #111827; /* Gray-900 pour un contraste fort */
+    letter-spacing: -0.025em;
 }
 
 h2.text-4xl {
@@ -384,7 +385,7 @@ button {
         min-width: 52px;
     }
 
-    .tab div { font-size: 0.65rem; margin-top: 2px; }
+    .tab div { font-size: 10px; font-weight: 600; margin-top: 3px; letter-spacing: 0.01em; }
 
     .tab.active::after {
         top: -3px;
@@ -395,6 +396,14 @@ button {
     }
 
     .top-tabs .flex-1 { display: none; }
+    #bottom-logout-btn { display: none; }
+
+    /* Compact tables on mobile */
+    th, td {
+        padding: 4px 4px !important;
+        font-size: 0.65rem !important; /* ~10.5px */
+        white-space: nowrap; /* Empêche le texte de revenir à la ligne pour gagner en hauteur */
+    }
 }
 
 /* =========================================

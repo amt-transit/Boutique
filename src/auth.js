@@ -11,6 +11,7 @@ export function setupLoginForm() {
     const errorText = document.getElementById('login-error-text');
     const forgotLink = document.getElementById('forgot-password-link');
     const logoutBtn = document.getElementById('bottom-logout-btn');
+    const drawerLogoutBtn = document.getElementById('drawer-logout-btn');
     const togglePwdBtn = document.getElementById('toggle-password-visibility');
     const pwdInput = document.getElementById('login-password');
 
@@ -33,11 +34,19 @@ export function setupLoginForm() {
             try {
                 await signInWithEmailAndPassword(auth, email, pass);
             } catch (error) {
-                console.error("Erreur Auth:", error.code);
-                let message = "Erreur de connexion.";
-                if (error.code.includes('invalid') || error.code.includes('user-not-found') || error.code.includes('wrong-password')) {
+                console.error("Erreur Auth:", error);
+                
+                let message = "Une erreur est survenue lors de la connexion.";
+                const errorCode = error.code || ""; // Protection contre les erreurs sans code
+
+                if (errorCode.includes('invalid-credential') || errorCode.includes('user-not-found') || errorCode.includes('wrong-password') || errorCode.includes('invalid-email')) {
                     message = "Email ou mot de passe incorrect.";
+                } else if (errorCode.includes('too-many-requests')) {
+                    message = "Trop de tentatives échouées. Compte temporairement bloqué.";
+                } else if (errorCode.includes('network-request-failed')) {
+                    message = "Erreur de connexion internet.";
                 }
+                
                 if(errorText) errorText.textContent = message;
                 if(errorBox) errorBox.classList.remove('hidden');
             }
@@ -46,6 +55,17 @@ export function setupLoginForm() {
 
     if(logoutBtn) {
         logoutBtn.addEventListener('click', () => {
+            showConfirmModal(
+                "Déconnexion",
+                "Êtes-vous sûr de vouloir vous déconnecter ?",
+                () => signOut(auth)
+            );
+        });
+    }
+
+    if(drawerLogoutBtn) {
+        drawerLogoutBtn.addEventListener('click', () => {
+            if(window.closeHamburgerMenu) window.closeHamburgerMenu();
             showConfirmModal(
                 "Déconnexion",
                 "Êtes-vous sûr de vouloir vous déconnecter ?",
@@ -87,6 +107,14 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
             try {
                 const superAdminDoc = await getDoc(doc(db, "super_admins", state.userId));
                 if (superAdminDoc.exists()) {
+                    // MASQUER les onglets de la boutique
+                    ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => hideTab(t));
+                    
+                    // AFFICHER les onglets Admin
+                    document.getElementById('admin-tab-btn').classList.remove('hidden');
+                    document.getElementById('admin-access-tab-btn').classList.remove('hidden');
+
+                    switchTab('admin');
                     showSuperAdminInterface();
                     hideSplash();
                     return;
@@ -204,12 +232,17 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     document.getElementById('app-container').classList.remove('hidden');
                     document.getElementById('top-nav-bar').classList.remove('hidden');
                     
-                    showAllTabs(); 
+                    // AFFICHER les onglets standards de la boutique
+                    ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => showTab(t));
+                    
+                    // MASQUER explicitement les onglets Admin
+                    document.getElementById('admin-tab-btn').classList.add('hidden');
+                    document.getElementById('admin-access-tab-btn').classList.add('hidden');
+
                     if (state.userRole === 'seller') { 
-                        hideTab('dashboard'); hideTab('admin'); hideTab('admin-access'); 
+                        hideTab('dashboard'); 
                         switchTab('ventes'); 
                     } else { 
-                        hideTab('admin'); hideTab('admin-access'); 
                         switchTab('dashboard'); 
                     }
                     initializeApplication();
