@@ -101,7 +101,17 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     let needsUpdate = false;
 
                     if (!allowedShops) {
-                        allowedShops = [{ id: data.boutiqueId, name: data.boutiqueName, role: data.role }];
+                        // Correction: Gestion des valeurs undefined pour éviter l'erreur Firestore
+                        const bId = data.boutiqueId || null;
+                        if (bId) {
+                            allowedShops = [{ 
+                                id: bId, 
+                                name: data.boutiqueName || 'Boutique', 
+                                role: data.role || 'seller' 
+                            }];
+                        } else {
+                            allowedShops = [];
+                        }
                         needsUpdate = true;
                     }
                     if (!shopIds || shopIds.length !== allowedShops.length) {
