@@ -46,28 +46,43 @@ export function showToast(message, type = "info") {
 }
 
 export function showConfirmModal(title, message, onConfirm) {
-    document.getElementById('confirm-modal-title').textContent = title;
-    document.getElementById('confirm-modal-message').textContent = message;
-    actionToConfirm = onConfirm;
-    document.getElementById('confirm-modal').classList.remove('hidden');
+    const modal = document.getElementById('confirm-modal');
+    const titleEl = document.getElementById('confirm-modal-title');
+    const textEl = document.getElementById('confirm-modal-text');
+    const confirmBtn = document.getElementById('modal-confirm-btn');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+
+    if (!modal || !titleEl || !textEl || !confirmBtn || !cancelBtn) {
+        console.error("Confirmation modal elements not found");
+        return;
+    }
+
+    titleEl.textContent = title;
+    textEl.textContent = message;
+
+    // Clone and replace buttons to remove old event listeners
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    const confirmHandler = () => {
+        if (onConfirm) onConfirm();
+        modal.classList.add('hidden');
+    };
+
+    const cancelHandler = () => {
+        modal.classList.add('hidden');
+    };
+
+    newConfirmBtn.addEventListener('click', confirmHandler, { once: true });
+    newCancelBtn.addEventListener('click', cancelHandler, { once: true });
+    
+    modal.classList.remove('hidden');
 }
 
 export function setupModalListeners() {
-    const confirmYes = document.getElementById('confirm-modal-yes');
-    if (confirmYes) {
-        confirmYes.addEventListener('click', () => {
-            if (actionToConfirm) actionToConfirm();
-            document.getElementById('confirm-modal').classList.add('hidden');
-        });
-    }
-
-    const confirmNo = document.getElementById('confirm-modal-no');
-    if (confirmNo) {
-        confirmNo.addEventListener('click', () => {
-            document.getElementById('confirm-modal').classList.add('hidden');
-        });
-    }
-
     const invoiceClose = document.getElementById('invoice-modal-close');
     if (invoiceClose) {
         invoiceClose.addEventListener('click', () => {

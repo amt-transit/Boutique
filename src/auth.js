@@ -2,7 +2,7 @@ import {
     db, auth, onAuthStateChanged, signInWithEmailAndPassword, signOut, 
     sendPasswordResetEmail, getDoc, doc, updateDoc
 } from './firebase.js';
-import { showToast, switchTab, showAllTabs, hideTab, showTab } from './ui.js';
+import { showToast, switchTab, showAllTabs, hideTab, showTab, showConfirmModal } from './ui.js';
 import * as state from './state.js';
 
 export function setupLoginForm() {
@@ -44,7 +44,15 @@ export function setupLoginForm() {
         });
     }
 
-    if(logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
+    if(logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            showConfirmModal(
+                "Déconnexion",
+                "Êtes-vous sûr de vouloir vous déconnecter ?",
+                () => signOut(auth)
+            );
+        });
+    }
 
     if(forgotLink) {
         forgotLink.addEventListener('click', async (e) => {
@@ -63,12 +71,24 @@ export function setupLoginForm() {
 
 export function setupAuthListener(initializeApplication, showSuperAdminInterface) {
     onAuthStateChanged(auth, async (user) => {
+        const splash = document.getElementById('splash-screen');
+        
+        // Fonction pour retirer le splash screen en douceur
+        const hideSplash = () => {
+            if (splash) {
+                // Ajout de scale-95 et blur-sm pour un effet de "départ" plus élégant
+                splash.classList.add('opacity-0', 'pointer-events-none', 'scale-95', 'blur-sm');
+                setTimeout(() => splash.remove(), 700); // Attend la fin de l'animation CSS
+            }
+        };
+
         if (user) {
             state.setUserId(user.uid);
             try {
                 const superAdminDoc = await getDoc(doc(db, "super_admins", state.userId));
                 if (superAdminDoc.exists()) {
                     showSuperAdminInterface();
+                    hideSplash();
                     return;
                 }
                 
@@ -175,17 +195,23 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                         switchTab('dashboard'); 
                     }
                     initializeApplication();
+                    hideSplash();
                 } else {
                     showToast("Compte introuvable", "error");
                     await signOut(auth);
+                    hideSplash();
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error(err);
+                hideSplash();
+            }
         } else {
             document.getElementById('auth-container').classList.remove('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('top-nav-bar').classList.add('hidden');
             state.setCurrentBoutiqueId(null);
             if (window.lucide) window.lucide.createIcons();
+            hideSplash();
         }
     });
 }

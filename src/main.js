@@ -76,4 +76,4 @@ function main() {
 }
 
 // Start the application
-main();
+document.addEventListener('DOMContentLoaded', main);
