@@ -123,6 +123,14 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                         updateDoc(userDoc.ref, { allowedShops: allowedShops, shopIds: shopIds });
                     }
 
+                    // NEW: Check if user has any shop assigned. If not, logout.
+                    if (!allowedShops || allowedShops.length === 0) {
+                        showToast("Aucune boutique n'est associée à ce compte.", "error");
+                        await signOut(auth);
+                        // onAuthStateChanged will re-trigger with user=null and handle the UI
+                        return; 
+                    }
+
                     let savedShopId = localStorage.getItem('activeShopId');
                     let activeShop = allowedShops.find(s => s.id === savedShopId);
                     
