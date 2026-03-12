@@ -173,7 +173,7 @@ export function setupAdminFeatures() {
                         const secAuth = getAuth(secApp);
                         try {
                             const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
-                            await setDoc(doc(db, "users", cred.user.uid), { email: email, role: role, allowedShops: [{id: shopId, name: shopName, role: role}], shopIds: [shopId] });
+                            await setDoc(doc(db, "users", cred.user.uid), { email: email, role: role, password: pass, allowedShops: [{id: shopId, name: shopName, role: role}], shopIds: [shopId] });
                         } finally {
                             await signOut(secAuth);
                             await deleteApp(secApp);
@@ -286,7 +286,7 @@ export async function setupAdminAccessPage() {
         
         const filtered = allUsers.filter(u => (u.email && u.email.toLowerCase().includes(term)) || (u.boutiqueName && u.boutiqueName.toLowerCase().includes(term)) || (u.role && u.role.toLowerCase().includes(term)));
 
-        if(filtered.length === 0) { listContainer.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Aucun utilisateur trouvé.</td></tr>'; return; }
+        if(filtered.length === 0) { listContainer.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Aucun utilisateur trouvé.</td></tr>'; return; }
 
         filtered.forEach(u => {
             const tr = document.createElement('tr');
@@ -298,6 +298,14 @@ export async function setupAdminAccessPage() {
                 <td class="p-3 font-medium text-gray-800 dark:text-gray-200">${u.boutiqueName || u.allowedShops?.[0]?.name || 'Inconnu'}</td>
                 <td class="p-3 font-mono text-gray-600 dark:text-gray-400 select-all">${u.email}</td>
                 <td class="p-3">${roleBadge}</td>
+                <td class="p-3">
+                    <div class="flex items-center gap-2">
+                        <input type="password" value="${u.password || ''}" readonly class="bg-transparent border-none w-24 text-xs font-mono focus:ring-0 text-gray-500" placeholder="Non enregistré">
+                        <button type="button" class="text-gray-400 hover:text-blue-600 js-toggle-table-pass">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </td>
                 <td class="p-3 text-right">
                     <button data-email="${u.email}" class="js-reset-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold border border-gray-300 mr-2" title="Envoyer un email pour changer le mot de passe">📧 Reset Pass</button>
                 </td>
@@ -307,6 +315,17 @@ export async function setupAdminAccessPage() {
         
         listContainer.querySelectorAll('.js-reset-btn').forEach(btn => {
             btn.addEventListener('click', () => sendResetMail(btn.dataset.email));
+        });
+
+        // Gestionnaire pour afficher/masquer le mot de passe dans le tableau
+        listContainer.querySelectorAll('.js-toggle-table-pass').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const input = e.currentTarget.previousElementSibling;
+                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                input.setAttribute('type', type);
+                e.currentTarget.innerHTML = type === 'password' ? '<i data-lucide="eye" class="w-4 h-4"></i>' : '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+                if(window.lucide) window.lucide.createIcons();
+            });
         });
     };
     render(); 

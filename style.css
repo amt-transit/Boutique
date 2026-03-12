@@ -155,14 +155,12 @@ input[type="tel"],
 input[type="search"],
 select {
     font-family: var(--font-body);
-    padding: 11px 14px;
     font-size: 0.9375rem;
     border: 1.5px solid #e2e8f0;
     border-radius: var(--radius-btn);
     background-color: #ffffff;
     color: var(--color-text-main);
     transition: all var(--transition-base);
-    width: 100%;
     line-height: 1.5;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     -webkit-appearance: none;
