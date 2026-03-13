@@ -652,6 +652,23 @@ button {
     white-space: nowrap;
 }
 
+/* Engrenages Loader */
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes spin-reverse-slow {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 4s linear infinite;
+}
+.animate-spin-reverse-slow {
+    animation: spin-reverse-slow 4s linear infinite;
+}
+
 /* =========================================
    MODALS — Polished overlays
    ========================================= */
@@ -1162,4 +1179,161 @@ body.dark .drawer-tab:hover {
 body.dark .drawer-tab.active {
     background: rgba(37, 99, 235, 0.15);
     color: #60a5fa;
+}
+/* =========================================
+   TYPOGRAPHIE RESPONSIVE — Mobile (Kweeli style)
+   Inspiré de l'app Kweeli : compact, épuré,
+   hiérarchie claire entre titres et données
+   ========================================= */
+
+@media (max-width: 767px) {
+
+    /* --- Base body --- */
+    body {
+        font-size: 13px !important;
+        line-height: 1.5 !important;
+    }
+
+    /* --- Titres de pages (ex: "Dashboard", "Stock") --- */
+    h1, .page-title {
+        font-size: 1.5rem !important;       /* ~24px */
+        font-weight: 800 !important;
+        letter-spacing: -0.03em !important;
+        line-height: 1.2 !important;
+    }
+
+    /* --- Sous-titres de sections --- */
+    h2 {
+        font-size: 1rem !important;         /* ~16px */
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
+    }
+
+    h3, h4 {
+        font-size: 0.875rem !important;     /* ~14px */
+        font-weight: 600 !important;
+    }
+
+    /* --- Labels KPI (CA TOTAL, COMMANDES...) --- */
+    .kpi-label,
+    .text-xs.uppercase,
+    .stat-label,
+    [class*="kpi"] .label,
+    .dashboard-card .label {
+        font-size: 0.65rem !important;      /* ~10px */
+        font-weight: 700 !important;
+        letter-spacing: 0.09em !important;
+        text-transform: uppercase !important;
+        color: #94a3b8 !important;
+    }
+
+    /* --- Valeurs KPI (montants, chiffres clés) --- */
+    .kpi-value,
+    .stat-value,
+    .text-2xl,
+    .text-3xl,
+    [class*="kpi"] .value {
+        font-size: 1.25rem !important;      /* ~20px */
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.2 !important;
+    }
+
+    /* --- Texte courant (tableaux, listes) --- */
+    p, span, div, td, th, li {
+        font-size: 0.8125rem !important;    /* ~13px */
+    }
+
+    /* --- Petits textes secondaires --- */
+    .text-xs {
+        font-size: 0.7rem !important;       /* ~11px */
+    }
+
+    .text-sm {
+        font-size: 0.8125rem !important;    /* ~13px */
+    }
+
+    /* --- Boutons --- */
+    button, .btn {
+        font-size: 0.8125rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* --- Inputs et selects --- */
+    input, select, textarea {
+        font-size: 0.875rem !important;     /* ~14px — évite zoom auto iOS */
+    }
+
+    /* --- Navigation barre du bas --- */
+    .tab div,
+    .tab span {
+        font-size: 0.625rem !important;     /* ~10px */
+        font-weight: 600 !important;
+        letter-spacing: 0.02em !important;
+    }
+
+    /* --- Icônes de navigation --- */
+    .tab i, .tab svg {
+        width: 1.25rem !important;
+        height: 1.25rem !important;
+    }
+
+    /* --- Badges et tags --- */
+    .badge, [class*="badge"],
+    .tag, [class*="tag"] {
+        font-size: 0.625rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.05em !important;
+    }
+
+    /* --- En-têtes de tableaux --- */
+    thead th {
+        font-size: 0.65rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.07em !important;
+        color: #94a3b8 !important;
+    }
+
+    /* --- Cellules de tableaux --- */
+    tbody td {
+        font-size: 0.8125rem !important;
+        padding: 0.625rem 0.75rem !important;
+    }
+
+    /* --- Cards / cartes --- */
+    .card, [class*="card"] {
+        font-size: 0.8125rem !important;
+    }
+
+    /* --- Titres dans le drawer hamburger --- */
+    .hamburger-section-label {
+        font-size: 0.6rem !important;
+        letter-spacing: 0.1em !important;
+    }
+
+    .drawer-tab span {
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* --- Search bar placeholder --- */
+    input::placeholder {
+        font-size: 0.8125rem !important;
+        font-weight: 400 !important;
+    }
+
+    /* --- Toast notifications --- */
+    #toast-container span {
+        font-size: 0.8125rem !important;
+    }
+
+    /* --- Modal titres --- */
+    .modal-title,
+    [id*="modal"] h2,
+    [id*="modal"] h3 {
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
+    }
 }

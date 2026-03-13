@@ -115,6 +115,7 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     document.getElementById('admin-access-tab-btn').classList.remove('hidden');
 
                     switchTab('admin');
+                    document.getElementById('global-search-container').classList.add('hidden');
                     showSuperAdminInterface();
                     hideSplash();
                     return;
@@ -194,14 +195,25 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     if(roleBadge) roleBadge.textContent = state.userRole === 'admin' ? 'Gérant' : 'Vendeur';
 
                     const shopDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId));
+                    
+                    // Mise à jour de l'email dans le hamburger
+                    const drawerEmail = document.getElementById('drawer-user-email');
+                    if(drawerEmail) drawerEmail.textContent = user.email;
+
                     if (shopDoc.exists()) {
                         const shopData = shopDoc.data();
                         const status = shopData.statut || 'actif';
                         
                         let isExpired = false;
+                        let daysLeft = 0;
                         if (shopData.expireAt) {
                             const expireDate = shopData.expireAt.toDate ? shopData.expireAt.toDate() : new Date(shopData.expireAt);
-                            if (new Date() > expireDate) isExpired = true;
+                            const now = new Date();
+                            if (now > expireDate) isExpired = true;
+                            
+                            // Calcul des jours restants pour le bandeau
+                            const diffTime = Math.abs(expireDate - now);
+                            daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
                         }
 
                         if (status === 'suspendu' || isExpired) {
@@ -217,6 +229,17 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                             return; 
                         } else {
                             document.getElementById('subscription-blocked-screen').classList.add('hidden');
+                            
+                            // Gestion du bandeau d'essai
+                            const trialBanner = document.getElementById('dashboard-trial-banner');
+                            if (trialBanner) {
+                                if (status === 'essai' && !isExpired) {
+                                    document.getElementById('trial-days-left').textContent = daysLeft;
+                                    trialBanner.classList.remove('hidden');
+                                } else {
+                                    trialBanner.classList.add('hidden');
+                                }
+                            }
                         }
                     }
 
@@ -231,6 +254,7 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     document.getElementById('auth-container').classList.add('hidden');
                     document.getElementById('app-container').classList.remove('hidden');
                     document.getElementById('top-nav-bar').classList.remove('hidden');
+                    document.getElementById('global-search-container').classList.remove('hidden');
                     
                     // AFFICHER les onglets standards de la boutique
                     ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => showTab(t));
@@ -239,9 +263,17 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     document.getElementById('admin-tab-btn').classList.add('hidden');
                     document.getElementById('admin-access-tab-btn').classList.add('hidden');
 
+                    // Gestion du bouton équipe dans le hamburger (Admin boutique seulement)
+                    const teamBtn = document.getElementById('drawer-team-btn');
+                    const desktopTeamBtn = document.getElementById('desktop-team-btn');
+                    
+                    const isAdmin = state.userRole === 'admin';
+                    
+                    if(teamBtn) teamBtn.classList.toggle('hidden', !isAdmin);
+                    if(desktopTeamBtn) desktopTeamBtn.classList.toggle('hidden', !isAdmin);
+
                     if (state.userRole === 'seller') { 
-                        hideTab('dashboard'); 
-                        switchTab('ventes'); 
+                        switchTab('dashboard'); // Les vendeurs arrivent maintenant sur leur dashboard simplifié
                     } else { 
                         switchTab('dashboard'); 
                     }

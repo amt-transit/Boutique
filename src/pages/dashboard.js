@@ -73,6 +73,38 @@ function updateDashboardUI() {
     // --- 4. Re-render charts and modals with filtered data ---
     renderDashboardCharts(filteredSales, productStats, startDate, endDate);
     setupClickableModals(filteredSales, productStats);
+    applyRoleBasedVisibility();
+}
+
+function applyRoleBasedVisibility() {
+    const isSeller = state.userRole === 'seller';
+
+    // IDs des éléments sensibles à masquer pour les vendeurs
+    const sensitiveElements = [
+        'card-caisse', 
+        'card-profit', 
+        'card-expenses',
+        'dash-top-profit-trigger'
+    ];
+
+    sensitiveElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('hidden', isSeller);
+    });
+
+    // Ajustement de la grille pour les vendeurs (pour éviter les trous)
+    // On masque les parents des cartes si nécessaire, ici fait via classes hidden
+    // Ajustement visuel : si vendeur, on peut agrandir les cartes restantes ou les centrer
+    // Le CSS grid s'adapte, mais on peut forcer un layout plus sympa.
+    
+    // Optionnel : Masquer le graphique "Top Produits (Revenu)" ou changer son titre
+    const topProductsCard = document.getElementById('top-products-chart')?.closest('.bg-white');
+    if(topProductsCard) {
+        if(isSeller) {
+            // On pourrait le garder car le CA n'est pas le bénéfice, mais si vous voulez masquer :
+            // topProductsCard.classList.add('hidden');
+        }
+    }
 }
 
 function renderDashboardCharts(sales, productStats, startDate, endDate) {
@@ -244,6 +276,7 @@ export function setupDashboard() {
             if(logoImg && docSnap.data().logo) { logoImg.src = docSnap.data().logo; logoImg.classList.remove('hidden'); }
             else if(logoImg) { logoImg.classList.add('hidden'); }
             updateDashboardUI();
+            applyRoleBasedVisibility();
         }
     });
 

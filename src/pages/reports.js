@@ -112,6 +112,46 @@ async function loadData() {
     } catch (error) { console.error(error); }
 };
 
+function exportReportsToPDF() {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) return showToast("Erreur librairie PDF", "error");
+
+    const doc = new jsPDF();
+    const shopName = document.getElementById('dashboard-user-name')?.textContent || "Ma Boutique";
+    const dateStart = document.getElementById('report-date-start').value;
+    const dateEnd = document.getElementById('report-date-end').value;
+
+    // En-tête
+    doc.setFontSize(18);
+    doc.text(shopName, 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Rapport d'activité`, 14, 30);
+    doc.setFontSize(10);
+    doc.text(`Période : ${dateStart} au ${dateEnd}`, 14, 36);
+
+    // Préparation des données pour le tableau
+    const rows = state.loadedTransactions.map(t => [
+        new Date(t.date).toLocaleDateString() + ' ' + new Date(t.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        t.desc.replace(/<[^>]*>?/gm, ''), // Enlever les balises HTML
+        t.type,
+        !t.isExpense && !t.type.includes('RETOUR') ? formatPrice(t.amount) : '',
+        t.isExpense || t.type.includes('RETOUR') ? formatPrice(t.amount) : ''
+    ]);
+
+    doc.autoTable({
+        head: [['Date', 'Description', 'Type', 'Entrée', 'Sortie']],
+        body: rows,
+        startY: 45,
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255 }, // Bleu
+        alternateRowStyles: { fillColor: [240, 244, 255] }
+    });
+
+    // Sauvegarde
+    doc.save(`rapport_${dateStart}_${dateEnd}.pdf`);
+}
+
 export function setupReports() {
     if (!state.currentBoutiqueId) return;
 
@@ -147,6 +187,9 @@ export function setupReports() {
     if(searchInput) searchInput.addEventListener('input', renderReportsTable);
     if(sortSelect) sortSelect.addEventListener('change', renderReportsTable);
     btnFilter.addEventListener('click', loadData);
+    
+    const btnExport = document.getElementById('btn-export-pdf');
+    if(btnExport) btnExport.addEventListener('click', exportReportsToPDF);
 
     const observer = new MutationObserver((mutations) => { 
         mutations.forEach((mutation) => { 

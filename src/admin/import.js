@@ -18,14 +18,23 @@ async function logAdminAction(actionType, details) {
 }
 
 export function setupImport() {
+    // Rendre la fonction accessible pour le bouton HTML onclick="loadShopsForImport()"
+    window.loadShopsForImport = loadShopsForImport;
     loadShopsForImport();
 }
 
 async function loadShopsForImport() { 
     const s = document.getElementById('import-target-shop'); 
     if(!s) return; 
+
+    // Si la liste est vide, on force le chargement depuis la DB
+    if (!state.allShopsList || state.allShopsList.length === 0) {
+        const snap = await getDocs(collection(db, "boutiques"));
+        const list = [];
+        snap.forEach(d => list.push({id: d.id, ...d.data()}));
+        state.setAllShopsList(list);
+    }
     
-    // We assume allShopsList is populated by the admin dashboard setup
     s.innerHTML = '<option value="">-- Choisir --</option>'; 
     state.allShopsList.forEach(b => { 
         const o = document.createElement('option'); 

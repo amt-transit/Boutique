@@ -39,10 +39,29 @@ async function logAdminAction(actionType, details) {
 
 export async function loadBoutiquesList() { 
     try {
-        const l = await getAvailableBoutiques(); 
+        if (!state.allShopsList || state.allShopsList.length === 0) {
+            await getAvailableBoutiques();
+        }
+
+        const searchInput = document.getElementById('admin-shops-search');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+        let boutiquesToRender = state.allShopsList;
+
+        if (searchTerm) {
+            boutiquesToRender = state.allShopsList.filter(b => 
+                b.nom.toLowerCase().includes(searchTerm)
+            );
+        }
+
         const d = document.getElementById('admin-boutiques-list'); 
         if(d) {
-            d.innerHTML = l.map(b => {
+            if (boutiquesToRender.length === 0) {
+                d.innerHTML = `<div class="p-4 text-center text-gray-500">Aucune boutique trouvée.</div>`;
+                return;
+            }
+
+            d.innerHTML = boutiquesToRender.map(b => {
                 let expStr = "À vie";
                 let isExpired = false;
                 let rawDate = "";
@@ -82,7 +101,7 @@ export async function loadBoutiquesList() {
             d.querySelectorAll('.js-immersion-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const shopId = e.target.closest('.shop-item').dataset.id;
-                    const shop = l.find(s => s.id === shopId);
+                    const shop = state.allShopsList.find(s => s.id === shopId);
                     if (shop) enterImmersionMode(shop.id, shop.nom);
                 });
             });
@@ -90,7 +109,7 @@ export async function loadBoutiquesList() {
             d.querySelectorAll('.js-access-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const shopId = e.target.closest('.shop-item').dataset.id;
-                    const shop = l.find(s => s.id === shopId);
+                    const shop = state.allShopsList.find(s => s.id === shopId);
                     if (shop) {
                         let rDate = "";
                         if(shop.expireAt) {
@@ -125,6 +144,12 @@ export function setupAdminFeatures() {
     };
     setupPassToggle('toggle-create-admin-pass', 'admin-password');
     setupPassToggle('toggle-create-seller-pass', 'seller-password');
+
+    // Add search listener for shops
+    const shopSearchInput = document.getElementById('admin-shops-search');
+    if (shopSearchInput) {
+        shopSearchInput.addEventListener('input', loadBoutiquesList);
+    }
 
     if(form) {
         form.addEventListener('submit', async (e) => {
@@ -189,7 +214,8 @@ export function setupAdminFeatures() {
                 document.getElementById('admin-modal').classList.add('hidden');
                 setupSuperAdminDashboard();
                 loadBoutiquesList();
-                // loadShopsForImport(); // This will be in import.js
+                // Actualiser la liste d'importation si la fonction est disponible
+                if (typeof window.loadShopsForImport === 'function') window.loadShopsForImport();
                 setupAdminAccessPage();
             } catch(err) { 
                 showToast(err.message, "error"); 
@@ -284,7 +310,13 @@ export async function setupAdminAccessPage() {
         listContainer.innerHTML = ''; 
         const term = filter.toLowerCase();
         
-        const filtered = allUsers.filter(u => (u.email && u.email.toLowerCase().includes(term)) || (u.boutiqueName && u.boutiqueName.toLowerCase().includes(term)) || (u.role && u.role.toLowerCase().includes(term)));
+        const filtered = allUsers.filter(u => {
+            const emailMatch = u.email && u.email.toLowerCase().includes(term);
+            const roleMatch = u.role && u.role.toLowerCase().includes(term);
+            const shopName = u.boutiqueName || (u.allowedShops && u.allowedShops.length > 0 ? u.allowedShops[0].name : '');
+            const shopMatch = shopName && shopName.toLowerCase().includes(term);
+            return emailMatch || roleMatch || shopMatch;
+        });
 
         if(filtered.length === 0) { listContainer.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Aucun utilisateur trouvé.</td></tr>'; return; }
 
@@ -329,7 +361,13 @@ export async function setupAdminAccessPage() {
         });
     };
     render(); 
-    searchInput.addEventListener('input', (e) => render(e.target.value));
+
+    // Éviter d'ajouter plusieurs fois l'écouteur d'événement (ex: après retour immersion)
+    // On clone le noeud pour supprimer les anciens écouteurs
+    const newSearchInput = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+    newSearchInput.value = searchInput.value; // Préserver la valeur
+    newSearchInput.addEventListener('input', (e) => render(e.target.value));
 }
 
 const sendResetMail = async (email) => {
@@ -387,6 +425,7 @@ const enterImmersionMode = async function(shopId, shopName) {
     document.getElementById('immersion-shop-name').textContent = shopName;
     document.getElementById('admin-tab-btn').classList.add('hidden');
     document.getElementById('admin-access-tab-btn').classList.add('hidden');
+    document.getElementById('global-search-container').classList.remove('hidden');
 
     // Afficher les onglets de la boutique pour l'immersion
     ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => showTab(t));
@@ -412,6 +451,7 @@ window.exitImmersionMode = function() {
     // Correction: Appeler directement les fonctions d'initialisation Admin
     document.getElementById('admin-tab-btn').classList.remove('hidden');
     document.getElementById('admin-access-tab-btn').classList.remove('hidden');
+    document.getElementById('global-search-container').classList.add('hidden');
     
     // Masquer les onglets de la boutique
     ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => hideTab(t));

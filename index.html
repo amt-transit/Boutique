@@ -23,6 +23,8 @@
     <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200" style="font-family:'DM Sans',sans-serif;">
@@ -53,6 +55,18 @@
         </div>
     </div>
 
+    <!-- Creation Loader (Engrenages) -->
+    <div id="creation-loader" class="fixed inset-0 bg-white/90 dark:bg-slate-900/90 z-[9999] hidden flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="relative w-24 h-24 mb-6">
+            <!-- Gear 1 -->
+            <i data-lucide="settings" class="absolute top-0 left-0 w-14 h-14 text-blue-600 animate-spin-slow"></i>
+            <!-- Gear 2 -->
+            <i data-lucide="settings" class="absolute bottom-0 right-0 w-14 h-14 text-purple-600 animate-spin-reverse-slow"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white animate-pulse">Création de votre boutique...</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Configuration de votre espace en cours</p>
+    </div>
+
     <div id="auth-container" class="fixed inset-0 flex items-center justify-center z-[100] p-4 hidden">
         <div class="w-full max-w-sm p-8 bg-white rounded-xl shadow-2xl">
             <!-- Logo & Brand -->
@@ -60,8 +74,8 @@
                 <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl shadow-lg mb-4" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
                     <i data-lucide="trending-up" class="w-7 h-7 text-white"></i>
                 </div>
-                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.5rem;letter-spacing:-0.03em;color:#0f172a;margin:0 0 4px;">Ma Boutique</h1>
-                <p style="font-size:0.875rem;color:#94a3b8;margin:0;">Connectez-vous à votre espace</p>
+                <h1 id="auth-title" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.5rem;letter-spacing:-0.03em;color:#0f172a;margin:0 0 4px;">Ma Boutique</h1>
+                <p id="auth-subtitle" style="font-size:0.875rem;color:#94a3b8;margin:0;">Connectez-vous à votre espace</p>
             </div>
             
             <form id="login-form" class="space-y-4">
@@ -95,6 +109,48 @@
                 <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3.5 px-5 rounded-xl shadow-lg transition mt-2" style="border-radius:12px;letter-spacing:-0.01em;font-family:'Plus Jakarta Sans',sans-serif;">
                     Se connecter
                 </button>
+                <div class="text-center mt-4">
+                    <a href="#" id="show-register-link" class="text-sm text-blue-600 hover:text-blue-800 font-bold">Pas encore de compte ? Créer un compte</a>
+                </div>
+            </form>
+
+            <form id="register-form" class="space-y-4 hidden">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1.5 uppercase tracking-wide">Nom de la Boutique</label>
+                    <input type="text" id="reg-shop-name" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition" placeholder="Ma Super Boutique" required style="border-radius:12px;">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1.5 uppercase tracking-wide">Adresse email</label>
+                    <input type="email" id="reg-email" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition" placeholder="votre@email.com" required style="border-radius:12px;">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1.5 uppercase tracking-wide">Mot de passe</label>
+                    <div class="relative">
+                        <input type="password" id="reg-password" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition pr-12" placeholder="••••••••" required style="border-radius:12px;">
+                        <button type="button" id="toggle-reg-pass" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none p-0.5">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">6 caractères minimum</p>
+                </div>
+                
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1.5 uppercase tracking-wide">Confirmer le mot de passe</label>
+                    <div class="relative">
+                        <input type="password" id="reg-confirm-password" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition pr-12" placeholder="••••••••" required style="border-radius:12px;">
+                        <button type="button" id="toggle-reg-confirm-pass" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none p-0.5">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-5 rounded-xl shadow-lg transition mt-2" style="border-radius:12px;">
+                    Commencer l'essai gratuit
+                </button>
+                
+                <div class="text-center mt-4">
+                    <a href="#" id="show-login-link" class="text-sm text-gray-500 hover:text-gray-800 font-bold">Retour à la connexion</a>
+                </div>
             </form>
             
             <p class="text-center text-xs text-gray-400 mt-6">Gestion de boutique · Version 2.0</p>
@@ -158,6 +214,10 @@
             <button class="tab secondary-tab" onclick="switchTab('rapports')"><i data-lucide="bar-chart-3"></i><div>Rapports</div></button>
             <button class="tab secondary-tab" onclick="switchTab('audit')"><i data-lucide="activity"></i><div>Audit</div></button>
             
+            <button class="tab hidden" id="desktop-team-btn">
+                <i data-lucide="users" class="text-blue-600"></i><div class="text-blue-600">Équipe</div>
+            </button>
+            
             <button class="tab hidden" id="admin-tab-btn" onclick="switchTab('admin')">
                 <i data-lucide="settings" class="text-red-500"></i><div class="text-red-500">Admin</div>
             </button>
@@ -170,18 +230,6 @@
         </div>
 
         <main class="flex-1 w-full bg-gray-50 h-auto md:h-full md:flex md:flex-col relative overflow-y-auto">
-            <div id="global-search-container" class="sticky top-0 bg-gray-100/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 z-30 border-b border-gray-200 dark:border-slate-800 flex items-center gap-2">
-                <button id="hamburger-btn" class="text-gray-500 hover:text-blue-600 md:hidden">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
-                </button>
-                <div class="relative flex-1">
-                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6"></i>
-                    <input type="text" id="global-search-input" placeholder="Rechercher un produit, un client..." class="w-full pl-14 pr-4 py-3 bg-white/70 dark:bg-slate-800/70 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-lg outline-none transition duration-300">
-                    <div id="global-search-results" class="hidden absolute w-full mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-96 overflow-y-auto">
-                        <!-- Search results will be injected here -->
-                    </div>
-                </div>
-            </div>
             <div id="global-shop-header" class="bg-white border-b border-gray-200 px-4 py-3 hidden flex justify-between items-center shadow-sm z-40 relative">
                 <div class="flex items-center gap-3">
                     
@@ -199,6 +247,18 @@
                     <button id="theme-toggle" class="text-gray-500 hover:text-blue-600 transition-colors duration-300 focus:outline-none">
                         <i data-lucide="moon" class="w-5 h-5"></i>
                     </button>
+                </div>
+            </div>
+            <div id="global-search-container" class="sticky top-0 bg-gray-100/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 z-30 border-b border-gray-200 dark:border-slate-800 flex items-center gap-2">
+                <button id="hamburger-btn" class="text-gray-500 hover:text-blue-600 md:hidden">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6"></i>
+                    <input type="text" id="global-search-input" placeholder="Rechercher un produit, un client..." class="w-full pl-14 pr-4 py-3 bg-white/70 dark:bg-slate-800/70 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-lg outline-none transition duration-300">
+                    <div id="global-search-results" class="hidden absolute w-full mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-96 overflow-y-auto">
+                        <!-- Search results will be injected here -->
+                    </div>
                 </div>
             </div>
 
@@ -222,6 +282,10 @@
                     <button class="drawer-tab" onclick="switchTab('audit'); closeHamburgerMenu();"><i data-lucide="activity"></i><span>Audit</span></button>
                     <button class="drawer-tab" onclick="switchTab('rapports'); closeHamburgerMenu();"><i data-lucide="bar-chart-3"></i><span>Rapports</span></button>
                     
+                    <button id="drawer-team-btn" class="drawer-tab hidden">
+                        <i data-lucide="users"></i><span>Gestion Équipe</span>
+                    </button>
+
                     <p class="hamburger-section-label mt-4">Préférences</p>
                     <button id="drawer-theme-toggle" class="drawer-tab">
                         <i id="drawer-theme-icon" data-lucide="moon"></i>
@@ -229,6 +293,12 @@
                     </button>
 
                     <p class="hamburger-section-label mt-4 text-red-400">Compte</p>
+                    
+                    <div class="px-3 py-2 bg-gray-50 dark:bg-slate-800 rounded-lg mb-2 border border-gray-100 dark:border-slate-700">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Connecté en tant que</p>
+                        <p class="text-xs font-bold text-gray-800 dark:text-gray-300 truncate" id="drawer-user-email">...</p>
+                    </div>
+
                     <button id="drawer-logout-btn" class="drawer-tab text-red-500 hover:text-red-600 hover:bg-red-50">
                         <i data-lucide="log-out"></i>
                         <span>Sortir</span>
@@ -258,12 +328,23 @@
                     <span id="dashboard-user-name" class="text-sm bg-white px-3 py-1 rounded-full shadow-sm text-gray-500"></span>
                 </div>
                 
+                <!-- BANDEAU ESSAI GRATUIT -->
+                <div id="dashboard-trial-banner" class="hidden mb-6 bg-gradient-to-r from-orange-500 to-yellow-500 text-white p-4 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/20 p-2 rounded-full"><i data-lucide="clock" class="w-6 h-6 text-white"></i></div>
+                        <div>
+                            <p class="font-bold text-lg leading-tight">Période d'essai active</p>
+                            <p class="text-sm opacity-90">Il vous reste <span id="trial-days-left" class="font-bold bg-white text-orange-600 px-1.5 rounded">90</span> jours pour profiter de toutes les fonctionnalités.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Caisse Initiale</div><div id="dash-caisse-initiale" class="text-2xl font-extrabold text-gray-900 dark:text-white">0 CFA</div></div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Total Ventes (Cash)</div><div id="dash-total-sales" class="text-2xl font-extrabold text-blue-600">0 CFA</div></div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-green-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Solde (Bénéfice)</div><div id="dash-total-profit" class="text-2xl font-extrabold text-green-600">0 CFA</div></div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-orange-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Crédits Clients</div><div id="dash-total-credits" class="text-2xl font-extrabold text-orange-600">0 CFA</div></div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-red-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Dépenses</div><div id="dash-total-expenses" class="text-2xl font-extrabold text-red-600">0 CFA</div></div>
+                    <div id="card-caisse" class="bg-white p-5 rounded-xl shadow-sm border border-gray-200"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Caisse Initiale</div><div id="dash-caisse-initiale" class="text-2xl font-extrabold text-gray-900 dark:text-white">0 CFA</div></div>
+                    <div id="card-sales" class="bg-white p-5 rounded-xl shadow-sm border border-blue-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Total Ventes (Cash)</div><div id="dash-total-sales" class="text-2xl font-extrabold text-blue-600">0 CFA</div></div>
+                    <div id="card-profit" class="bg-white p-5 rounded-xl shadow-sm border border-green-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Solde (Bénéfice)</div><div id="dash-total-profit" class="text-2xl font-extrabold text-green-600">0 CFA</div></div>
+                    <div id="card-credits" class="bg-white p-5 rounded-xl shadow-sm border border-orange-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Crédits Clients</div><div id="dash-total-credits" class="text-2xl font-extrabold text-orange-600">0 CFA</div></div>
+                    <div id="card-expenses" class="bg-white p-5 rounded-xl shadow-sm border border-red-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Dépenses</div><div id="dash-total-expenses" class="text-2xl font-extrabold text-red-600">0 CFA</div></div>
                 </div>
 
                 <!-- GRAPHIQUES -->
@@ -667,6 +748,9 @@
                             <button id="btn-filter-reports" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-bold transition">
                                 Filtrer
                             </button>
+                            <button id="btn-export-pdf" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-bold transition flex items-center gap-1" title="Exporter en PDF">
+                                <i data-lucide="file-down" class="w-4 h-4"></i> <span class="hidden sm:inline">PDF</span>
+                            </button>
                         </div>
                     </div>
 
@@ -857,6 +941,10 @@
                                 <button id="open-admin-modal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 transition">
                                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Créer
                                 </button>
+                            </div>
+                            <div class="mb-4 relative">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                                <input type="text" id="admin-shops-search" placeholder="Rechercher une boutique..." class="w-full pl-10 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
                             <div id="admin-boutiques-list" class="max-h-60 overflow-y-auto divide-y divide-gray-100 border rounded-lg bg-gray-50">
                                 <!-- Liste complète injectée ici -->
@@ -1074,6 +1162,34 @@
                 <button onclick="document.getElementById('dashboard-generic-modal').classList.add('hidden')" class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-500 dark:text-gray-400"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div id="dashboard-generic-modal-body" class="p-4 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Modale Gestion Équipe -->
+    <div id="team-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[160] p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl max-w-sm w-full animate-fade-in-up">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b dark:border-slate-700">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2"><i data-lucide="users"></i> Mon Équipe</h3>
+                <button onclick="document.getElementById('team-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><i data-lucide="x"></i></button>
+            </div>
+            
+            <div class="mb-4">
+                <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Vendeurs actuels</h4>
+                <div id="team-list" class="max-h-40 overflow-y-auto border rounded-lg p-2 dark:border-slate-700 dark:bg-slate-900/50">
+                    <!-- Liste injectée par JS -->
+                </div>
+            </div>
+
+            <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                <h4 class="text-sm font-bold text-blue-800 dark:text-blue-300 mb-3">Ajouter un vendeur</h4>
+                <form id="form-add-seller" class="space-y-3">
+                    <input type="email" id="seller-add-email" placeholder="Email du vendeur" class="w-full p-2 text-sm border rounded outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white" required>
+                    <input type="password" id="seller-add-pass" placeholder="Mot de passe (6 min)" class="w-full p-2 text-sm border rounded outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white" required minlength="6">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm shadow">
+                        Créer le compte
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 

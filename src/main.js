@@ -1,5 +1,6 @@
 // src/main.js
 import { setupLoginForm, setupAuthListener } from './auth.js';
+import { setupRegisterForm } from './register.js';
 import { setupModalListeners, switchTab, showTab, hideTab, setupThemeToggle, setupScrollToTop } from './ui.js';
 import { setupDashboard } from './pages/dashboard.js';
 import { setupStockManagement } from './pages/stock.js';
@@ -14,6 +15,7 @@ import { setupAdminFeatures, setupSuperAdminDashboard, setupAdminAccessPage, loa
 import { setupImport } from './admin/import.js';
 import { setupGlobalSearch } from './globalSearch.js';
 import { setupHamburgerMenu, closeHamburgerMenu } from './hamburger.js';
+import { setupTeamManagement } from './pages/team.js';
 
 // Make some functions globally available for onclick attributes
 window.switchTab = switchTab;
@@ -32,6 +34,7 @@ function initializeApplication() {
     setupOrdersListener();
     setupSuppliersPage();
     setupGlobalSearch();
+    setupTeamManagement();
     if (window.lucide) window.lucide.createIcons();
 }
 
@@ -69,6 +72,7 @@ function main() {
     setupAuthListener(initializeApplication, showSuperAdminInterface);
     
     setupLoginForm();
+    setupRegisterForm();
     setupModalListeners();
     setupThemeToggle();
     setupScrollToTop();
