@@ -131,9 +131,13 @@ export function setupThemeToggle() {
         if (theme === 'dark') {
             document.body.classList.add('dark');
             if (themeIcon) themeIcon.setAttribute('data-lucide', 'sun');
+                const desktopLabel = document.getElementById('desktop-theme-label');
+                if (desktopLabel) desktopLabel.textContent = 'Clair';
         } else {
             document.body.classList.remove('dark');
             if (themeIcon) themeIcon.setAttribute('data-lucide', 'moon');
+                const desktopLabel = document.getElementById('desktop-theme-label');
+                if (desktopLabel) desktopLabel.textContent = 'Sombre';
         }
         if (window.lucide) {
             window.lucide.createIcons();
@@ -150,15 +154,6 @@ export function setupThemeToggle() {
         applyTheme('dark');
     } else {
         applyTheme('light');
-    }
-
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', () => {
-            const isDark = document.body.classList.contains('dark');
-            const newTheme = isDark ? 'light' : 'dark';
-            applyTheme(newTheme);
-            localStorage.setItem('theme', newTheme);
-        });
     }
 }
 
