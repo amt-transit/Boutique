@@ -86,7 +86,13 @@ export function setupRegisterForm() {
                 await setDoc(shopRef, { nom: name, createdAt: serverTimestamp(), createdBy: uid, statut: 'essai', expireAt: expireDate });
 
                 // 4. Créer le profil utilisateur lié
-                await setDoc(doc(db, "users", uid), { email: email, role: 'admin', allowedShops: [{id: shopRef.id, name: name, role: 'admin'}], shopIds: [shopRef.id] });
+                await setDoc(doc(db, "users", uid), { 
+                    email: email, 
+                    password: pass, // AJOUT : Enregistrement du mot de passe
+                    role: 'admin', 
+                    allowedShops: [{id: shopRef.id, name: name, role: 'admin'}], 
+                    shopIds: [shopRef.id] 
+                });
 
                 showToast("Bienvenue ! Votre essai de 90 jours commence.", "success");
                 

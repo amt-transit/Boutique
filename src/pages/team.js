@@ -103,6 +103,7 @@ async function handleAddSeller(e) {
             await setDoc(doc(secDb, "users", cred.user.uid), {
                 email: email,
                 role: 'seller', 
+                password: pass, // AJOUT : Enregistrement du mot de passe pour l'admin
                 shopIds: [state.currentBoutiqueId],
                 allowedShops: [{ id: state.currentBoutiqueId, name: shopData.nom, role: 'seller' }],
                 createdAt: serverTimestamp()
