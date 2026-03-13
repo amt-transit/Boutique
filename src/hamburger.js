@@ -5,16 +5,18 @@ export function setupHamburgerMenu() {
     if (hamburgerBtn) hamburgerBtn.addEventListener('click', openHamburgerMenu);
 
     const drawerThemeBtn = document.getElementById('drawer-theme-toggle');
-    if (drawerThemeBtn) {
-        drawerThemeBtn.addEventListener('click', () => {
-            const isDark = document.body.classList.contains('dark');
-            const newTheme = isDark ? 'light' : 'dark';
-            document.body.classList.toggle('dark', newTheme === 'dark');
-            localStorage.setItem('theme', newTheme);
-            updateDrawerThemeButton(newTheme === 'dark');
-            if (window.lucide) window.lucide.createIcons();
-        });
-    }
+    const headerThemeBtn = document.getElementById('theme-toggle');
+
+    const toggleTheme = () => {
+        const isDark = document.body.classList.contains('dark');
+        const newTheme = isDark ? 'light' : 'dark';
+        document.body.classList.toggle('dark', newTheme === 'dark');
+        localStorage.setItem('theme', newTheme);
+        updateDrawerThemeButton(newTheme === 'dark');
+    };
+
+    if (drawerThemeBtn) drawerThemeBtn.addEventListener('click', toggleTheme);
+    if (headerThemeBtn) headerThemeBtn.addEventListener('click', toggleTheme);
 
     // Fermer avec Escape
     document.addEventListener('keydown', (e) => {
@@ -24,7 +26,10 @@ export function setupHamburgerMenu() {
     // Sync état initial
     const savedTheme = localStorage.getItem('theme');
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    updateDrawerThemeButton(savedTheme === 'dark' || (!savedTheme && systemDark));
+    const isDarkInitial = savedTheme === 'dark' || (!savedTheme && systemDark);
+    
+    document.body.classList.toggle('dark', isDarkInitial);
+    updateDrawerThemeButton(isDarkInitial);
 }
 
 export function openHamburgerMenu() {
@@ -45,5 +50,9 @@ function updateDrawerThemeButton(isDark) {
     const label = document.getElementById('drawer-theme-label');
     if (icon) icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
     if (label) label.textContent = isDark ? 'Mode clair' : 'Mode sombre';
+    
+    const headerIcon = document.querySelector('#theme-toggle i');
+    if (headerIcon) headerIcon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+    
     if (window.lucide) window.lucide.createIcons();
 }

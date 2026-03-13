@@ -37,6 +37,7 @@ function initializeApplication() {
     setupTeamManagement();
     if (window.lucide) window.lucide.createIcons();
 }
+window.initializeApplication = initializeApplication;
 
 // This function is called if the authenticated user is a super admin
 function showSuperAdminInterface() {
