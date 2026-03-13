@@ -447,6 +447,7 @@ window.exitImmersionMode = function() {
     state.setUserRole(null);
 
     document.getElementById('immersion-banner').classList.add('hidden');
+    document.getElementById('global-shop-header').classList.add('hidden');
     
     // Correction: Appeler directement les fonctions d'initialisation Admin
     document.getElementById('admin-tab-btn').classList.remove('hidden');

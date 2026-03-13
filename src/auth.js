@@ -107,6 +107,13 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
             try {
                 const superAdminDoc = await getDoc(doc(db, "super_admins", state.userId));
                 if (superAdminDoc.exists()) {
+                    // INITIALISATION UI SUPER ADMIN
+                    document.getElementById('auth-container').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    document.getElementById('top-nav-bar').classList.remove('hidden');
+                    document.getElementById('global-shop-header').classList.add('hidden');
+                    document.getElementById('global-search-container').classList.add('hidden');
+
                     // MASQUER les onglets de la boutique
                     ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => hideTab(t));
                     
@@ -115,7 +122,6 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     document.getElementById('admin-access-tab-btn').classList.remove('hidden');
 
                     switchTab('admin');
-                    document.getElementById('global-search-container').classList.add('hidden');
                     showSuperAdminInterface();
                     hideSplash();
                     return;
@@ -199,6 +205,8 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     // Mise à jour de l'email dans le hamburger
                     const drawerEmail = document.getElementById('drawer-user-email');
                     if(drawerEmail) drawerEmail.textContent = user.email;
+                    const desktopEmail = document.getElementById('desktop-user-email');
+                    if(desktopEmail) desktopEmail.textContent = user.email;
 
                     if (shopDoc.exists()) {
                         const shopData = shopDoc.data();

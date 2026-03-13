@@ -214,9 +214,12 @@
             <button class="tab secondary-tab" onclick="switchTab('rapports')"><i data-lucide="bar-chart-3"></i><div>Rapports</div></button>
             <button class="tab secondary-tab" onclick="switchTab('audit')"><i data-lucide="activity"></i><div>Audit</div></button>
             
-            <button class="tab hidden" id="desktop-team-btn">
-                <i data-lucide="users" class="text-blue-600"></i><div class="text-blue-600">Équipe</div>
-            </button>
+            <!-- Wrapper pour cacher le bouton Bureau sur mobile (évite le doublon dans la barre du bas) -->
+            <div class="hidden md:block w-full">
+                <button class="tab hidden" id="desktop-team-btn">
+                    <i data-lucide="users" class="text-blue-600"></i><div class="text-blue-600">Équipe</div>
+                </button>
+            </div>
             
             <button class="tab hidden" id="admin-tab-btn" onclick="switchTab('admin')">
                 <i data-lucide="settings" class="text-red-500"></i><div class="text-red-500">Admin</div>
@@ -226,6 +229,14 @@
             </button>
             
             <div class="flex-1"></div>
+            
+            <div class="hidden md:block w-full px-2 mb-2">
+                <div class="bg-gray-50 dark:bg-slate-800 p-2 rounded-lg border border-gray-200 dark:border-slate-700">
+                    <div class="text-[10px] text-gray-400 font-bold uppercase">Compte</div>
+                    <div id="desktop-user-email" class="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">...</div>
+                </div>
+            </div>
+            
             <button class="tab" id="bottom-logout-btn"><i data-lucide="log-out" class="text-red-400"></i><div class="text-red-400">Sortir</div></button>
         </div>
 
@@ -276,12 +287,13 @@
                     </button>
                 </div>
                 <div class="hamburger-drawer-body">
-                    <p class="hamburger-section-label">Navigation</p>
-                    <button class="drawer-tab" onclick="switchTab('commandes'); closeHamburgerMenu();"><i data-lucide="clipboard-list"></i><span>Commandes</span></button>
-                    <button class="drawer-tab" onclick="switchTab('fournisseurs'); closeHamburgerMenu();"><i data-lucide="truck"></i><span>Fournisseurs</span></button>
-                    <button class="drawer-tab" onclick="switchTab('audit'); closeHamburgerMenu();"><i data-lucide="activity"></i><span>Audit</span></button>
-                    <button class="drawer-tab" onclick="switchTab('rapports'); closeHamburgerMenu();"><i data-lucide="bar-chart-3"></i><span>Rapports</span></button>
+                    <p class="hamburger-section-label md:hidden">Navigation</p>
+                    <button class="drawer-tab md:hidden" onclick="switchTab('commandes'); closeHamburgerMenu();"><i data-lucide="clipboard-list"></i><span>Commandes</span></button>
+                    <button class="drawer-tab md:hidden" onclick="switchTab('fournisseurs'); closeHamburgerMenu();"><i data-lucide="truck"></i><span>Fournisseurs</span></button>
+                    <button class="drawer-tab md:hidden" onclick="switchTab('audit'); closeHamburgerMenu();"><i data-lucide="activity"></i><span>Audit</span></button>
+                    <button class="drawer-tab md:hidden" onclick="switchTab('rapports'); closeHamburgerMenu();"><i data-lucide="bar-chart-3"></i><span>Rapports</span></button>
                     
+                    <!-- Bouton Équipe Mobile (Préservé) -->
                     <button id="drawer-team-btn" class="drawer-tab hidden">
                         <i data-lucide="users"></i><span>Gestion Équipe</span>
                     </button>
@@ -311,76 +323,218 @@
                 <button onclick="exitImmersionMode()" class="bg-white text-purple-600 px-3 py-1 rounded shadow-lg">Quitter l'immersion</button>
             </div>
 
-            <div id="page-dashboard" class="page-content">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-                    <div class="flex items-center gap-3">
-                        <img id="dash-shop-logo" src="" alt="Logo" class="w-12 h-12 object-contain rounded-lg bg-white p-1 shadow-sm hidden">
-                        <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Tableau de Bord</h1>
+            <div id="page-dashboard" class="page-content dash-root">
+
+                <!-- ═══════════════════════════════════════
+                    HEADER HERO — Dégradé coloré + salutation
+                ═══════════════════════════════════════ -->
+                <div class="dash-hero">
+                    <div class="dash-hero-left">
+                        <div class="dash-hero-brand">
+                            <img id="dash-shop-logo" src="" alt="Logo" class="dash-logo hidden">
+                            <div class="dash-hero-titles">
+                                <p class="dash-greeting">Bonjour 👋</p>
+                                <h1 id="dashboard-user-name" class="dash-shopname">Ma Boutique</h1>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2 mt-4 md:mt-0 bg-white dark:bg-slate-800/60 p-2 rounded-lg shadow-sm border dark:border-slate-700">
-                        <input type="date" id="dash-date-start" class="border-none bg-gray-50 dark:bg-slate-700 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                        <span class="text-gray-400 font-bold">à</span>
-                        <input type="date" id="dash-date-end" class="border-none bg-gray-50 dark:bg-slate-700 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                        <button id="btn-dash-filter" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition">
-                            <i data-lucide="filter" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                    <span id="dashboard-user-name" class="text-sm bg-white px-3 py-1 rounded-full shadow-sm text-gray-500"></span>
-                </div>
-                
-                <!-- BANDEAU ESSAI GRATUIT -->
-                <div id="dashboard-trial-banner" class="hidden mb-6 bg-gradient-to-r from-orange-500 to-yellow-500 text-white p-4 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-white/20 p-2 rounded-full"><i data-lucide="clock" class="w-6 h-6 text-white"></i></div>
-                        <div>
-                            <p class="font-bold text-lg leading-tight">Période d'essai active</p>
-                            <p class="text-sm opacity-90">Il vous reste <span id="trial-days-left" class="font-bold bg-white text-orange-600 px-1.5 rounded">90</span> jours pour profiter de toutes les fonctionnalités.</p>
+                    <div class="dash-hero-right">
+                        <div class="dash-date-filter">
+                            <input type="date" id="dash-date-start" class="dash-date-input">
+                            <span class="dash-date-sep">→</span>
+                            <input type="date" id="dash-date-end" class="dash-date-input">
+                            <button id="btn-dash-filter" class="dash-filter-btn">
+                                <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                    <div id="card-caisse" class="bg-white p-5 rounded-xl shadow-sm border border-gray-200"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Caisse Initiale</div><div id="dash-caisse-initiale" class="text-2xl font-extrabold text-gray-900 dark:text-white">0 CFA</div></div>
-                    <div id="card-sales" class="bg-white p-5 rounded-xl shadow-sm border border-blue-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Total Ventes (Cash)</div><div id="dash-total-sales" class="text-2xl font-extrabold text-blue-600">0 CFA</div></div>
-                    <div id="card-profit" class="bg-white p-5 rounded-xl shadow-sm border border-green-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Solde (Bénéfice)</div><div id="dash-total-profit" class="text-2xl font-extrabold text-green-600">0 CFA</div></div>
-                    <div id="card-credits" class="bg-white p-5 rounded-xl shadow-sm border border-orange-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Crédits Clients</div><div id="dash-total-credits" class="text-2xl font-extrabold text-orange-600">0 CFA</div></div>
-                    <div id="card-expenses" class="bg-white p-5 rounded-xl shadow-sm border border-red-100"><div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Dépenses</div><div id="dash-total-expenses" class="text-2xl font-extrabold text-red-600">0 CFA</div></div>
+                <!-- ═══════════════════════════════════════
+                    BANDEAU ESSAI
+                ═══════════════════════════════════════ -->
+                <div id="dashboard-trial-banner" class="dash-trial hidden">
+                    <div class="dash-trial-icon"><i data-lucide="clock" class="w-5 h-5"></i></div>
+                    <div class="dash-trial-text">
+                        <strong>Période d'essai</strong> — Il vous reste
+                        <span id="trial-days-left" class="dash-trial-badge">90</span> jours
+                    </div>
+                    <button class="dash-trial-close" onclick="document.getElementById('dashboard-trial-banner').classList.add('hidden')">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
                 </div>
 
-                <!-- GRAPHIQUES -->
-                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
-                    <div class="lg:col-span-3 bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                        <h3 class="font-bold mb-4 text-gray-700 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4"></i> Évolution des Ventes (30 jours)</h3>
-                        <div class="h-64 w-full"><canvas id="sales-over-time-chart"></canvas></div>
-                    </div>
-                    <div class="lg:col-span-2 bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                        <h3 class="font-bold mb-4 text-gray-700 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4"></i> Top Produits (Revenu)</h3>
-                        <div class="h-64 w-full"><canvas id="top-products-chart"></canvas></div>
-                    </div>
-                </div>
+                <!-- ═══════════════════════════════════════
+                    KPI CARDS — 2×2 mobile / 5 colonnes desktop
+                ═══════════════════════════════════════ -->
+                <div class="dash-kpi-grid">
 
-                <!-- CARTES CLIQUABLES (DÉTAILS) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div id="dash-low-stock-trigger" class="bg-white rounded-xl p-4 shadow-sm border border-red-100 cursor-pointer hover:bg-red-50 transition group">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="font-bold text-red-700 group-hover:text-red-800">Stock Faible</h3>
-                            <span id="dash-low-stock-badge" class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full hidden">0</span>
+                    <!-- Caisse initiale -->
+                    <div class="kpi-card kpi-slate" id="card-caisse">
+                        <div class="kpi-top">
+                            <div class="kpi-icon-wrap kpi-icon-slate">
+                                <i data-lucide="wallet" class="w-5 h-5"></i>
+                            </div>
+                            <span class="kpi-trend kpi-trend-neutral">
+                                <i data-lucide="minus" class="w-3 h-3"></i>
+                            </span>
                         </div>
-                        <p class="text-xs text-gray-500">Voir les produits à réapprovisionner</p>
+                        <div id="dash-caisse-initiale" class="kpi-value">0 CFA</div>
+                        <div class="kpi-label">Caisse Initiale</div>
+                        <div class="kpi-bar kpi-bar-slate"></div>
                     </div>
-                    <div id="dash-recent-sales-trigger" class="bg-white rounded-xl p-4 shadow-sm border border-blue-100 cursor-pointer hover:bg-blue-50 transition group">
-                        <h3 class="font-bold text-blue-700 mb-2 group-hover:text-blue-800">Dernières Ventes</h3>
-                        <p class="text-xs text-gray-500">Voir l'historique récent</p>
+
+                    <!-- Ventes cash -->
+                    <div class="kpi-card kpi-blue" id="card-sales">
+                        <div class="kpi-top">
+                            <div class="kpi-icon-wrap kpi-icon-blue">
+                                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                            </div>
+                            <span class="kpi-trend kpi-trend-up">
+                                <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+                            </span>
+                        </div>
+                        <div id="dash-total-sales" class="kpi-value">0 CFA</div>
+                        <div class="kpi-label">Ventes Cash</div>
+                        <div class="kpi-bar kpi-bar-blue"></div>
                     </div>
-                    <div id="dash-top-profit-trigger" class="bg-white rounded-xl p-4 shadow-sm border border-green-100 cursor-pointer hover:bg-green-50 transition group">
-                        <h3 class="font-bold text-green-700 mb-2 group-hover:text-green-800">Top Rentabilité</h3>
-                        <p class="text-xs text-gray-500">Produits générant le plus de marge</p>
+
+                    <!-- Bénéfice -->
+                    <div class="kpi-card kpi-green" id="card-profit">
+                        <div class="kpi-top">
+                            <div class="kpi-icon-wrap kpi-icon-green">
+                                <i data-lucide="piggy-bank" class="w-5 h-5"></i>
+                            </div>
+                            <span class="kpi-trend kpi-trend-up">
+                                <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+                            </span>
+                        </div>
+                        <div id="dash-total-profit" class="kpi-value">0 CFA</div>
+                        <div class="kpi-label">Bénéfice Net</div>
+                        <div class="kpi-bar kpi-bar-green"></div>
                     </div>
-                    <div id="dash-top-qty-trigger" class="bg-white rounded-xl p-4 shadow-sm border border-purple-100 cursor-pointer hover:bg-purple-50 transition group">
-                        <h3 class="font-bold text-purple-700 mb-2 group-hover:text-purple-800">Top Quantités</h3>
-                        <p class="text-xs text-gray-500">Produits les plus vendus en volume</p>
+
+                    <!-- Crédits -->
+                    <div class="kpi-card kpi-orange" id="card-credits">
+                        <div class="kpi-top">
+                            <div class="kpi-icon-wrap kpi-icon-orange">
+                                <i data-lucide="users" class="w-5 h-5"></i>
+                            </div>
+                            <span class="kpi-trend kpi-trend-warn">
+                                <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                            </span>
+                        </div>
+                        <div id="dash-total-credits" class="kpi-value">0 CFA</div>
+                        <div class="kpi-label">Crédits Clients</div>
+                        <div class="kpi-bar kpi-bar-orange"></div>
                     </div>
+
+                    <!-- Dépenses -->
+                    <div class="kpi-card kpi-red" id="card-expenses">
+                        <div class="kpi-top">
+                            <div class="kpi-icon-wrap kpi-icon-red">
+                                <i data-lucide="credit-card" class="w-5 h-5"></i>
+                            </div>
+                            <span class="kpi-trend kpi-trend-down">
+                                <i data-lucide="arrow-down-right" class="w-3 h-3"></i>
+                            </span>
+                        </div>
+                        <div id="dash-total-expenses" class="kpi-value">0 CFA</div>
+                        <div class="kpi-label">Dépenses</div>
+                        <div class="kpi-bar kpi-bar-red"></div>
+                    </div>
+
                 </div>
+
+                <!-- ═══════════════════════════════════════
+                    GRAPHIQUES
+                ═══════════════════════════════════════ -->
+                <div class="dash-charts-grid">
+
+                    <div class="dash-chart-card dash-chart-main">
+                        <div class="dash-chart-header">
+                            <div class="dash-chart-title">
+                                <div class="dash-chart-dot dash-dot-blue"></div>
+                                Évolution des Ventes
+                            </div>
+                            <span class="dash-chart-sub">30 derniers jours</span>
+                        </div>
+                        <div class="dash-chart-body">
+                            <canvas id="sales-over-time-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="dash-chart-card dash-chart-side">
+                        <div class="dash-chart-header">
+                            <div class="dash-chart-title">
+                                <div class="dash-chart-dot dash-dot-purple"></div>
+                                Top Produits
+                            </div>
+                            <span class="dash-chart-sub">Par revenu</span>
+                        </div>
+                        <div class="dash-chart-body">
+                            <canvas id="top-products-chart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ═══════════════════════════════════════
+                    RACCOURCIS — Cartes cliquables visuelles
+                ═══════════════════════════════════════ -->
+                <div class="dash-shortcuts-header">
+                    <span class="dash-shortcuts-title">Analyses Rapides</span>
+                </div>
+
+                <div class="dash-shortcuts-grid">
+
+                    <a id="dash-low-stock-trigger" href="#" class="shortcut-card shortcut-red">
+                        <div class="shortcut-icon-wrap">
+                            <i data-lucide="package-x" class="w-6 h-6"></i>
+                        </div>
+                        <div class="shortcut-content">
+                            <div class="shortcut-name">Stock Faible</div>
+                            <div class="shortcut-desc">Produits à réapprovisionner</div>
+                        </div>
+                        <span id="dash-low-stock-badge" class="shortcut-badge shortcut-badge-red hidden">0</span>
+                        <i data-lucide="chevron-right" class="shortcut-arrow w-4 h-4"></i>
+                    </a>
+
+                    <a id="dash-recent-sales-trigger" href="#" class="shortcut-card shortcut-blue">
+                        <div class="shortcut-icon-wrap">
+                            <i data-lucide="history" class="w-6 h-6"></i>
+                        </div>
+                        <div class="shortcut-content">
+                            <div class="shortcut-name">Dernières Ventes</div>
+                            <div class="shortcut-desc">Historique récent</div>
+                        </div>
+                        <i data-lucide="chevron-right" class="shortcut-arrow w-4 h-4"></i>
+                    </a>
+
+                    <a id="dash-top-profit-trigger" href="#" class="shortcut-card shortcut-green">
+                        <div class="shortcut-icon-wrap">
+                            <i data-lucide="trending-up" class="w-6 h-6"></i>
+                        </div>
+                        <div class="shortcut-content">
+                            <div class="shortcut-name">Top Rentabilité</div>
+                            <div class="shortcut-desc">Meilleures marges</div>
+                        </div>
+                        <i data-lucide="chevron-right" class="shortcut-arrow w-4 h-4"></i>
+                    </a>
+
+                    <a id="dash-top-qty-trigger" href="#" class="shortcut-card shortcut-purple">
+                        <div class="shortcut-icon-wrap">
+                            <i data-lucide="bar-chart-4" class="w-6 h-6"></i>
+                        </div>
+                        <div class="shortcut-content">
+                            <div class="shortcut-name">Top Quantités</div>
+                            <div class="shortcut-desc">Plus vendus en volume</div>
+                        </div>
+                        <i data-lucide="chevron-right" class="shortcut-arrow w-4 h-4"></i>
+                    </a>
+
+                </div>
+
             </div>
 
             <div id="page-ventes" class="page-content hidden h-full flex flex-col p-4 md:p-6">
