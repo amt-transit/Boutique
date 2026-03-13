@@ -333,8 +333,8 @@ export async function setupAdminAccessPage() {
                 <td class="p-3">
                     <div class="flex items-center gap-2">
                         <input type="password" value="${u.password || ''}" readonly class="bg-transparent border-none w-24 text-xs font-mono focus:ring-0 text-gray-500" placeholder="Non enregistré">
-                        <button type="button" class="text-gray-400 hover:text-blue-600 js-toggle-table-pass">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        <button type="button" class="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-2 py-1 rounded text-[10px] font-bold transition js-toggle-table-pass">
+                            <i data-lucide="eye" class="w-3 h-3"></i>
                         </button>
                     </div>
                 </td>
@@ -355,7 +355,11 @@ export async function setupAdminAccessPage() {
                 const input = e.currentTarget.previousElementSibling;
                 const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
                 input.setAttribute('type', type);
-                e.currentTarget.innerHTML = type === 'password' ? '<i data-lucide="eye" class="w-4 h-4"></i>' : '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+                if (type === 'password') {
+                    e.currentTarget.innerHTML = '<i data-lucide="eye" class="w-3 h-3"></i>';
+                } else {
+                    e.currentTarget.innerHTML = '<i data-lucide="eye-off" class="w-3 h-3"></i>';
+                }
                 if(window.lucide) window.lucide.createIcons();
             });
         });
