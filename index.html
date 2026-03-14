@@ -193,5 +193,15 @@
         // Initialiser les icônes Lucide
         lucide.createIcons();
     </script>
+
+    <!-- Vérification de l'état de connexion -->
+    <script type="module">
+        import { auth, onAuthStateChanged } from './src/firebase.js';
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.href = 'app.html';
+            }
+        });
+    </script>
 </body>
 </html>
