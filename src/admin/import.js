@@ -75,6 +75,8 @@ async function uploadBatchData(id, n, d) {
             const percent = Math.round((i / totalLines) * 100);
             progressBar.style.width = `${percent}%`;
             progressText.textContent = `${i} / ${totalLines} lignes traitées...`;
+            // Force le navigateur à faire une pause pour dessiner la barre de progression
+            await new Promise(resolve => setTimeout(resolve, 15)); 
         }
 
         if (!r.Nom && !r.Produit && !r.Motif) {
@@ -265,7 +267,19 @@ function showImportPreview(shopId, type, data, fileInput) {
         modal.classList.add('hidden');
         modal.style.display = '';
         const progressContainer = document.getElementById('import-progress-container');
-        if(progressContainer) progressContainer.classList.remove('hidden');
+        
+        if(progressContainer) {
+            progressContainer.classList.remove('hidden');
+            const progressBar = document.getElementById('import-progress-bar');
+            const progressText = document.getElementById('import-progress-text');
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressText) progressText.textContent = 'Préparation...';
+            const titleStatus = document.getElementById('import-status-title');
+            if (titleStatus) titleStatus.innerHTML = '<i data-lucide="loader-2" class="animate-spin text-blue-500 w-5 h-5"></i> Importation en cours...';
+            const reportArea = document.getElementById('import-report-area');
+            if (reportArea) reportArea.classList.add('hidden');
+            if (window.lucide) window.lucide.createIcons();
+        }
         
         await uploadBatchData(shopId, type, data); 
         fileInput.value = ""; 
