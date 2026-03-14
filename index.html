@@ -1,1456 +1,189 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion de Boutique</title>
+    <title>Ma Boutique - Logiciel de gestion de caisse et stock</title>
+    <meta name="description" content="Gérez votre boutique simplement : caisse, stock, crédits clients et statistiques en un seul outil.">
     
-    <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="%232563eb"/><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="17 6 23 6 23 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
-    <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-status-bar-style" content="black-translucent">
-    
+    <!-- Polices -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="print.css" media="print">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
     
+    <!-- Tailwind & Icônes -->
+     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="%232563eb"/><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="17 6 23 6 23 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> 
-    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js" type="text/javascript"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        body { font-family: 'DM Sans', sans-serif; }
+        h1, h2, h3, h4, .font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .bg-hero-pattern {
+            background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.1) 0%, transparent 100%);
+        }
+    </style>
 </head>
+<body class="bg-slate-50 text-slate-800 antialiased">
 
-<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200" style="font-family:'DM Sans',sans-serif;">
-
-    <!-- SPLASH SCREEN (Écran de chargement) -->
-    <div id="splash-screen" class="fixed inset-0 bg-white dark:bg-slate-950 flex flex-col items-center justify-center z-[9999] transition-all duration-700 ease-in-out">
-        
-        <!-- Background Decorations (Blobs) -->
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/10 blur-[100px] animate-pulse"></div>
-            <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-500/10 blur-[100px] animate-pulse" style="animation-delay: 1s;"></div>
-        </div>
-
-        <!-- Content -->
-        <div class="relative z-10 flex flex-col items-center">
-            <div class="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl shadow-2xl shadow-blue-500/30 flex items-center justify-center mb-8 transform transition-transform hover:scale-105 duration-500">
-            <!-- SVG Inline pour affichage immédiat sans attendre Lucide JS -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-            </div>
-            
-            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 mb-3 tracking-tight" style="font-family:'Plus Jakarta Sans',sans-serif;">Ma Boutique</h1>
-            
-            <div class="flex items-center gap-2 mt-4">
-                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: -0.3s"></div>
-                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: -0.15s"></div>
-                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Creation Loader (Engrenages) -->
-    <div id="creation-loader" class="fixed inset-0 bg-white/90 dark:bg-slate-900/90 z-[9999] hidden flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
-        <div class="relative w-24 h-24 mb-6">
-            <!-- Gear 1 -->
-            <i data-lucide="settings" class="absolute top-0 left-0 w-14 h-14 text-blue-600 animate-spin-slow"></i>
-            <!-- Gear 2 -->
-            <i data-lucide="settings" class="absolute bottom-0 right-0 w-14 h-14 text-purple-600 animate-spin-reverse-slow"></i>
-        </div>
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white animate-pulse">Création de votre boutique...</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Configuration de votre espace en cours</p>
-    </div>
-
-    <div id="auth-container" class="fixed inset-0 flex items-center justify-center z-[100] p-4 hidden">
-        <div class="w-full max-w-sm p-8 bg-white rounded-xl shadow-2xl">
-            <!-- Logo & Brand -->
-            <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl shadow-lg mb-4" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
-                    <i data-lucide="trending-up" class="w-7 h-7 text-white"></i>
-                </div>
-                <h1 id="auth-title" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.5rem;letter-spacing:-0.03em;color:#0f172a;margin:0 0 4px;">Ma Boutique</h1>
-                <p id="auth-subtitle" style="font-size:0.875rem;color:#94a3b8;margin:0;">Connectez-vous à votre espace</p>
-            </div>
-            
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-gray-500 block mb-1.5 uppercase tracking-wide">Adresse email</label>
-                    <div class="relative">
-                        <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none"></i>
-                        <input type="email" id="login-email" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition" placeholder="exemple@boutique.com" required style="border-radius:12px;">
-                    </div>
-                </div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-1.5">
-                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Mot de passe</label>
-                        <a href="#" id="forgot-password-link" class="text-xs text-blue-600 hover:text-blue-700 font-semibold">Oublié ?</a>
-                    </div>
-                    <div class="relative">
-                        <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none"></i>
-                        <input type="password" id="login-password" class="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition" placeholder="••••••••" required style="border-radius:12px;">
-                        <button type="button" id="toggle-password-visibility" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none p-0.5">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div id="login-error-msg" class="hidden bg-red-50 border border-red-100 text-red-700 p-3 rounded-xl text-sm flex items-center gap-2">
-                    <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
-                    <span id="login-error-text">Erreur.</span>
-                </div>
-
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3.5 px-5 rounded-xl shadow-lg transition mt-2" style="border-radius:12px;letter-spacing:-0.01em;font-family:'Plus Jakarta Sans',sans-serif;">
-                    Se connecter
-                </button>
-                <div class="text-center mt-4">
-                    <a href="#" id="show-register-link" class="text-sm text-blue-600 hover:text-blue-800 font-bold">Pas encore de compte ? Créer un compte</a>
-                </div>
-            </form>
-
-            <form id="register-form" class="space-y-4 hidden">
-                <div>
-                    <label class="text-xs font-bold text-gray-500 block mb-1.5 uppercase tracking-wide">Nom de la Boutique</label>
-                    <input type="text" id="reg-shop-name" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition" placeholder="Ma Super Boutique" required style="border-radius:12px;">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-gray-500 block mb-1.5 uppercase tracking-wide">Adresse email</label>
-                    <input type="email" id="reg-email" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition" placeholder="votre@email.com" required style="border-radius:12px;">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-gray-500 block mb-1.5 uppercase tracking-wide">Mot de passe</label>
-                    <div class="relative">
-                        <input type="password" id="reg-password" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition pr-12" placeholder="••••••••" required style="border-radius:12px;">
-                        <button type="button" id="toggle-reg-pass" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none p-0.5">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-1">6 caractères minimum</p>
-                </div>
-                
-                <div>
-                    <label class="text-xs font-bold text-gray-500 block mb-1.5 uppercase tracking-wide">Confirmer le mot de passe</label>
-                    <div class="relative">
-                        <input type="password" id="reg-confirm-password" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-0 outline-none transition pr-12" placeholder="••••••••" required style="border-radius:12px;">
-                        <button type="button" id="toggle-reg-confirm-pass" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none p-0.5">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-5 rounded-xl shadow-lg transition mt-2" style="border-radius:12px;">
-                    Commencer l'essai gratuit
-                </button>
-                
-                <div class="text-center mt-4">
-                    <a href="#" id="show-login-link" class="text-sm text-gray-500 hover:text-gray-800 font-bold">Retour à la connexion</a>
-                </div>
-            </form>
-            
-            <p class="text-center text-xs text-gray-400 mt-6">Gestion de boutique · Version 2.0</p>
-        </div>
-    </div>
-
-    <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[110]">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 class="text-xl font-bold text-gray-800">Créer une Boutique</h2>
-                <button id="admin-modal-close-btn" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
-            </div>
-            <form id="create-boutique-form" class="space-y-4">
-                <input type="text" id="new-boutique-name" class="w-full p-3 border-2 border-gray-300 rounded-lg" placeholder="Nom de la boutique" required>
-                
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Logo (Petit fichier &lt; 100ko)</label>
-                    <input type="file" id="new-boutique-logo" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                        <h4 class="text-sm font-bold text-blue-800 mb-2">Propriétaire</h4>
-                        <input type="email" id="admin-email" class="w-full p-2 border border-gray-300 rounded mb-2" placeholder="Email" required>
-                        <div class="relative">
-                            <input type="password" id="admin-password" class="w-full p-2 border border-gray-300 rounded pr-10" placeholder="Pass (6 min)" required>
-                            <button type="button" id="toggle-create-admin-pass" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                    <div class="p-4 bg-green-50 rounded-lg border border-green-100">
-                        <h4 class="text-sm font-bold text-green-800 mb-2">Vendeur</h4>
-                        <input type="email" id="seller-email" class="w-full p-2 border border-gray-300 rounded mb-2" placeholder="Email" required>
-                        <div class="relative">
-                            <input type="password" id="seller-password" class="w-full p-2 border border-gray-300 rounded pr-10" placeholder="Pass (6 min)" required>
-                            <button type="button" id="toggle-create-seller-pass" class="absolute right-2 top-2 text-gray-400 hover:text-green-600"><i data-lucide="eye" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Créer</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="app-container" class="flex h-screen bg-gray-50 hidden flex-col md:flex-row overflow-hidden">
-        
-        <div id="top-nav-bar" class="top-tabs hidden">
-            <!-- Brand logo for desktop sidebar -->
-            <div class="hidden md:flex items-center gap-2.5 px-3 py-3 mb-3 border-b border-gray-100 dark:border-slate-800">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);">
-                    <i data-lucide="trending-up" class="w-4 h-4 text-white"></i>
-                </div>
-                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:-0.02em;color:#0f172a;" class="dark:text-white">Ma Boutique</span>
-            </div>
-            <button class="tab active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i><div>Dashboard</div></button>
-            <button class="tab" onclick="switchTab('ventes')"><i data-lucide="shopping-cart"></i><div>Vente</div></button>
-            <button class="tab secondary-tab" onclick="switchTab('commandes')"><i data-lucide="clipboard-list"></i><div>Commandes</div></button>
-            <button class="tab" onclick="switchTab('stock')"><i data-lucide="package"></i><div>Stock</div></button>
-            <button class="tab secondary-tab" onclick="switchTab('fournisseurs')"><i data-lucide="truck"></i><div>Fournisseurs</div></button>
-            <button class="tab" onclick="switchTab('credits')"><i data-lucide="users"></i><div>Crédits</div></button>
-            <button class="tab" onclick="switchTab('charges')"><i data-lucide="credit-card"></i><div>Charges</div></button>
-            <button class="tab secondary-tab" onclick="switchTab('rapports')"><i data-lucide="bar-chart-3"></i><div>Rapports</div></button>
-            <button class="tab secondary-tab" onclick="switchTab('audit')"><i data-lucide="activity"></i><div>Audit</div></button>
-            
-            <!-- Wrapper pour cacher le bouton Bureau sur mobile (évite le doublon dans la barre du bas) -->
-            <div class="hidden md:block w-full">
-                <button class="tab hidden" id="desktop-team-btn">
-                    <i data-lucide="users" class="text-blue-600"></i><div class="text-blue-600">Équipe</div>
-                </button>
-            </div>
-            
-            <button class="tab hidden" id="admin-tab-btn" onclick="switchTab('admin')">
-                <i data-lucide="settings" class="text-red-500"></i><div class="text-red-500">Admin</div>
-            </button>
-            <button class="tab hidden" id="admin-access-tab-btn" onclick="switchTab('admin-access')">
-                <i data-lucide="users-2" class="text-purple-600"></i><div class="text-purple-600">Utilisateurs</div>
-            </button>
-            
-            <div class="flex-1"></div>
-            
-            <div class="hidden md:block w-full px-2 mb-2">
-                <button id="theme-toggle" class="w-full flex items-center justify-center gap-2 bg-gray-50 dark:bg-slate-800 p-2 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition focus:outline-none">
-                    <i data-lucide="moon" class="w-4 h-4"></i>
-                    <span class="text-[10px] font-bold uppercase tracking-wider" id="desktop-theme-label">Sombre</span>
-                </button>
-            </div>
-            
-            <div class="hidden md:block w-full px-2 mb-2">
-                <div class="bg-gray-50 dark:bg-slate-800 p-2 rounded-lg border border-gray-200 dark:border-slate-700">
-                    <div class="text-[10px] text-gray-400 font-bold uppercase">Compte</div>
-                    <div id="desktop-user-email" class="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">...</div>
-                </div>
-            </div>
-            
-            <button class="tab" id="bottom-logout-btn"><i data-lucide="log-out" class="text-red-400"></i><div class="text-red-400">Sortir</div></button>
-        </div>
-
-        <main class="flex-1 w-full bg-gray-50 h-auto md:h-full md:flex md:flex-col relative overflow-y-auto">
-            <div id="global-shop-header" class="bg-white border-b border-gray-200 px-4 py-3 hidden flex justify-between items-center shadow-sm z-40 relative">
+    <!-- HEADER / NAVIGATION -->
+    <header class="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
                 <div class="flex items-center gap-3">
-                    
-                    <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-                        <i data-lucide="store" class="w-4 h-4"></i>
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-500/30">
+                        <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
                     </div>
-                    <div>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Boutique Active</p>
-                        <select id="global-shop-select" class="font-bold text-gray-800 bg-transparent outline-none cursor-pointer hover:text-blue-600 transition appearance-none text-sm pr-4">
-                            </select>
-                    </div>
+                    <span class="font-heading font-extrabold text-xl text-slate-900 tracking-tight">Ma Boutique</span>
                 </div>
+                
+                <!-- Liens Desktop -->
+                <nav class="hidden md:flex gap-8">
+                    <a href="#accueil" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Accueil</a>
+                    <a href="#services" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Nos Services</a>
+                    <a href="#apropos" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">À Propos</a>
+                    <a href="#" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Documentation</a>
+                </nav>
+
+                <!-- Boutons d'action -->
                 <div class="flex items-center gap-4">
-                    <span id="global-user-role" class="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-bold border border-blue-100"></span>
-                </div>
-            </div>
-            <div id="global-search-container" class="sticky top-0 bg-gray-100/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 z-30 border-b border-gray-200 dark:border-slate-800 flex items-center gap-2">
-                <button id="hamburger-btn" class="text-gray-500 hover:text-blue-600 md:hidden">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
-                </button>
-                <div class="relative flex-1">
-                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6"></i>
-                    <input type="text" id="global-search-input" placeholder="Rechercher un produit, un client..." class="w-full pl-14 pr-4 py-3 bg-white/70 dark:bg-slate-800/70 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-lg outline-none transition duration-300">
-                    <div id="global-search-results" class="hidden absolute w-full mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-96 overflow-y-auto">
-                        <!-- Search results will be injected here -->
-                    </div>
-                </div>
-            </div>
-
-            <div id="hamburger-overlay" class="hamburger-overlay"></div>
-            <div id="hamburger-drawer" class="hamburger-drawer">
-                <div class="hamburger-drawer-header">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);">
-                            <i data-lucide="trending-up" class="w-4 h-4 text-white"></i>
-                        </div>
-                        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:-0.02em;color:#0f172a;" class="dark:text-white">Ma Boutique</span>
-                    </div>
-                    <button onclick="closeHamburgerMenu()" class="hamburger-close-btn">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <div class="hamburger-drawer-body">
-                    <p class="hamburger-section-label md:hidden">Navigation</p>
-                    <button class="drawer-tab md:hidden" onclick="switchTab('commandes'); closeHamburgerMenu();"><i data-lucide="clipboard-list"></i><span>Commandes</span></button>
-                    <button class="drawer-tab md:hidden" onclick="switchTab('fournisseurs'); closeHamburgerMenu();"><i data-lucide="truck"></i><span>Fournisseurs</span></button>
-                    <button class="drawer-tab md:hidden" onclick="switchTab('audit'); closeHamburgerMenu();"><i data-lucide="activity"></i><span>Audit</span></button>
-                    <button class="drawer-tab md:hidden" onclick="switchTab('rapports'); closeHamburgerMenu();"><i data-lucide="bar-chart-3"></i><span>Rapports</span></button>
-                    
-                    <!-- Bouton Équipe Mobile (Préservé) -->
-                    <button id="drawer-team-btn" class="drawer-tab hidden">
-                        <i data-lucide="users"></i><span>Gestion Équipe</span>
-                    </button>
-
-                    <p class="hamburger-section-label mt-4">Préférences</p>
-                    <button id="drawer-theme-toggle" class="drawer-tab">
-                        <i id="drawer-theme-icon" data-lucide="moon"></i>
-                        <span id="drawer-theme-label">Mode sombre</span>
-                    </button>
-
-                    <p class="hamburger-section-label mt-4 text-red-400">Compte</p>
-                    
-                    <div class="px-3 py-2 bg-gray-50 dark:bg-slate-800 rounded-lg mb-2 border border-gray-100 dark:border-slate-700">
-                        <p class="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Connecté en tant que</p>
-                        <p class="text-xs font-bold text-gray-800 dark:text-gray-300 truncate" id="drawer-user-email">...</p>
-                    </div>
-
-                    <button id="drawer-logout-btn" class="drawer-tab text-red-500 hover:text-red-600 hover:bg-red-50">
-                        <i data-lucide="log-out"></i>
-                        <span>Sortir</span>
-                    </button>
-                </div>
-            </div>
-
-            <div id="immersion-banner" class="bg-purple-600 text-white p-2 text-center text-xs font-bold hidden flex justify-between items-center px-4 z-[60] sticky top-0">
-                <span>🕵️ MODE IMMERSION : <span id="immersion-shop-name"></span></span>
-                <button onclick="exitImmersionMode()" class="bg-white text-purple-600 px-3 py-1 rounded shadow-lg">Quitter l'immersion</button>
-            </div>
-
-            <div id="page-dashboard" class="page-content dash-root">
-
-                <!-- ═══════════════════════════════════════
-                    HEADER HERO — Dégradé coloré + salutation
-                ═══════════════════════════════════════ -->
-                <div class="dash-hero">
-                    <div class="dash-hero-left">
-                        <div class="dash-hero-brand">
-                            <img id="dash-shop-logo" src="" alt="Logo" class="dash-logo hidden">
-                            <div class="dash-hero-titles">
-                                <p class="dash-greeting">Bonjour 👋</p>
-                                <h1 id="dashboard-user-name" class="dash-shopname">Ma Boutique</h1>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="dash-hero-right">
-                        <div class="dash-date-filter">
-                            <input type="date" id="dash-date-start" class="dash-date-input">
-                            <span class="dash-date-sep">→</span>
-                            <input type="date" id="dash-date-end" class="dash-date-input">
-                            <button id="btn-dash-filter" class="dash-filter-btn">
-                                <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════════════════════════
-                    BANDEAU ESSAI
-                ═══════════════════════════════════════ -->
-                <div id="dashboard-trial-banner" class="dash-trial hidden">
-                    <div class="dash-trial-icon"><i data-lucide="clock" class="w-5 h-5"></i></div>
-                    <div class="dash-trial-text">
-                        <strong>Période d'essai</strong> — Il vous reste
-                        <span id="trial-days-left" class="dash-trial-badge">90</span> jours
-                    </div>
-                    <button class="dash-trial-close" onclick="document.getElementById('dashboard-trial-banner').classList.add('hidden')">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
-
-                <!-- ═══════════════════════════════════════
-                    KPI CARDS — 2×2 mobile / 5 colonnes desktop
-                ═══════════════════════════════════════ -->
-                <div class="dash-kpi-grid">
-
-                    <!-- Caisse initiale -->
-                    <div class="kpi-card kpi-slate" id="card-caisse">
-                        <div class="kpi-top">
-                            <div class="kpi-icon-wrap kpi-icon-slate">
-                                <i data-lucide="wallet" class="w-5 h-5"></i>
-                            </div>
-                            <span class="kpi-trend kpi-trend-neutral">
-                                <i data-lucide="minus" class="w-3 h-3"></i>
-                            </span>
-                        </div>
-                        <div id="dash-caisse-initiale" class="kpi-value">0 CFA</div>
-                        <div class="kpi-label">Caisse Initiale</div>
-                        <div class="kpi-bar kpi-bar-slate"></div>
-                    </div>
-
-                    <!-- Ventes cash -->
-                    <div class="kpi-card kpi-blue" id="card-sales">
-                        <div class="kpi-top">
-                            <div class="kpi-icon-wrap kpi-icon-blue">
-                                <i data-lucide="trending-up" class="w-5 h-5"></i>
-                            </div>
-                            <span class="kpi-trend kpi-trend-up">
-                                <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
-                            </span>
-                        </div>
-                        <div id="dash-total-sales" class="kpi-value">0 CFA</div>
-                        <div class="kpi-label">Ventes Cash</div>
-                        <div class="kpi-bar kpi-bar-blue"></div>
-                    </div>
-
-                    <!-- Bénéfice -->
-                    <div class="kpi-card kpi-green" id="card-profit">
-                        <div class="kpi-top">
-                            <div class="kpi-icon-wrap kpi-icon-green">
-                                <i data-lucide="piggy-bank" class="w-5 h-5"></i>
-                            </div>
-                            <span class="kpi-trend kpi-trend-up">
-                                <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
-                            </span>
-                        </div>
-                        <div id="dash-total-profit" class="kpi-value">0 CFA</div>
-                        <div class="kpi-label">Bénéfice Net</div>
-                        <div class="kpi-bar kpi-bar-green"></div>
-                    </div>
-
-                    <!-- Crédits -->
-                    <div class="kpi-card kpi-orange" id="card-credits">
-                        <div class="kpi-top">
-                            <div class="kpi-icon-wrap kpi-icon-orange">
-                                <i data-lucide="users" class="w-5 h-5"></i>
-                            </div>
-                            <span class="kpi-trend kpi-trend-warn">
-                                <i data-lucide="alert-circle" class="w-3 h-3"></i>
-                            </span>
-                        </div>
-                        <div id="dash-total-credits" class="kpi-value">0 CFA</div>
-                        <div class="kpi-label">Crédits Clients</div>
-                        <div class="kpi-bar kpi-bar-orange"></div>
-                    </div>
-
-                    <!-- Dépenses -->
-                    <div class="kpi-card kpi-red" id="card-expenses">
-                        <div class="kpi-top">
-                            <div class="kpi-icon-wrap kpi-icon-red">
-                                <i data-lucide="credit-card" class="w-5 h-5"></i>
-                            </div>
-                            <span class="kpi-trend kpi-trend-down">
-                                <i data-lucide="arrow-down-right" class="w-3 h-3"></i>
-                            </span>
-                        </div>
-                        <div id="dash-total-expenses" class="kpi-value">0 CFA</div>
-                        <div class="kpi-label">Dépenses</div>
-                        <div class="kpi-bar kpi-bar-red"></div>
-                    </div>
-
-                </div>
-
-                <!-- ═══════════════════════════════════════
-                    GRAPHIQUES
-                ═══════════════════════════════════════ -->
-                <div class="dash-charts-grid">
-
-                    <div class="dash-chart-card dash-chart-main">
-                        <div class="dash-chart-header">
-                            <div class="dash-chart-title">
-                                <div class="dash-chart-dot dash-dot-blue"></div>
-                                Évolution des Ventes
-                            </div>
-                            <span class="dash-chart-sub">30 derniers jours</span>
-                        </div>
-                        <div class="dash-chart-body">
-                            <canvas id="sales-over-time-chart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="dash-chart-card dash-chart-side">
-                        <div class="dash-chart-header">
-                            <div class="dash-chart-title">
-                                <div class="dash-chart-dot dash-dot-purple"></div>
-                                Top Produits
-                            </div>
-                            <span class="dash-chart-sub">Par revenu</span>
-                        </div>
-                        <div class="dash-chart-body">
-                            <canvas id="top-products-chart"></canvas>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- ═══════════════════════════════════════
-                    RACCOURCIS — Cartes cliquables visuelles
-                ═══════════════════════════════════════ -->
-                <div class="dash-shortcuts-header">
-                    <span class="dash-shortcuts-title">Analyses Rapides</span>
-                </div>
-
-                <div class="dash-shortcuts-grid">
-
-                    <a id="dash-low-stock-trigger" href="#" class="shortcut-card shortcut-red">
-                        <div class="shortcut-icon-wrap">
-                            <i data-lucide="package-x" class="w-6 h-6"></i>
-                        </div>
-                        <div class="shortcut-content">
-                            <div class="shortcut-name">Stock Faible</div>
-                            <div class="shortcut-desc">Produits à réapprovisionner</div>
-                        </div>
-                        <span id="dash-low-stock-badge" class="shortcut-badge shortcut-badge-red hidden">0</span>
-                        <i data-lucide="chevron-right" class="shortcut-arrow w-4 h-4"></i>
+                    <a href="app.html" class="hidden sm:block text-sm font-bold text-slate-600 hover:text-blue-600 transition">Connexion</a>
+                    <a href="app.html" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 px-5 rounded-lg shadow-md transition transform hover:-translate-y-0.5">
+                        Essai Gratuit
                     </a>
-
-                    <a id="dash-recent-sales-trigger" href="#" class="shortcut-card shortcut-blue">
-                        <div class="shortcut-icon-wrap">
-                            <i data-lucide="history" class="w-6 h-6"></i>
-                        </div>
-                        <div class="shortcut-content">
-                            <div class="shortcut-name">Dernières Ventes</div>
-                            <div class="shortcut-desc">Historique récent</div>
-                        </div>
-                        <i data-lucide="chevron-right" class="shortcut-arrow w-4 h-4"></i>
-                    </a>
-
-                    <a id="dash-top-profit-trigger" href="#" class="shortcut-card shortcut-green">
-                        <div class="shortcut-icon-wrap">
-                            <i data-lucide="trending-up" class="w-6 h-6"></i>
-                        </div>
-                        <div class="shortcut-content">
-                            <div class="shortcut-name">Top Rentabilité</div>
-                            <div class="shortcut-desc">Meilleures marges</div>
-                        </div>
-                        <i data-lucide="chevron-right" class="shortcut-arrow w-4 h-4"></i>
-                    </a>
-
-                    <a id="dash-top-qty-trigger" href="#" class="shortcut-card shortcut-purple">
-                        <div class="shortcut-icon-wrap">
-                            <i data-lucide="bar-chart-4" class="w-6 h-6"></i>
-                        </div>
-                        <div class="shortcut-content">
-                            <div class="shortcut-name">Top Quantités</div>
-                            <div class="shortcut-desc">Plus vendus en volume</div>
-                        </div>
-                        <i data-lucide="chevron-right" class="shortcut-arrow w-4 h-4"></i>
-                    </a>
-
-                </div>
-
-            </div>
-
-            <div id="page-ventes" class="page-content hidden h-full flex flex-col p-4 md:p-6">
-    
-                <div class="flex-none flex justify-between items-center mb-4">
-                    <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Caisse</h1>
-                    <div class="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm">
-                        <i data-lucide="calendar" class="w-4 h-4"></i> <span id="current-date-display"></span>
-                    </div>
-                </div>
-
-                <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0 overflow-hidden">
-                    
-                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm flex flex-col overflow-hidden h-full border border-gray-200">
-                        
-                        <div class="p-4 border-b z-20 bg-white flex-none">
-                            <div class="flex gap-2"> <div class="relative flex-1">
-                                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                                    <input type="text" id="sale-search" placeholder="Nom du produit..." class="w-full pl-10 p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" autocomplete="off">
-                                    <div id="sale-search-results" class="hidden absolute w-full bg-white border border-gray-300 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto z-50"></div>
-                                </div>
-                                <button id="btn-scan-product" type="button" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg shadow-sm transition">
-                                    <i data-lucide="scan-barcode" class="w-6 h-6"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="flex-1 overflow-auto bg-white relative">
-                            <table class="w-full text-sm">
-                                <thead class="bg-gray-50 text-gray-600 text-xs uppercase sticky top-0 z-10 shadow-sm">
-                                    <tr>
-                                        <th class="p-3 text-left">Produit</th>
-                                        <th class="p-3 text-center">Prix U.</th>
-                                        <th class="p-3 text-center">Qté</th>
-                                        <th class="p-3 text-right">Total</th>
-                                        <th class="p-3 w-10"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="cart-table-body" class="divide-y divide-gray-100">
-                                    <tr><td colspan="5" class="p-10 text-center text-gray-400 italic">Le panier est vide.<br>Scannez ou recherchez un produit.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col h-full overflow-y-auto lg:overflow-hidden"> 
-                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 flex flex-col gap-4 h-full">
-                            
-                            <div class="text-center pb-6 border-b border-gray-100 flex-none">
-                                <p class="text-gray-400 font-bold mb-1 text-[10px] uppercase tracking-wider">Net à Payer</p>
-                                <h2 id="cart-total-display" class="text-4xl font-extrabold text-blue-600 dark:text-blue-400">0 CFA</h2>
-                            </div>
-
-                            <div class="flex-1 flex flex-col justify-center gap-3">
-                                <button id="btn-validate-cash" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-md flex justify-center items-center gap-2 transition transform active:scale-95">
-                                    <i data-lucide="banknote"></i> Espèces
-                                </button>
-                                
-                                <button id="btn-open-momo-modal" class="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-xl font-bold border border-teal-600 flex justify-center items-center gap-2 transition mt-1">
-                                    <i data-lucide="smartphone"></i> Mobile Money
-                                </button>
-                                
-                                <button id="btn-open-credit-modal" class="w-full bg-orange-50 hover:bg-orange-100 text-orange-700 py-3 rounded-xl font-bold border border-orange-200 flex justify-center items-center gap-2 transition">
-                                    <i data-lucide="user-plus"></i> Crédit Client
-                                </button>
-                                
-                                <button onclick="saveCartAsOrder()" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-3 rounded-xl font-bold border border-indigo-200 flex justify-center items-center gap-2 transition">
-                                    <i data-lucide="clipboard-list"></i> Mettre en Commande
-                                </button>
-                            </div>
-
-                            <div class="flex-none pt-4 border-t border-gray-100">
-                                <button onclick="clearCart()" class="w-full text-gray-400 hover:text-red-500 py-2 text-xs font-medium flex justify-center items-center gap-1 transition">
-                                    <i data-lucide="trash-2" class="w-3 h-3"></i> Vider le panier
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id="page-commandes" class="page-content hidden h-full flex flex-col p-4 md:p-6">
-    
-                <div class="flex-none mb-6">
-                    <h1 class="text-2xl font-extrabold mb-4 text-gray-900 dark:text-white">Commandes en cours</h1>
-                    
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-indigo-500 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div>
-                            <h3 class="font-bold text-gray-700 text-sm">Nouvelle Réservation</h3>
-                            <p class="text-xs text-gray-500">Remplissez le panier dans l'onglet "Vente" puis cliquez ici.</p>
-                        </div>
-                        <button onclick="saveCartAsOrder()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow transition text-sm">
-                            <i data-lucide="save" class="w-4 h-4"></i> Enregistrer le Panier comme Commande
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex-1 overflow-y-auto min-h-0 pr-2"> <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="orders-list-container">
-                        <p class="text-gray-400 italic col-span-full text-center mt-10">Chargement des commandes...</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-stock" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
-    
-                <div class="flex-none mb-4">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-                        <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Gestion du Stock</h1>
-                        <div class="flex items-center gap-2">
-                            <button id="open-print-labels-modal"
-                                    class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
-                                <i data-lucide="printer" class="w-5 h-5"></i> Imprimer Étiquettes
-                            </button>
-                            <button onclick="document.getElementById('add-product-form').classList.toggle('hidden')" 
-                                    class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
-                                <i data-lucide="plus-circle" class="w-5 h-5"></i> Nouveau Produit
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="add-product-form" class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-4 hidden">
-                        <h3 class="font-bold text-lg mb-4 text-gray-700">Ajouter / Modifier</h3>
-                        <form id="form-stock" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                            <div class="lg:col-span-4 relative">
-                                <label class="text-xs font-bold text-gray-500 uppercase">Nom du Produit (Modèle de base)</label>
-                                <input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded outline-none" placeholder="Ex: Basket Air Force 1" required autocomplete="off">
-                                <div id="prod-nom-suggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg max-h-48 overflow-y-auto top-full left-0"></div>
-                            </div>
-                            <div class="lg:col-span-1">
-                                <label class="text-xs font-bold text-gray-500 uppercase">Prix Achat</label>
-                                <input type="number" id="prod-achat" class="w-full mt-1 border p-2 rounded">
-                            </div>
-                            <div class="lg:col-span-1">
-                                <label class="text-xs font-bold text-gray-500 uppercase">Prix Vente</label>
-                                <input type="number" id="prod-prix" class="w-full mt-1 border p-2 rounded">
-                            </div>
-
-                            <div class="lg:col-span-6 bg-blue-50 border border-blue-100 p-2 rounded-lg mt-1">
-                                <label class="flex items-center gap-2 cursor-pointer text-sm font-bold text-blue-800">
-                                    <input type="checkbox" id="has-variants-checkbox" class="w-5 h-5 text-blue-600 rounded">
-                                    Ce produit possède des variantes (Tailles, Couleurs...)
-                                </label>
-                            </div>
-
-                            <div id="standard-inputs-zone" class="lg:col-span-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 w-full">
-                                <div class="lg:col-span-2">
-                                    <label class="text-xs font-bold text-gray-500 uppercase">Code Barre</label>
-                                    <div class="flex gap-1 mt-1">
-                                        <input type="text" id="prod-code" class="w-full border p-2 rounded outline-none bg-gray-50" placeholder="Scanner..." autocomplete="off">
-                                        <button type="button" id="btn-scan-new-prod" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">
-                                            <i data-lucide="scan-barcode" class="w-5 h-5"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="lg:col-span-2 bg-green-50 p-2 rounded border border-green-200">
-                                    <label class="text-xs font-bold text-green-800 uppercase">Stock à Ajouter</label>
-                                    <input type="number" id="prod-qte" class="w-full mt-1 border-2 border-green-500 p-2 rounded font-bold text-lg text-center text-green-700" placeholder="0">
-                                </div>
-                            </div>
-
-                            <div id="variants-inputs-zone" class="lg:col-span-6 hidden bg-white border border-gray-200 p-4 rounded-lg shadow-inner">
-                                <div class="flex justify-between items-center mb-3 border-b pb-2">
-                                    <h4 class="text-sm font-bold text-gray-700">Détails des variantes</h4>
-                                    <button type="button" id="btn-add-variant" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold hover:bg-blue-200 transition shadow-sm">+ Ajouter Ligne</button>
-                                </div>
-                                <div id="variants-list" class="space-y-2">
-                                    <div class="flex gap-2 items-center variant-row">
-                                        <input type="text" placeholder="Ex: 42 Rouge" class="var-nom p-2 border rounded flex-1 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-blue-300" required>
-                                        <input type="text" placeholder="Code barre (opt.)" class="var-code p-2 border rounded w-1/3 text-sm bg-gray-50 outline-none">
-                                        <input type="number" placeholder="Qté" class="var-qte p-2 border rounded w-20 text-sm font-bold text-center border-green-300 outline-none" required min="0">
-                                        <button type="button" class="text-gray-400 hover:text-red-500 p-1" onclick="if(document.querySelectorAll('.variant-row').length>1) this.parentElement.remove()"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="lg:col-span-6 flex justify-end gap-3 mt-2 pt-3 border-t">
-                                <button type="button" onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-bold shadow-lg">Enregistrer</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div class="bg-white p-3 rounded-xl shadow-sm border border-blue-100">
-                            <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Valeur Achat</div>
-                            <div id="stock-total-value" class="text-lg font-extrabold text-blue-600">0 CFA</div>
-                        </div>
-                        <div class="bg-white p-3 rounded-xl shadow-sm border border-green-100">
-                            <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Valeur Vente</div>
-                            <div id="stock-potential-value" class="text-lg font-extrabold text-green-600">0 CFA</div>
-                        </div>
-                        <div class="bg-white p-3 rounded-xl shadow-sm border border-purple-100">
-                            <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Volume</div>
-                            <div id="stock-total-count" class="text-lg font-extrabold text-purple-600">0</div>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="relative flex-1">
-                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                            <input type="text" id="stock-search-input" placeholder="Rechercher..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg">
-                        </div>
-                        <div class="w-full md:w-64">
-                            <select id="stock-sort-select" class="w-full p-2.5 border border-gray-300 rounded-lg">
-                                <option value="name_asc">Nom (A-Z)</option>
-                                <option value="stock_asc">Stock Faible ⚠️</option>
-                                <option value="stock_desc">Stock Élevé</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1"> <table class="w-full text-left border-collapse relative">
-                            <thead class="bg-gray-100 border-b border-gray-200 sticky top-0 z-10 shadow-sm"> <tr>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Date</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Produit</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Achat</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Vente</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm text-center">Total</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm text-center">Vendu</th>
-                                    <th class="p-4 font-semibold text-blue-600 text-sm text-center">Reste</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stock-table-body" class="divide-y divide-gray-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-fournisseurs" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
-                <div class="flex-none mb-4">
-                    <div class="flex justify-between items-center">
-                        <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Fournisseurs</h1>
-                        <button id="add-supplier-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
-                            <i data-lucide="plus-circle" class="w-5 h-5"></i> Nouveau Fournisseur
-                        </button>
-                    </div>
-                </div>
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-gray-100 text-gray-600">
-                                <tr>
-                                    <th class="p-4 font-semibold">Nom</th>
-                                    <th class="p-4 font-semibold">Contact</th>
-                                    <th class="p-4 font-semibold">Email</th>
-                                    <th class="p-4 font-semibold">Téléphone</th>
-                                    <th class="p-4 font-semibold text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="suppliers-table-body" class="divide-y divide-gray-100">
-                                <!-- Supplier list will be injected here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-credits" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
-    
-                <div class="flex-none space-y-4 mb-4">
-                    <div class="flex justify-between items-center">
-                        <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Gestion des Crédits</h1>
-                        <button onclick="document.getElementById('add-client-modal').classList.remove('hidden')" 
-                                class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center shadow-sm font-medium transition">
-                            <i data-lucide="user-plus" class="w-5 h-5"></i> Nouveau Client
-                        </button>
-                    </div>
-                    
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="relative flex-1">
-                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                            <input type="text" id="credits-search" placeholder="Chercher un client..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-200">
-                        </div>
-                        <div class="w-full md:w-64">
-                            <select id="credits-sort" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none">
-                                <option value="name_asc">Nom (A-Z)</option>
-                                <option value="dette_desc">Dette (Haute)</option>
-                                <option value="dette_asc">Dette (Basse)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1">
-                        <table class="w-full text-left text-sm border-collapse relative">
-                            <thead class="bg-orange-50 text-orange-900 border-b border-orange-100 sticky top-0 z-10 shadow-sm">
-                                <tr>
-                                    <th class="p-4 font-semibold">Client</th>
-                                    <th class="p-4 font-semibold">Téléphone</th>
-                                    <th class="p-4 font-semibold">Dette Actuelle</th>
-                                    <th class="p-4 font-semibold text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="credits-table-body" class="divide-y divide-gray-100">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-charges" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
-    
-                <div class="flex-none space-y-4 mb-4">
-                    <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Charges & Dépenses</h1>
-
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-red-100 flex flex-col lg:flex-row gap-4 lg:items-center">
-                        
-                        <form id="form-expense" class="flex-1 flex flex-col sm:flex-row gap-3">
-                            <div class="hidden xl:flex items-center gap-2 text-sm font-bold text-gray-700 whitespace-nowrap mr-2">
-                                <i data-lucide="plus-circle" class="text-red-500 w-4 h-4"></i> Nouvelle Dépense
-                            </div>
-                            <input type="text" id="exp-motif" placeholder="Motif (Ex: Facture CIE)" class="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 outline-none" required autocomplete="off">
-                            <input type="number" id="exp-montant" placeholder="Montant" class="w-full sm:w-40 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 outline-none" required>
-                            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-sm transition">
-                                Ajouter
-                            </button>
-                        </form>
-
-                        <div class="hidden lg:block w-px h-10 bg-gray-100"></div>
-
-                        <div class="flex gap-3 w-full lg:w-auto">
-                            <div class="relative flex-1 lg:w-64">
-                                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                                    <input type="text" id="expenses-search" placeholder="Rechercher une dépense..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-200 outline-none">
-                                </div>
-                            <select id="expenses-sort" class="p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none">
-                                    <option value="date_desc">Date (Récent)</option>
-                                    <option value="date_asc">Date (Ancien)</option>
-                                    <option value="amount_desc">Montant (Élevé)</option>
-                                </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1"> <table class="w-full text-left text-sm relative border-collapse">
-                            <thead class="bg-red-50 text-red-900 border-b border-red-100 sticky top-0 z-10 shadow-sm">
-                                <tr>
-                                    <th class="p-4 font-semibold whitespace-nowrap">Date</th>
-                                    <th class="p-4 font-semibold">Motif</th>
-                                    <th class="p-4 font-semibold text-right">Montant</th>
-                                    <th class="p-4 font-semibold text-right w-20"></th> </tr>
-                            </thead>
-                            <tbody id="expenses-table-body" class="divide-y divide-gray-100">
-                                <tr><td colspan="4" class="p-6 text-center text-gray-400">Chargement...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-rapports" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
-    
-                <div class="flex-none space-y-4 mb-4">
-                    
-                    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                        <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Historique</h1>
-                        <div class="flex gap-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
-                            <input type="date" id="report-date-start" class="border-none bg-gray-50 rounded px-2 text-sm outline-none">
-                            <span class="text-gray-400 self-center">à</span>
-                            <input type="date" id="report-date-end" class="border-none bg-gray-50 rounded px-2 text-sm outline-none">
-                            <button id="btn-filter-reports" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-bold transition">
-                                Filtrer
-                            </button>
-                            <button id="btn-export-pdf" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-bold transition flex items-center gap-1" title="Exporter en PDF">
-                                <i data-lucide="file-down" class="w-4 h-4"></i> <span class="hidden sm:inline">PDF</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="report-financial-stats" class="space-y-4">
-                        <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl flex flex-wrap items-center gap-4 justify-between">
-                            <div>
-                                <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-wider mb-1">Caisse Initiale</label>
-                                <p class="text-xs text-blue-600">Argent disponible au début de la période.</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <input type="number" id="caisse-initiale-input" value="0" class="text-right font-extrabold text-xl w-32 p-2 rounded border border-blue-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                                <span class="font-bold text-blue-800">CFA</span>
-                                <button id="btn-save-caisse" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 shadow-sm" title="Sauvegarder">
-                                    <i data-lucide="save" class="w-5 h-5"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500">
-                                <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Total Entrées</div>
-                                <div id="report-total-dispo" class="text-xl font-extrabold text-green-600">0 CFA</div>
-                                <div class="text-xs text-gray-400 mt-1">Dont Ventes: <span id="report-only-sales">0</span></div>
-                            </div>
-                            <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500">
-                                <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Total Sorties</div>
-                                <div id="report-total-expenses" class="text-xl font-extrabold text-red-600">0 CFA</div>
-                            </div>
-                            <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-800 bg-blue-50">
-                                <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Solde Final (Théorique)</div>
-                                <div id="report-balance" class="text-2xl font-extrabold text-blue-800">0 CFA</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <div class="relative flex-1">
-                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                            <input type="text" id="reports-search" placeholder="Filtrer les opérations..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                        </div>
-                        <select id="reports-sort" class="p-2.5 border border-gray-300 rounded-lg text-sm bg-white">
-                            <option value="date_desc">Date (Récent)</option>
-                            <option value="amount_desc">Montant (Élevé)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1"> <table class="w-full text-left text-sm relative border-collapse">
-                            <thead class="bg-teal-700 text-white sticky top-0 z-10 shadow-md"> <tr>
-                                    <th class="p-3 font-medium whitespace-nowrap">Date</th>
-                                    <th class="p-3 font-medium">Description</th>
-                                    <th class="p-3 font-medium text-center">Type</th>
-                                    <th class="p-3 font-medium text-right bg-teal-800">Entrée (+)</th>
-                                    <th class="p-3 font-medium text-right bg-red-900 bg-opacity-30">Sortie (-)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reports-table-body" class="divide-y divide-gray-100">
-                                <tr><td colspan="5" class="p-6 text-center text-gray-400">Chargement...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-audit" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
-                <div class="flex-none mb-4">
-                    <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Audit Financier</h1>
-                    <p class="text-sm text-gray-500">Évolution de la trésorerie (Solde) dans le temps.</p>
-                </div>
-                <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-gray-200 relative min-h-[300px]">
-                    <canvas id="audit-chart"></canvas>
-                </div>
-                <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex-1 min-h-0 flex flex-col">
-                    <div class="p-4 border-b bg-gray-50 font-bold text-gray-700">Journal des Mouvements de Trésorerie</div>
-                    <div class="overflow-auto flex-1">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-gray-100 text-gray-600 sticky top-0 shadow-sm">
-                                <tr><th class="p-3">Date & Heure</th><th class="p-3">Type</th><th class="p-3 text-right">Montant</th><th class="p-3 text-right">Solde (Caisse)</th></tr>
-                            </thead>
-                            <tbody id="audit-table-body" class="divide-y divide-gray-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-admin" class="page-content hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Tableau de Bord Admin</h1>
-                    <span class="text-xs font-mono text-gray-400">AdminLTE v4 Style</span>
-                </div>
-
-                <!-- AdminLTE v4 Dashboard v1 Style - Small Boxes -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Box 1: Boutiques -->
-                    <div class="bg-blue-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
-                        <div class="p-5">
-                            <h3 class="text-4xl font-extrabold" id="admin-stat-boutiques">0</h3>
-                            <p class="font-semibold text-blue-100">Boutiques Actives</p>
-                        </div>
-                        <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
-                            <i data-lucide="shopping-bag" class="w-20 h-20"></i>
-                        </div>
-                        <a href="#admin-tools" onclick="document.querySelector('#admin-tools').scrollIntoView({behavior: 'smooth'})" class="block bg-black/10 hover:bg-black/20 text-center py-2 text-sm font-medium transition backdrop-blur-sm cursor-pointer">
-                            Gérer les boutiques <i data-lucide="arrow-right-circle" class="w-4 h-4 inline ml-1"></i>
-                        </a>
-                    </div>
-
-                    <!-- Box 2: Utilisateurs -->
-                    <div class="bg-green-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
-                        <div class="p-5">
-                            <h3 class="text-4xl font-extrabold" id="admin-stat-users">0</h3>
-                            <p class="font-semibold text-green-100">Utilisateurs</p>
-                        </div>
-                        <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
-                            <i data-lucide="users" class="w-20 h-20"></i>
-                        </div>
-                        <button onclick="switchTab('admin-access')" class="w-full block bg-black/10 hover:bg-black/20 text-center py-2 text-sm font-medium transition backdrop-blur-sm cursor-pointer">
-                            Voir les accès <i data-lucide="arrow-right-circle" class="w-4 h-4 inline ml-1"></i>
-                        </button>
-                    </div>
-
-                    <div class="bg-yellow-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
-                        <div class="p-5">
-                            <h3 class="text-4xl font-extrabold" id="admin-stat-logs">0</h3>
-                            <p class="font-semibold text-yellow-100">Actions Administratives</p>
-                        </div>
-                        <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
-                            <i data-lucide="activity" class="w-20 h-20"></i>
-                        </div>
-                        <span class="block bg-black/10 text-center py-2 text-sm font-medium backdrop-blur-sm">
-                            Journal d'audit global
-                        </span>
-                    </div>
-
-                    <div class="bg-red-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
-                        <div class="p-5">
-                            <h3 class="text-4xl font-extrabold" id="admin-stat-alerts">0</h3>
-                            <p class="font-semibold text-red-100">Boutiques Bloquées</p>
-                        </div>
-                        <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
-                            <i data-lucide="shield-alert" class="w-20 h-20"></i>
-                        </div>
-                        <span class="block bg-black/10 text-center py-2 text-sm font-medium backdrop-blur-sm">
-                            Abonnements expirés ou suspendus
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Main Row -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-                    <!-- Left Col (Charts) -->
-                    <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
-                        <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg flex justify-between items-center">
-                            <h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-5 h-5 text-blue-500"></i> Création de Boutiques</h3>
-                        </div>
-                        <div class="p-4 flex-1">
-                            <div class="h-64 w-full"><canvas id="admin-chart-shops"></canvas></div>
-                        </div>
-                    </div>
-
-                    <!-- Right Col (Latest Logs/Members) -->
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
-                        <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
-                            <h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="list" class="w-5 h-5 text-gray-500"></i> Dernières Boutiques</h3>
-                        </div>
-                        <div class="p-0 flex-1 overflow-y-auto max-h-[300px]" id="admin-latest-shops-list">
-                            <!-- Liste injectée par JS -->
-                            <div class="p-4 text-center text-gray-400">Chargement...</div>
-                        </div>
-                        <div class="p-3 border-t border-gray-100 text-center bg-gray-50 rounded-b-lg">
-                            <button onclick="document.querySelector('#admin-tools').scrollIntoView({behavior: 'smooth'})" class="text-sm text-blue-600 font-bold hover:underline">Voir toutes les boutiques</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Outils existants (Déplacés ici) -->
-                <div id="admin-tools" class="border-t-2 border-gray-200 pt-8">
-                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        <i data-lucide="settings" class="w-6 h-6"></i> Outils de Gestion
-                    </h2>
-                    
-                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <!-- Gestion Boutiques -->
-                        <div class="bg-white p-6 rounded-xl shadow border border-blue-100">
-                            <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-lg font-bold text-gray-700">1. Gestion des Boutiques</h2>
-                                <button id="open-admin-modal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 transition">
-                                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Créer
-                                </button>
-                            </div>
-                            <div class="mb-4 relative">
-                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
-                                <input type="text" id="admin-shops-search" placeholder="Rechercher une boutique..." class="w-full pl-10 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                            </div>
-                            <div id="admin-boutiques-list" class="max-h-60 overflow-y-auto divide-y divide-gray-100 border rounded-lg bg-gray-50">
-                                <!-- Liste complète injectée ici -->
-                            </div>
-                        </div>
-
-                        <!-- Importation -->
-                        <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
-                            <h2 class="text-lg font-bold text-gray-700 mb-4">2. Importation de Données</h2>
-                    
-                    <div class="mb-6">
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Boutique Cible</label>
-                        <div class="flex gap-2">
-                            <select id="import-target-shop" class="w-full p-3 border-2 border-green-200 rounded-lg bg-green-50 focus:ring-green-500 outline-none">
-                                <option value="">-- Choisir --</option>
-                            </select>
-                            <button onclick="loadShopsForImport()" class="bg-gray-200 p-2 rounded hover:bg-gray-300 transition" title="Actualiser la liste">
-                                🔄
-                            </button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="package" class="text-blue-600"></i> Stock</h3><p class="text-xs text-gray-400 mb-3">Cols: Nom, PrixVente, PrixAchat, Quantite</p><input type="file" id="csv-stock" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/><button onclick="processImport('products')" class="mt-2 w-full bg-blue-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="users" class="text-orange-600"></i> Clients</h3><p class="text-xs text-gray-400 mb-3">Cols: Nom, Telephone, Dette</p><input type="file" id="csv-clients" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/><button onclick="processImport('clients')" class="mt-2 w-full bg-orange-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="credit-card" class="text-red-600"></i> Charges</h3><p class="text-xs text-gray-400 mb-3">Cols: Date, Motif, Montant</p><input type="file" id="csv-expenses" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/><button onclick="processImport('expenses')" class="mt-2 w-full bg-red-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-gray-50 transition"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="shopping-cart" class="text-green-600"></i> Ventes</h3><p class="text-xs text-gray-400 mb-3">Cols: Date, Produit, Quantite, PrixUnitaire, Profit</p><input type="file" id="csv-sales" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/><button onclick="processImport('ventes')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold py-2 rounded">Lancer</button></div><div class="border rounded-lg p-4 hover:bg-purple-50 transition border-purple-100"><h3 class="font-bold text-gray-800 flex items-center gap-2 mb-2"><i data-lucide="image" class="text-purple-600"></i> Logo</h3><p class="text-xs text-gray-400 mb-3">Mise à jour logo (Max 100 Ko)</p><input type="file" id="file-logo-update" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/><button onclick="processLogoUpdate()" class="mt-2 w-full bg-purple-600 text-white text-xs font-bold py-2 rounded shadow-sm hover:bg-purple-700">Mettre à jour</button></div></div>
-
-                        </div>
-                    </div>
-                    <div id="import-progress-container" class="mt-6 bg-white p-5 rounded-xl shadow-inner border border-blue-200 hidden">
-                        <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2" id="import-status-title">
-                            <i data-lucide="loader-2" class="animate-spin text-blue-500"></i> Importation en cours...
-                        </h4>
-                        
-                        <div class="w-full bg-gray-200 rounded-full h-4 mb-2 overflow-hidden shadow-inner">
-                            <div id="import-progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
-                        </div>
-                        <p class="text-sm font-mono text-gray-500 mb-4" id="import-progress-text">0 / 0 lignes traitées</p>
-
-                        <div id="import-report-area" class="hidden">
-                            <h5 class="font-bold text-sm text-orange-800 mb-2 border-b border-orange-200 pb-1 flex items-center gap-1">
-                                <i data-lucide="alert-triangle" class="w-4 h-4"></i> Rapport d'anomalies
-                            </h5>
-                            <div class="max-h-48 overflow-y-auto bg-orange-50 rounded border border-orange-100 text-xs">
-                                <table class="w-full text-left">
-                                    <thead class="bg-orange-100 text-orange-800 sticky top-0">
-                                        <tr>
-                                            <th class="p-2 w-20">Ligne Excel</th>
-                                            <th class="p-2">Détail de l'Erreur</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="import-report-body" class="divide-y divide-orange-100">
-                                        </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-admin-access" class="page-content hidden">
-                <h1 class="text-2xl font-extrabold mb-6 text-gray-900 dark:text-white">Gestion des Utilisateurs</h1>
-                <div class="bg-white p-6 rounded-xl shadow border border-purple-200 h-full flex flex-col">
-                    <div class="mb-4 relative flex-none">
-                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                        <input type="text" id="admin-users-search" placeholder="Chercher par email, boutique ou rôle..." class="w-full pl-10 p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
-                    </div>
-                    <div class="overflow-auto flex-1">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-purple-50 text-purple-900 sticky top-0">
-                                <tr><th class="p-3">Boutique</th><th class="p-3">Email (Identifiant)</th><th class="p-3">Rôle</th><th class="p-3">MP</th><th class="p-3 text-right">Actions</th></tr>
-                            </thead>
-                            <tbody id="admin-users-list" class="divide-y divide-gray-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <div id="edit-product-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[160]">
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-2">
-                <h3 class="text-lg font-bold text-gray-800 dark:text-slate-100">Gestion du Produit</h3>
-                <button onclick="document.getElementById('edit-product-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><i data-lucide="x"></i></button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                
-                <div class="space-y-6">
-                    <div class="bg-gray-50 dark:bg-slate-900/70 p-4 rounded-lg border dark:border-slate-700">
-                        <h4 class="text-sm font-bold text-blue-800 dark:text-blue-300 mb-3 uppercase border-b pb-1 dark:border-slate-600">1. Modifier Informations</h4>
-                        <form id="form-edit-product" class="space-y-3">
-                            <input type="hidden" id="edit-prod-id">
-                            <div>
-                                <label class="text-xs font-bold text-gray-500 dark:text-slate-400">Nom du produit</label>
-                                <input type="text" id="edit-prod-nom" class="w-full p-2 border dark:border-slate-600 rounded bg-gray-200 dark:bg-slate-700" readonly>
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="text-xs font-bold text-gray-500">Prix Achat</label>
-                                    <input type="number" id="edit-prod-achat" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-bold text-gray-500">Prix Vente</label>
-                                    <input type="number" id="edit-prod-vente" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-gray-500">Correction Stock (Inventaire)</label>
-                                <input type="number" id="edit-prod-stock" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
-                                <p class="text-[10px] text-gray-400 mt-1">Utilisez ceci pour corriger une erreur de comptage.</p>
-                            </div>
-                            <div class="flex items-center gap-2 mt-2 p-3 bg-gray-100 rounded border border-gray-200">
-                                <input type="checkbox" id="edit-prod-discontinued" class="w-5 h-5 text-gray-600 rounded focus:ring-gray-500 cursor-pointer">
-                                <label for="edit-prod-discontinued" class="text-xs font-bold text-gray-700 cursor-pointer select-none">Ne plus approvisionner (Fin de série)</label>
-                            </div>
-                            <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-bold shadow hover:bg-blue-700">Enregistrer les modifications</button>
-                        </form>
-                    </div>
-
-                    <div class="bg-red-50 p-4 rounded-lg border border-red-100">
-                        <h4 class="text-sm font-bold text-red-800 mb-3 uppercase border-b border-red-200 pb-1">2. Zone de Perte</h4>
-                        <p class="text-xs text-red-600 mb-3">Sortir des produits du stock sans encaisser d'argent (Périmés, Cassés, Volés).</p>
-                        <button type="button" onclick="signalerPerime()" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-bold shadow hover:bg-red-700 flex justify-center items-center gap-2">
-                            <i data-lucide="trash"></i> Signaler Produits Périmés / Cassés
-                        </button>
-                    </div>
-                </div>
-
-                <div class="border-l pl-6 border-gray-200">
-                    <h4 class="text-sm font-bold text-gray-800 mb-3 uppercase flex items-center gap-2">
-                        <i data-lucide="history" class="w-4 h-4"></i> Journal d'activité
-                    </h4>
-                    <div class="overflow-y-auto max-h-[400px] bg-white rounded border border-gray-200 shadow-inner">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-gray-100 text-gray-600 sticky top-0">
-                                <tr>
-                                    <th class="p-2 border-b">Date</th>
-                                    <th class="p-2 border-b">Action</th>
-                                    <th class="p-2 border-b">Détails</th>
-                                </tr>
-                            </thead>
-                            <tbody id="product-history-body">
-                                <tr><td colspan="3" class="p-4 text-center text-gray-400">Chargement...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div id="credit-sale-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[150]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"><h3 class="text-lg font-bold text-gray-800 mb-4">Client</h3><div class="mb-4"><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sélectionner</label><div class="flex gap-2"><select id="credit-client-select" class="w-full p-3 border rounded bg-gray-50"><option value="">Chargement...</option></select><button id="btn-quick-add-client" class="bg-green-600 text-white p-3 rounded shadow"><i data-lucide="plus"></i></button></div></div><div class="flex justify-end gap-3"><button onclick="document.getElementById('credit-sale-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-200 font-bold rounded">Annuler</button><button id="confirm-credit-sale-btn" class="px-4 py-2 bg-orange-600 text-white font-bold rounded shadow">Valider</button></div></div></div><div id="add-client-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[150]"><div class="bg-white p-6 rounded-xl w-full max-w-sm"><h3 class="text-lg font-bold text-lg mb-4">Nouveau Client</h3><form id="form-client" class="space-y-4"><input type="text" id="client-nom" placeholder="Nom" class="w-full border p-2 rounded" required><input type="tel" id="client-tel" placeholder="Tel" class="w-full border p-2 rounded"><div class="flex justify-end gap-2"><button type="button" onclick="document.getElementById('add-client-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600">Annuler</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Sauvegarder</button></div></form></div></div><div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[160]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"><h2 id="confirm-modal-title" class="text-lg font-bold text-gray-800 mb-2">Confirmation</h2><p id="confirm-modal-text" class="text-sm text-gray-600 mb-6">...</p><div class="flex justify-end gap-3"><button id="modal-cancel-btn" class="bg-gray-100 text-gray-800 font-bold py-2 px-4 rounded-lg">Non</button><button id="modal-confirm-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Oui</button></div></div></div><div id="invoice-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[200] backdrop-blur-sm"><div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform transition-all scale-100"><div class="text-center mb-6"><div class="mx-auto bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-3"><i data-lucide="check" class="text-green-600 w-6 h-6"></i></div><h2 class="text-2xl font-bold text-gray-800">Vente Réussie !</h2><p class="text-gray-500 text-sm">Le stock et la caisse ont été mis à jour.</p></div><div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 text-sm font-mono"><div class="flex justify-between border-b border-gray-200 pb-2 mb-2"><span class="font-bold">Total payé</span><span class="font-bold text-blue-600" id="invoice-amount">0 CFA</span></div><div class="text-xs text-gray-500" id="invoice-preview"></div></div><div class="space-y-3"><a id="btn-whatsapp-share" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-xl font-bold shadow-lg flex justify-center items-center gap-2 transition-transform hover:scale-105"><i data-lucide="message-circle" class="w-5 h-5 fill-current"></i> Envoyer Facture WhatsApp</a><button onclick="document.getElementById('invoice-modal').classList.add('hidden')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold">Fermer et Nouvelle Vente</button></div></div></div><div id="access-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[170]"><div class="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full"><h3 class="text-lg font-bold text-gray-800 mb-4">Gestion Accès (Secours)</h3><p class="text-sm text-gray-500 mb-4">Boutique: <span id="access-shop-name" class="font-bold text-blue-600"></span></p><div class="space-y-4"><div class="p-4 bg-blue-50 rounded border border-blue-100"><h4 class="text-xs font-bold text-blue-800 uppercase mb-2">Propriétaire</h4><p class="text-xs text-gray-600 mb-2">Actuel: <span id="current-admin-email" class="font-mono font-bold">...</span></p><input type="email" id="new-admin-access-email" placeholder="Nouvel Email" class="w-full p-2 text-sm border rounded mb-2"><div class="relative mb-2"><input type="password" id="new-admin-access-pass" placeholder="Nouveau Pass" class="w-full p-2 text-sm border rounded pr-10"><button type="button" id="toggle-admin-access-pass" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="w-4 h-4"></i></button></div><button onclick="updateAccess('admin')" class="w-full bg-blue-600 text-white text-xs py-2 rounded font-bold">Remplacer</button></div><div class="p-4 bg-green-50 rounded border border-green-100"><h4 class="text-xs font-bold text-green-800 uppercase mb-2">Vendeur</h4><p class="text-xs text-gray-600 mb-2">Actuel: <span id="current-seller-email" class="font-mono font-bold">...</span></p><input type="email" id="new-seller-access-email" placeholder="Nouvel Email" class="w-full p-2 text-sm border rounded mb-2"><div class="relative mb-2"><input type="password" id="new-seller-access-pass" placeholder="Nouveau Pass" class="w-full p-2 text-sm border rounded pr-10"><button type="button" id="toggle-seller-access-pass" class="absolute right-2 top-2 text-gray-400 hover:text-green-600"><i data-lucide="eye" class="w-4 h-4"></i></button></div><button onclick="updateAccess('seller')" class="w-full bg-green-600 text-white text-xs py-2 rounded font-bold">Remplacer</button></div></div><div class="mt-4 text-right"><button onclick="document.getElementById('access-modal').classList.add('hidden')" class="text-gray-500 text-sm underline">Fermer</button></div></div></div><div id="scanner-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden flex flex-col items-center justify-center z-[250]">
-        <div class="w-full max-w-md bg-white rounded-xl overflow-hidden relative">
-            <button onclick="stopScanner()" class="absolute top-2 right-2 bg-white rounded-full p-2 z-10 text-red-600 font-bold"><i data-lucide="x"></i></button>
-            <div class="viewfinder-wrap w-full h-[300px] bg-black relative overflow-hidden">
-                <video id="video-preview" class="w-full h-full object-cover block" autoplay muted playsinline></video>
-                <div class="viewfinder-overlay">
-                    <div class="viewfinder-box">
-                        <div class="scan-line"></div>
-                    </div>
-                </div>
-                <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-white bg-black bg-opacity-50 px-3 py-1 rounded-full whitespace-nowrap" id="scan-label">
-                    Pointez vers un code-barres
-                </div>
-            </div>
-        </div>
-    </div>
+    </header>
 
-    <div id="barcode-assoc-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[260]">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
-            <div class="text-center mb-4">
-                <i data-lucide="scan-barcode" class="w-12 h-12 mx-auto text-blue-500 mb-2"></i>
-                <h3 class="text-lg font-bold text-gray-800">Nouveau Code détecté !</h3>
-                <p class="text-xs text-gray-500 font-mono bg-gray-100 p-1 rounded mt-1" id="assoc-barcode-display">...</p>
+    <!-- SECTION: LANDING PAGE (HERO) -->
+    <section id="accueil" class="pt-32 pb-20 lg:pt-48 lg:pb-32 bg-hero-pattern overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-wide mb-6">
+                <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
+                Version 2.0 disponible
             </div>
-            <p class="text-sm text-gray-600 mb-3">Ce produit n'est pas reconnu. Sélectionnez-le dans la liste pour l'associer définitivement :</p>
-            
-            <div class="relative mb-4">
-                 <input type="text" id="assoc-search" placeholder="Rechercher produit..." class="w-full p-2 border rounded mb-2">
-                 <select id="assoc-product-select" class="w-full p-2 border rounded bg-white">
-                     <option value="">-- Choisir un produit --</option>
-                 </select>
-            </div>
-
-            <div class="flex justify-end gap-2">
-                <button onclick="closeAssocModal()" class="px-4 py-2 text-gray-500">Annuler</button>
-                <button onclick="confirmBarcodeAssociation()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded shadow">Enregistrer & Ajouter</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modale Nouvelle Commande (Remplacement du prompt) -->
-    <div id="order-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[155]">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Nouvelle Commande</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nom du Client</label>
-                    <input type="text" id="order-client-name" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ex: Mme Kouassi">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Téléphone (Optionnel)</label>
-                    <input type="tel" id="order-client-tel" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-indigo-500" placeholder="07...">
-                </div>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button onclick="document.getElementById('order-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
-                    <button onclick="finalizeOrder()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded shadow">Confirmer</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modale Générique Dashboard -->
-    <div id="dashboard-generic-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center p-4 hidden z-[200]">
-        <div class="bg-white dark:bg-slate-800 rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-fade-in-up">
-            <div class="flex justify-between items-center p-4 border-b dark:border-slate-700">
-                <h3 class="font-bold text-lg text-gray-800 dark:text-slate-100" id="dashboard-generic-modal-title">Détails</h3>
-                <button onclick="document.getElementById('dashboard-generic-modal').classList.add('hidden')" class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-500 dark:text-gray-400"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div id="dashboard-generic-modal-body" class="p-4 overflow-y-auto"></div>
-        </div>
-    </div>
-
-    <!-- Modale Gestion Équipe -->
-    <div id="team-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[160] p-4 backdrop-blur-sm">
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl max-w-sm w-full animate-fade-in-up">
-            <div class="flex justify-between items-center mb-4 pb-2 border-b dark:border-slate-700">
-                <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2"><i data-lucide="users"></i> Mon Équipe</h3>
-                <button onclick="document.getElementById('team-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><i data-lucide="x"></i></button>
+            <h1 class="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6 max-w-4xl mx-auto">
+                Gérez votre commerce avec une <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">simplicité déconcertante</span>.
+            </h1>
+            <p class="text-lg sm:text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+                Caisse enregistreuse, gestion des stocks en temps réel, suivi des crédits clients et statistiques détaillées. Prenez le contrôle total de votre boutique.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="app.html" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-4 px-8 rounded-xl shadow-xl shadow-blue-500/30 transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                    Commencer mes 90 jours gratuits <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </a>
+                <a href="#services" class="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 font-bold text-lg py-4 px-8 rounded-xl shadow-sm border border-slate-200 transition flex items-center justify-center gap-2">
+                    Découvrir les fonctionnalités
+                </a>
             </div>
             
-            <div class="mb-4">
-                <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Vendeurs actuels</h4>
-                <div id="team-list" class="max-h-40 overflow-y-auto border rounded-lg p-2 dark:border-slate-700 dark:bg-slate-900/50">
-                    <!-- Liste injectée par JS -->
-                </div>
-            </div>
-
-            <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
-                <h4 class="text-sm font-bold text-blue-800 dark:text-blue-300 mb-3">Ajouter un vendeur</h4>
-                <form id="form-add-seller" class="space-y-3">
-                    <input type="email" id="seller-add-email" placeholder="Email du vendeur" class="w-full p-2 text-sm border rounded outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white" required>
-                    <input type="password" id="seller-add-pass" placeholder="Mot de passe (6 min)" class="w-full p-2 text-sm border rounded outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white" required minlength="6">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm shadow">
-                        Créer le compte
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div id="subscription-blocked-screen" class="fixed inset-0 bg-gray-900 bg-opacity-95 z-[999] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
-            <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="lock" class="w-10 h-10"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">Abonnement Expiré</h2>
-            <p class="text-gray-600 mb-6">L'accès à votre boutique a été suspendu car votre abonnement est arrivé à terme. Veuillez contacter l'administrateur pour renouveler votre accès.</p>
-            <button id="btn-logout-blocked" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg transition w-full shadow-sm">
-                Se déconnecter
-            </button>
-        </div>
-    </div>
-
-    <div id="subscription-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[170]">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
-            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="calendar-clock"></i> Gérer l'Abonnement</h3>
-            <p class="text-sm text-gray-500 mb-4 border-b pb-2">Boutique: <span id="sub-shop-name" class="font-bold text-blue-600"></span></p>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Statut d'accès</label>
-                    <select id="sub-status-select" class="w-full p-3 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="actif">🟢 Actif (Paiement OK)</option>
-                        <option value="essai">🟠 Période d'essai</option>
-                        <option value="suspendu">🔴 Suspendu (Bloqué)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Date de fin d'accès</label>
-                    <input type="date" id="sub-date-input" class="w-full p-3 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button onclick="document.getElementById('subscription-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Annuler</button>
-                    <button id="btn-save-subscription" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow">Appliquer</button>
+            <!-- Image/Mockup de l'application -->
+            <div class="mt-16 mx-auto max-w-5xl">
+                <div class="rounded-2xl border border-slate-200/50 bg-white/50 p-2 shadow-2xl backdrop-blur-sm">
+                    <div class="rounded-xl overflow-hidden bg-slate-100 aspect-[16/9] relative shadow-inner border border-slate-200">
+                        <!-- Ton image locale -->
+                        <img src="dashboard-preview.png" alt="Aperçu du tableau de bord Ma Boutique" class="w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-700 ease-in-out">
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div id="momo-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[155] backdrop-blur-sm">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
-            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <i data-lucide="smartphone" class="text-teal-500"></i> Paiement Mobile
-            </h3>
+    </section>
+
+    <!-- SECTION: SERVICES -->
+    <section id="services" class="py-20 bg-white border-y border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-4">Tout ce dont vous avez besoin</h2>
+                <p class="text-lg text-slate-600 max-w-2xl mx-auto">Une suite complète d'outils logistiques et techniques pensés pour faciliter votre quotidien de commerçant.</p>
+            </div>
             
-            <div class="space-y-4">
-                <p class="text-xs text-gray-500 uppercase font-bold">1. Choisir l'opérateur</p>
-                <div class="grid grid-cols-2 gap-3" id="momo-network-container">
-                    <button type="button" class="momo-net-btn border-2 border-gray-200 rounded-xl p-3 text-center transition focus:outline-none" data-net="Wave">
-                        <span class="block font-bold text-blue-500 text-lg">Wave</span>
-                    </button>
-                    <button type="button" class="momo-net-btn border-2 border-gray-200 rounded-xl p-3 text-center transition focus:outline-none" data-net="Orange">
-                        <span class="block font-bold text-orange-500 text-lg">Orange</span>
-                    </button>
-                    <button type="button" class="momo-net-btn border-2 border-gray-200 rounded-xl p-3 text-center transition focus:outline-none" data-net="MTN">
-                        <span class="block font-bold text-yellow-500 text-lg">MTN</span>
-                    </button>
-                    <button type="button" class="momo-net-btn border-2 border-gray-200 rounded-xl p-3 text-center transition focus:outline-none" data-net="Moov">
-                        <span class="block font-bold text-green-600 text-lg">Moov</span>
-                    </button>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Service 1 -->
+                <div class="bg-slate-50 border border-slate-100 p-8 rounded-2xl hover:shadow-lg transition hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-heading text-xl font-bold text-slate-900 mb-3">Caisse Rapide (POS)</h3>
+                    <p class="text-slate-600 leading-relaxed">Encaissez vos clients en quelques clics. Supporte les paiements en espèces, Mobile Money et la gestion des rendus de monnaie.</p>
                 </div>
                 
-                <input type="hidden" id="momo-selected-network" value="">
-
-                <div class="mt-4">
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">2. Numéro du client</label>
-                    <input type="tel" id="momo-client-phone" class="w-full border-2 p-3 rounded-lg outline-none focus:border-teal-500 bg-gray-50 font-bold text-lg tracking-wider" placeholder="Ex: 0707070707">
+                <!-- Service 2 -->
+                <div class="bg-slate-50 border border-slate-100 p-8 rounded-2xl hover:shadow-lg transition hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="package" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-heading text-xl font-bold text-slate-900 mb-3">Gestion des Stocks</h3>
+                    <p class="text-slate-600 leading-relaxed">Suivez votre inventaire en temps réel. Soyez alerté lorsque les stocks sont faibles et générez des codes-barres pour vos produits.</p>
                 </div>
 
-                <div class="flex justify-end gap-3 pt-4 border-t mt-2">
-                    <button onclick="document.getElementById('momo-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition">Annuler</button>
-                    <button id="btn-confirm-momo" class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-md flex items-center gap-2 transition disabled:opacity-50">
-                        Encaisser <i data-lucide="check-circle" class="w-4 h-4"></i>
-                    </button>
+                <!-- Service 3 -->
+                <div class="bg-slate-50 border border-slate-100 p-8 rounded-2xl hover:shadow-lg transition hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-heading text-xl font-bold text-slate-900 mb-3">Crédits Clients</h3>
+                    <p class="text-slate-600 leading-relaxed">Ne perdez plus jamais la trace de vos créances. Enregistrez les ventes à crédit et gérez les remboursements facilement.</p>
+                </div>
+
+                <!-- Service 4 -->
+                <div class="bg-slate-50 border border-slate-100 p-8 rounded-2xl hover:shadow-lg transition hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-heading text-xl font-bold text-slate-900 mb-3">Analyses & Rapports</h3>
+                    <p class="text-slate-600 leading-relaxed">Visualisez votre chiffre d'affaires, vos bénéfices et vos produits les plus rentables à l'aide de graphiques clairs.</p>
+                </div>
+                
+                <!-- Service 5 -->
+                <div class="bg-slate-50 border border-slate-100 p-8 rounded-2xl hover:shadow-lg transition hover:-translate-y-1 lg:col-span-2">
+                    <div class="w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="users-2" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-heading text-xl font-bold text-slate-900 mb-3">Gestion Multicompte (Équipe)</h3>
+                    <p class="text-slate-600 leading-relaxed">En tant que propriétaire, ajoutez des vendeurs à votre boutique. Chacun possède ses propres accès. Vous supervisez tout à distance avec le mode "Immersion" exclusif.</p>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-        <!-- Modale pour l'impression des étiquettes -->
-    <div id="print-labels-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[200]">
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-3">
-                <h3 class="text-lg font-bold">Imprimer des Étiquettes</h3>
-                <button id="close-print-labels-modal" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><i data-lucide="x"></i></button>
-            </div>
-            <div id="product-list-for-labels" class="overflow-y-auto flex-1 pr-2">
-                <!-- La liste des produits sera injectée ici -->
-            </div>
-            <div class="flex justify-end gap-3 mt-4 pt-4 border-t dark:border-slate-700">
-                <button id="close-print-labels-modal-2" type="button" class="px-5 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">Annuler</button>
-                <button id="generate-labels-btn" type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg font-bold shadow-lg">Générer & Imprimer</button>
+    <!-- SECTION: À PROPOS -->
+    <section id="apropos" class="py-20 bg-slate-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-6">Notre Mission</h2>
+            <p class="text-lg text-slate-600 mb-8 leading-relaxed">
+                Née de l'observation des difficultés quotidiennes rencontrées par les commerçants indépendants, <strong>Ma Boutique</strong> a été conçue avec une idée simple : démocratiser l'accès à des outils de gestion professionnels. Nous croyons que la technologie ne doit pas être un obstacle, mais un levier de croissance. C'est pourquoi nous avons développé une plateforme intuitive, sécurisée et accessible partout, permettant aux entrepreneurs de se concentrer sur ce qui compte vraiment : leurs clients.
+            </p>
+            <div class="bg-blue-50 rounded-2xl p-8 border border-blue-100 inline-block text-left">
+                <h4 class="font-bold text-blue-900 mb-2 flex items-center gap-2"><i data-lucide="book-open" class="w-5 h-5"></i> Besoin d'aide technique ?</h4>
+                <p class="text-sm text-blue-800 mb-4">Notre base de connaissances détaillée vous explique étape par étape comment utiliser chaque module de l'application.</p>
+                <a href="#" class="text-sm font-bold text-blue-600 hover:text-blue-800 underline">Accéder au Guide d'utilisation &rarr;</a>
             </div>
         </div>
-    </div>
+    </section>
 
-        <button id="scroll-to-top" class="hidden fixed bottom-5 right-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white p-3 rounded-full shadow-lg transition-opacity duration-300 z-50">
-        <i data-lucide="arrow-up" class="w-6 h-6"></i>
-    </button>
-    <div id="printable-area" class="hidden"></div>
-    <div id="toast-container"></div>
-    <script type="module" src="src/main.js"></script>
-    
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-5 h-5 text-blue-500"></i>
+                <span class="font-heading font-bold text-white text-lg">Ma Boutique</span>
+            </div>
+            <div class="flex gap-6 text-sm">
+                <a href="#accueil" class="hover:text-white transition">Accueil</a>
+                <a href="#services" class="hover:text-white transition">Services</a>
+                <a href="#" class="hover:text-white transition">Documentation</a>
+                <a href="#" class="hover:text-white transition">Mentions Légales</a>
+                <a href="app.html" class="text-slate-600 hover:text-blue-500 transition">Administration</a>
+            </div>
+            <p class="text-sm">&copy; 2024 Ma Boutique. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Initialiser les icônes Lucide
+        lucide.createIcons();
+    </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 // src/admin/import.js
-import { db, collection, doc, writeBatch, increment, serverTimestamp, getDocs } from '../firebase.js';
+import { db, collection, doc, writeBatch, increment, serverTimestamp, getDocs, addDoc } from '../firebase.js';
 import { showToast } from '../ui.js';
 import * as state from '../state.js';
 
@@ -170,30 +170,121 @@ window.processImport = async function(type) {
     
     if(!id) return showToast("ERREUR : Aucune boutique sélectionnée !", "error");
     
-    const fileInputId = `csv-${type === 'products' ? 'stock' : type}`;
+    let fileTypeStr = type;
+    if (type === 'products') fileTypeStr = 'stock';
+    if (type === 'ventes') fileTypeStr = 'sales'; // Correction du bug de l'ID
+    
+    const fileInputId = `csv-${fileTypeStr}`;
     const fileInput = document.getElementById(fileInputId);
     if(!fileInput) return;
     const f = fileInput.files[0];
     
     if(!f) return showToast("Veuillez sélectionner un fichier CSV.", "error");
     
-    const progressContainer = document.getElementById('import-progress-container');
-    if(progressContainer) progressContainer.classList.remove('hidden');
-    
     Papa.parse(f, { 
         header: true, 
         skipEmptyLines: true, 
         complete: async (r) => { 
-            if(confirm(`Confirmer l'import de ${r.data.length} lignes ?`)) {
-                await uploadBatchData(id, type, r.data); 
-                fileInput.value = "";
-            } else {
-                if(progressContainer) progressContainer.classList.add('hidden');
-            }
+            showImportPreview(id, type, r.data, fileInput);
         },
         error: () => {
             showToast("Erreur de lecture du fichier CSV.", "error");
-            if(progressContainer) progressContainer.classList.add('hidden');
         }
     });
 };
+
+function showImportPreview(shopId, type, data, fileInput) {
+    if (!data || data.length === 0) {
+        return showToast("Le fichier CSV est vide ou mal formaté.", "error");
+    }
+
+    let modal = document.getElementById('import-preview-modal');
+    
+    // Si la modale n'existe pas dans le DOM (ex: app.html non mis à jour), on la crée dynamiquement
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'import-preview-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-60 hidden flex-col items-center justify-center z-[250] p-4 backdrop-blur-sm';
+        modal.innerHTML = `
+            <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col animate-fade-in-up">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h3 class="text-xl font-extrabold text-gray-800 flex items-center gap-2" id="import-preview-title"><i data-lucide="file-spreadsheet" class="text-blue-500"></i> Prévisualisation de l'import</h3>
+                    <button id="btn-close-import-preview" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div class="overflow-auto flex-1 border border-gray-200 rounded-xl bg-white mb-4 shadow-inner">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead id="import-preview-head" class="text-xs uppercase text-gray-600 sticky top-0 shadow-sm">
+                        </thead>
+                        <tbody id="import-preview-body" class="divide-y divide-gray-100">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button id="btn-cancel-import" class="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition">Annuler</button>
+                    <button id="btn-confirm-import" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition transform hover:-translate-y-0.5">
+                        <i data-lucide="upload-cloud" class="w-5 h-5"></i> Lancer l'importation
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    const title = document.getElementById('import-preview-title');
+    const thead = document.getElementById('import-preview-head');
+    const tbody = document.getElementById('import-preview-body');
+    
+    const typeNames = { 'products': 'Stock', 'clients': 'Clients', 'expenses': 'Charges', 'ventes': 'Ventes' };
+    title.innerHTML = `Prévisualisation : ${typeNames[type] || type} <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded ml-2">${data.length} lignes trouvées</span>`;
+
+    // En-têtes dynamiques
+    const headers = Object.keys(data[0]);
+    thead.innerHTML = `<tr><th class="p-3 border-r bg-gray-200">#</th>${headers.map(h => `<th class="p-3 border-r bg-gray-200">${h}</th>`).join('')}</tr>`;
+
+    // Contenu du tableau (limité à 300 pour éviter de faire planter le navigateur sur de gros fichiers, mais toutes seront importées)
+    const displayData = data.slice(0, 300);
+    let rowsHtml = '';
+    displayData.forEach((row, index) => {
+        rowsHtml += `<tr class="hover:bg-blue-50 border-b transition">
+            <td class="p-2 border-r text-gray-400 font-mono text-xs">${index + 1}</td>
+            ${headers.map(h => `<td class="p-2 border-r text-gray-700 truncate max-w-xs">${row[h] || ''}</td>`).join('')}
+        </tr>`;
+    });
+    
+    if (data.length > 300) {
+        rowsHtml += `<tr><td colspan="${headers.length + 1}" class="p-4 text-center text-gray-500 font-bold bg-gray-50">... et ${data.length - 300} autres lignes non affichées.</td></tr>`;
+    }
+    tbody.innerHTML = rowsHtml;
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex'; // Force l'affichage par dessus les règles Tailwind de base
+
+    // Configuration du bouton de validation
+    document.getElementById('btn-confirm-import').onclick = async () => {
+        modal.classList.add('hidden');
+        modal.style.display = '';
+        const progressContainer = document.getElementById('import-progress-container');
+        if(progressContainer) progressContainer.classList.remove('hidden');
+        
+        await uploadBatchData(shopId, type, data); 
+        fileInput.value = ""; 
+    };
+
+    // Configuration du bouton annuler
+    document.getElementById('btn-cancel-import').onclick = () => {
+        modal.classList.add('hidden');
+        modal.style.display = '';
+        fileInput.value = "";
+    };
+
+    // Configuration du bouton croix (X) en haut à droite
+    const btnClose = document.getElementById('btn-close-import-preview') || document.querySelector('#import-preview-modal button[onclick*="hidden"]');
+    if (btnClose) {
+        btnClose.onclick = () => {
+            modal.classList.add('hidden');
+            modal.style.display = '';
+            if (fileInput) fileInput.value = "";
+        };
+    }
+}
