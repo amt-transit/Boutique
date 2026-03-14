@@ -1,6 +1,6 @@
 // src/pages/dashboard.js
-import { db, onSnapshot, doc, collection } from '../firebase.js';
-import { formatPrice } from '../ui.js';
+import { db, onSnapshot, doc, collection, updateDoc, serverTimestamp } from '../firebase.js';
+import { formatPrice, showToast } from '../ui.js';
 import * as state from '../state.js';
 
 let salesChartInstance = null;
@@ -11,6 +11,8 @@ let allSalesData = [];
 let allExpensesData = [];
 let allCreditsData = [];
 let caisseInitiale = 0;
+let currentFondDeCaisse = 0;
+let dateFondDeCaisse = new Date(0);
 
 // Central rendering function
 function updateDashboardUI() {
@@ -60,7 +62,8 @@ function updateDashboardUI() {
     const totalCredits = allCreditsData.reduce((acc, c) => acc + (c.dette || 0), 0); // Total debt is global, not date-filtered
 
     // --- 3. Update UI Elements ---
-    const beneficeReel = (caisseInitiale + totalVentesEncaissees) - totalDepenses;
+    // Le bénéfice réel est calculé uniquement sur les entrées/sorties (sans compter le capital investi)
+    const beneficeReel = totalVentesEncaissees - totalDepenses;
     document.getElementById('dash-caisse-initiale').textContent = formatPrice(caisseInitiale);
     document.getElementById('dash-total-sales').textContent = formatPrice(totalVentesEncaissees);
     document.getElementById('dash-total-expenses').textContent = formatPrice(totalDepenses);
@@ -84,7 +87,8 @@ function applyRoleBasedVisibility() {
         'card-caisse', 
         'card-profit', 
         'card-expenses',
-        'dash-top-profit-trigger'
+        'dash-top-profit-trigger',
+        'admin-capital-box'
     ];
 
     sensitiveElements.forEach(id => {
@@ -268,6 +272,21 @@ export function setupDashboard() {
 
     filterBtn.addEventListener('click', updateDashboardUI);
     
+    // Enregistrement du Fond de Caisse (Monnaie du matin) depuis l'onglet Ventes
+    const btnSaveFondCaisse = document.getElementById('btn-save-fond-caisse');
+    const inputFondCaisse = document.getElementById('fond-caisse-input');
+    if (btnSaveFondCaisse && inputFondCaisse) {
+        btnSaveFondCaisse.addEventListener('click', async () => {
+            try {
+                await updateDoc(doc(db, "boutiques", state.currentBoutiqueId), { 
+                    fondDeCaisse: parseFloat(inputFondCaisse.value) || 0,
+                    dateFondDeCaisse: serverTimestamp() 
+                });
+                if (typeof showToast === 'function') showToast("Fond de caisse enregistré avec succès !", "success");
+            } catch (e) { console.error(e); }
+        });
+    }
+    
     // Listeners just update data arrays and trigger a UI update
     onSnapshot(doc(db, "boutiques", state.currentBoutiqueId), (docSnap) => {
         if (docSnap.exists()) {
@@ -275,23 +294,64 @@ export function setupDashboard() {
             const logoImg = document.getElementById('dash-shop-logo');
             if(logoImg && docSnap.data().logo) { logoImg.src = docSnap.data().logo; logoImg.classList.remove('hidden'); }
             else if(logoImg) { logoImg.classList.add('hidden'); }
+            
+            // Met à jour l'affichage du fond de caisse s'il a été changé par un autre appareil
+            if (inputFondCaisse && document.activeElement !== inputFondCaisse) {
+                inputFondCaisse.value = docSnap.data().fondDeCaisse || 0;
+            }
+            
+            currentFondDeCaisse = docSnap.data().fondDeCaisse || 0;
+            dateFondDeCaisse = docSnap.data().dateFondDeCaisse?.toDate() || new Date(0);
+            
             updateDashboardUI();
             applyRoleBasedVisibility();
+            updateSoldeTheorique();
         }
     });
 
     onSnapshot(collection(db, "boutiques", state.currentBoutiqueId, "expenses"), (snap) => {
         allExpensesData = snap.docs.map(d => ({...d.data(), id: d.id}));
         updateDashboardUI();
+        updateSoldeTheorique();
     });
 
     onSnapshot(collection(db, "boutiques", state.currentBoutiqueId, "ventes"), (snap) => {
         allSalesData = snap.docs.map(d => ({...d.data(), id: d.id}));
         updateDashboardUI();
+        updateSoldeTheorique();
     });
 
     onSnapshot(collection(db, "boutiques", state.currentBoutiqueId, "clients"), (snap) => {
         allCreditsData = snap.docs.map(d => ({...d.data(), id: d.id}));
         updateDashboardUI();
     });
+}
+
+function updateSoldeTheorique() {
+    const display = document.getElementById('solde-theorique-display');
+    if (!display) return;
+
+    let cashIn = 0;
+    let cashOut = 0;
+
+    allSalesData.forEach(s => {
+        const d = s.date?.toDate() || new Date(0);
+        if (d >= dateFondDeCaisse) {
+            if (s.type === 'cash' || s.type === 'cash_import' || s.type === 'remboursement') {
+                cashIn += s.total || 0;
+            } else if (s.type === 'retour') {
+                cashIn -= s.total || 0;
+            }
+        }
+    });
+
+    allExpensesData.forEach(e => {
+        const d = e.date?.toDate() || new Date(0);
+        if (d >= dateFondDeCaisse) {
+            cashOut += e.montant || 0;
+        }
+    });
+
+    const expectedBalance = currentFondDeCaisse + cashIn - cashOut;
+    display.textContent = formatPrice(expectedBalance);
 }
