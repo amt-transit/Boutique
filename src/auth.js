@@ -2,7 +2,7 @@ import {
     db, auth, onAuthStateChanged, signInWithEmailAndPassword, signOut, 
     sendPasswordResetEmail, getDoc, doc, updateDoc
 } from './firebase.js';
-import { showToast, switchTab, showAllTabs, hideTab, showTab, showConfirmModal } from './ui.js';
+import { showToast, switchTab, showAllTabs, hideTab, showTab, showConfirmModal } from './ui.js'; 
 import * as state from './state.js';
 
 export function setupLoginForm() {

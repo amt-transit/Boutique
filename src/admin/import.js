@@ -9,7 +9,7 @@ async function logAdminAction(actionType, details) {
         await addDoc(collection(db, "admin_logs"), {
             action: actionType,
             details: details,
-            date: serverTimestamp(),
+            date: serverTimestamp(), 
             adminId: state.userId
         });
     } catch (e) {

@@ -1,5 +1,5 @@
 // src/pages/sales.js
-import { db, collection, doc, getDocs, setDoc, writeBatch, increment, serverTimestamp } from '../firebase.js';
+import { db, collection, doc, getDocs, setDoc, writeBatch, increment, serverTimestamp } from '../firebase.js'; 
 import { showToast, formatPrice, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
 

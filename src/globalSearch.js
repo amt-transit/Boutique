@@ -4,7 +4,7 @@ import { switchTab } from './ui.js';
 
 export function setupGlobalSearch() {
     const searchInput = document.getElementById('global-search-input');
-    const resultsContainer = document.getElementById('global-search-results');
+    const resultsContainer = document.getElementById('global-search-results'); 
 
     if (!searchInput || !resultsContainer) return;
 

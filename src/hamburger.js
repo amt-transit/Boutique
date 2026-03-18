@@ -15,7 +15,7 @@ export function setupHamburgerMenu() {
         updateDrawerThemeButton(newTheme === 'dark');
     };
 
-    if (drawerThemeBtn) drawerThemeBtn.addEventListener('click', toggleTheme);
+    if (drawerThemeBtn) drawerThemeBtn.addEventListener('click', toggleTheme); 
     if (headerThemeBtn) headerThemeBtn.addEventListener('click', toggleTheme);
 
     // Fermer avec Escape

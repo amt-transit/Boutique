@@ -20,7 +20,7 @@ export let allShopsList = [];
 export const setUserId = (id) => userId = id;
 export const setCurrentBoutiqueId = (id) => currentBoutiqueId = id;
 export const setUserRole = (role) => userRole = role;
-export const setIsScanningForNewProduct = (value) => isScanningForNewProduct = value;
+export const setIsScanningForNewProduct = (value) => isScanningForNewProduct = value; 
 export const setCurrentAccessShopId = (id) => currentAccessShopId = id;
 
 export const setAllProducts = (products) => allProducts = products;

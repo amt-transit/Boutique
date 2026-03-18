@@ -58,20 +58,37 @@ function updateDashboardUI() {
         }
     });
 
-    const totalDepenses = filteredExpenses.reduce((acc, e) => acc + (e.montant || 0), 0);
+    let periodDepenses = 0;
+    filteredExpenses.forEach(e => {
+        if(e.type !== 'entree') periodDepenses += (e.montant || 0);
+    });
+
+    // --- Calcul du Solde Global (Prend en compte toute la durée de vie) ---
+    let globalEncaisse = 0;
+    allSalesData.forEach(s => {
+        if (s.type === 'cash' || s.type === 'cash_import' || s.type === 'remboursement' || s.type === 'mobile_money') globalEncaisse += (s.total || 0);
+        if (s.type === 'retour') globalEncaisse -= (s.total || 0);
+    });
+    
+    let globalDepenses = 0;
+    let globalApports = 0;
+    allExpensesData.forEach(e => {
+        if(e.type === 'entree') globalApports += (e.montant || 0);
+        else globalDepenses += (e.montant || 0);
+    });
+
+    const soldeGlobal = caisseInitiale + globalEncaisse + globalApports - globalDepenses;
     const totalCredits = allCreditsData.reduce((acc, c) => acc + (c.dette || 0), 0); // Total debt is global, not date-filtered
 
     // --- 3. Update UI Elements ---
-    // Le bénéfice réel est calculé uniquement sur les entrées/sorties (sans compter le capital investi)
-    const beneficeReel = totalVentesEncaissees - totalDepenses;
     document.getElementById('dash-caisse-initiale').textContent = formatPrice(caisseInitiale);
     document.getElementById('dash-total-sales').textContent = formatPrice(totalVentesEncaissees);
-    document.getElementById('dash-total-expenses').textContent = formatPrice(totalDepenses);
+    document.getElementById('dash-total-expenses').textContent = formatPrice(periodDepenses);
     document.getElementById('dash-total-credits').textContent = formatPrice(totalCredits);
     
     const elProfit = document.getElementById('dash-total-profit');
-    elProfit.textContent = formatPrice(beneficeReel);
-    elProfit.className = `text-2xl font-bold ${beneficeReel < 0 ? 'text-red-600' : 'text-green-600'}`;
+    elProfit.textContent = formatPrice(soldeGlobal);
+    elProfit.className = `kpi-value ${soldeGlobal < 0 ? 'text-red-600' : 'text-green-600'}`;
 
     // --- 4. Re-render charts and modals with filtered data ---
     renderDashboardCharts(filteredSales, productStats, startDate, endDate);
@@ -347,7 +364,9 @@ function updateSoldeTheorique() {
 
     allExpensesData.forEach(e => {
         const d = e.date?.toDate() || new Date(0);
-        if (d >= dateFondDeCaisse) {
+        // On ne soustrait l'argent du tiroir QUE si la dépense a été faite avec l'argent de la caisse
+        // (Les anciennes dépenses sans e.source sont considérées comme caisse par défaut)
+        if (d >= dateFondDeCaisse && (!e.source || e.source === 'caisse')) {
             cashOut += e.montant || 0;
         }
     });

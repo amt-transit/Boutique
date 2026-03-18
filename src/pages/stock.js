@@ -1,5 +1,5 @@
 // src/pages/stock.js
-import { db, onSnapshot, collection, query, where, getDocs, doc, writeBatch, increment, serverTimestamp, updateDoc } from '../firebase.js';
+import { db, onSnapshot, collection, query, where, getDocs, doc, writeBatch, increment, serverTimestamp, updateDoc } from '../firebase.js'; 
 import { showToast, formatPrice } from '../ui.js';
 import * as state from '../state.js';
 

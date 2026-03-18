@@ -8,7 +8,7 @@ function renderTable() {
     if(!tbody) return;
     
     tbody.innerHTML = '';
-    let filtered = [...state.allClients];
+    let filtered = [...state.allClients]; 
     
     const searchInput = document.getElementById('credits-search');
     if(searchInput && searchInput.value) { 

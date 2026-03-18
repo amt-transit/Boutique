@@ -3,7 +3,7 @@
 let actionToConfirm = null;
 
 export function formatPrice(p) {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(p || 0);
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(p || 0); 
 }
 
 export function showToast(message, type = "info") {

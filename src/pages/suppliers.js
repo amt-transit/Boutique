@@ -10,7 +10,7 @@ function renderSuppliersTable() {
     if (!tbody) return;
 
     tbody.innerHTML = allSuppliers.map(supplier => `
-        <tr class="border-b dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50">
+        <tr class="border-b dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50"> 
             <td class="p-4 font-medium">${supplier.nom}</td>
             <td class="p-4 text-gray-500">${supplier.contact || '-'}</td>
             <td class="p-4 text-gray-500">${supplier.email || '-'}</td>

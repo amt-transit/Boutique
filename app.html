@@ -210,7 +210,7 @@
             <button class="tab" onclick="switchTab('stock')"><i data-lucide="package"></i><div>Stock</div></button>
             <button class="tab secondary-tab" onclick="switchTab('fournisseurs')"><i data-lucide="truck"></i><div>Achats & Fourn.</div></button>
             <button class="tab" onclick="switchTab('credits')"><i data-lucide="users"></i><div>Clients & Crédits</div></button>
-            <button class="tab" onclick="switchTab('charges')"><i data-lucide="credit-card"></i><div>Charges</div></button>
+            <button class="tab" onclick="switchTab('charges')"><i data-lucide="arrow-left-right"></i><div>Trésorerie</div></button>
             <button class="tab secondary-tab" onclick="switchTab('rapports')"><i data-lucide="bar-chart-3"></i><div>Historique & Clôture</div></button>
             <button class="tab secondary-tab" onclick="switchTab('audit')"><i data-lucide="activity"></i><div>Audit</div></button>
             
@@ -414,7 +414,7 @@
                             </span>
                         </div>
                         <div id="dash-total-profit" class="kpi-value">0 CFA</div>
-                        <div class="kpi-label">Bénéfice Net</div>
+                        <div class="kpi-label" title="Capital de départ + Ventes + Apports - Dépenses">Solde Dispo. (Global)</div>
                         <div class="kpi-bar kpi-bar-green"></div>
                     </div>
 
@@ -590,8 +590,8 @@
                         <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex flex-col gap-2">
                             <div class="flex justify-between items-center">
                                 <div>
-                                    <p class="text-[10px] font-bold text-blue-800 uppercase tracking-wider">Fond de Caisse</p>
-                                    <p class="text-xs text-blue-600">Monnaie du matin</p>
+                                    <p class="text-xs font-extrabold text-blue-800 uppercase tracking-wider">Monnaie du matin</p>
+                                    <p class="text-[10px] text-blue-600 font-medium">Argent dans le tiroir pour démarrer</p>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <input type="number" id="fond-caisse-input" placeholder="0" class="w-20 text-right font-bold text-lg p-1.5 rounded-lg border border-blue-200 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
@@ -601,7 +601,7 @@
                                 </div>
                             </div>
                             <div class="border-t border-blue-100 pt-2 mt-1 flex justify-between items-center">
-                                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider" title="Basé sur le dernier fond enregistré + ventes - dépenses">Espèces attendues en caisse :</span>
+                                <span class="text-[10px] font-extrabold text-gray-600 uppercase tracking-wider">Argent prévu dans le tiroir ce soir :</span>
                                 <span id="solde-theorique-display" class="text-xs font-bold text-blue-800">...</span>
                             </div>
                         </div>
@@ -864,16 +864,21 @@
             <div id="page-charges" class="page-content hidden md:h-full flex flex-col p-4 md:p-6">
     
                 <div class="flex-none space-y-4 mb-4">
-                    <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Charges & Dépenses</h1>
+                    <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Entrées & Sorties d'Argent</h1>
 
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-red-100 flex flex-col lg:flex-row gap-4 lg:items-center">
                         
                         <form id="form-expense" class="flex-1 flex flex-col sm:flex-row gap-3">
-                            <div class="hidden xl:flex items-center gap-2 text-sm font-bold text-gray-700 whitespace-nowrap mr-2">
-                                <i data-lucide="plus-circle" class="text-red-500 w-4 h-4"></i> Nouvelle Dépense
-                            </div>
+                            <select id="exp-type" class="w-full sm:w-auto p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 outline-none text-sm font-bold bg-white">
+                                <option value="sortie">🔴 Dépense / Sortie</option>
+                                <option value="entree">🟢 Apport Externe (Injection)</option>
+                            </select>
                             <input type="text" id="exp-motif" placeholder="Motif (Ex: Facture CIE)" class="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 outline-none" required autocomplete="off">
                             <input type="number" id="exp-montant" placeholder="Montant" class="w-full sm:w-40 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 outline-none" required>
+                            <select id="exp-source" class="w-full sm:w-auto p-2.5 border border-red-200 rounded-lg focus:ring-2 focus:ring-red-200 outline-none text-sm font-bold text-red-800 bg-red-50">
+                                <option value="caisse">📉 Pris dans le tiroir de la boutique</option>
+                                <option value="externe">📱 Payé par le patron / Mobile Money</option>
+                            </select>
                             <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-sm transition">
                                 Ajouter
                             </button>

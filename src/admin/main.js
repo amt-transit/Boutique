@@ -16,6 +16,7 @@ async function getAvailableBoutiques() {
 }
 
 const convertBase64 = (file) => {
+    
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);

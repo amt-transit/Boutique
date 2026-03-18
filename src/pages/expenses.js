@@ -9,7 +9,7 @@ function renderTable() {
     
     tbody.innerHTML = '';
     let filtered = [...state.allExpenses];
-
+ 
     const searchInput = document.getElementById('expenses-search');
     if(searchInput && searchInput.value) { 
         const term = searchInput.value.toLowerCase(); 
@@ -32,7 +32,11 @@ function renderTable() {
     filtered.forEach(ex => {
         const rowClass = ex.deleted ? "deleted-row" : "border-b hover:bg-gray-50 transition";
         const deleteBtn = (state.userRole === 'admin' && !ex.deleted) ? `<button onclick="deleteExp('${ex.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
-        tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4 text-sm text-gray-500">${new Date(ex.date?.seconds*1000).toLocaleDateString()}</td><td class="p-4 font-medium text-gray-800">${ex.motif}</td><td class="p-4 text-right font-bold text-red-600">-${formatPrice(ex.montant)}</td><td class="p-4 text-right">${deleteBtn}</td></tr>`;
+        const isEntree = ex.type === 'entree';
+        const amountClass = isEntree ? 'text-green-600' : 'text-red-600';
+        const sign = isEntree ? '+' : '-';
+        const icon = isEntree ? '🟢' : '🔴';
+        tbody.innerHTML += `<tr class="${rowClass}"><td class="p-4 text-sm text-gray-500">${new Date(ex.date?.seconds*1000).toLocaleDateString()}</td><td class="p-4 font-medium text-gray-800">${icon} ${ex.motif}</td><td class="p-4 text-right font-bold ${amountClass}">${sign}${formatPrice(ex.montant)}</td><td class="p-4 text-right">${deleteBtn}</td></tr>`;
     });
     if (window.lucide) window.lucide.createIcons();
 };
@@ -65,6 +69,8 @@ export function setupExpenses() {
                 await setDoc(doc(collection(db, "boutiques", state.currentBoutiqueId, "expenses")), { 
                     motif: document.getElementById('exp-motif').value, 
                     montant: parseFloat(document.getElementById('exp-montant').value), 
+                    source: document.getElementById('exp-source').value,
+                    type: document.getElementById('exp-type').value,
                     date: serverTimestamp(), 
                     user: state.userId, 
                     deleted: false 

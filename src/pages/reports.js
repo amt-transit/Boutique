@@ -1,5 +1,5 @@
 // src/pages/reports.js
-import { db, getDocs, collection, doc, getDoc, updateDoc, writeBatch, increment, serverTimestamp } from '../firebase.js';
+import { db, getDocs, collection, doc, getDoc, updateDoc, writeBatch, increment, serverTimestamp } from '../firebase.js'; 
 import { showToast, formatPrice } from '../ui.js';
 import * as state from '../state.js';
 
@@ -100,7 +100,11 @@ async function loadData() {
         expSnap.forEach(doc => { 
             const e = doc.data(); 
             if(e.deleted) return; 
-            transactions.push({ date: e.date?.toDate(), desc: e.motif, type: 'SORTIE', amount: e.montant||0, isExpense: true, isEffectiveEntry: false }); 
+            if(e.type === 'entree') {
+                transactions.push({ date: e.date?.toDate(), desc: `🟢 ${e.motif}`, type: 'APPORT', amount: e.montant||0, isExpense: false, isEffectiveEntry: true }); 
+            } else {
+                transactions.push({ date: e.date?.toDate(), desc: `🔴 ${e.motif}`, type: 'SORTIE', amount: e.montant||0, isExpense: true, isEffectiveEntry: false }); 
+            }
         });
 
         const start = new Date(dateStart.value); start.setHours(0,0,0,0); 

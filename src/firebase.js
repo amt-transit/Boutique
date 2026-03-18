@@ -1,7 +1,7 @@
 // src/firebase.js
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { 
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail, deleteUser
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail, deleteUser 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
     getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, 

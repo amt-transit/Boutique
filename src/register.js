@@ -16,7 +16,7 @@ export function setupRegisterForm() {
             loginForm.classList.add('hidden');
             registerForm.classList.remove('hidden');
             authTitle.textContent = "Créer un compte";
-            authSubtitle.textContent = "90 jours d'essai gratuit, sans engagement.";
+            authSubtitle.textContent = "90 jours d'essai gratuit, sans engagement."; 
         });
 
         showLoginLink.addEventListener('click', (e) => {

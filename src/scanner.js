@@ -18,7 +18,7 @@ function showScanFeedback(message, type = 'success') {
     feedbackEl.className = `scan-feedback`;
     feedbackEl.textContent = message;
     
-    const bgColor = type === 'success' ? 'rgba(22, 163, 74, 0.8)' : 'rgba(220, 38, 38, 0.8)';
+    const bgColor = type === 'success' ? 'rgba(22, 163, 74, 0.8)' : 'rgba(220, 38, 38, 0.8)'; 
     feedbackEl.style.backgroundColor = bgColor;
     
     readerDiv.appendChild(feedbackEl);

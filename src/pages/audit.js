@@ -5,7 +5,7 @@ import * as state from '../state.js';
 
 let auditChart = null;
 
-async function loadAudit() {
+async function loadAudit() { 
     if(!state.currentBoutiqueId) return;
     
     const tableBody = document.getElementById('audit-table-body');
@@ -29,7 +29,13 @@ async function loadAudit() {
 
     expSnap.forEach(d => {
         const e = d.data();
-        if(!e.deleted) movements.push({ date: e.date?.toDate(), amount: -(e.montant || 0), type: 'SORTIE', details: e.motif });
+        if(!e.deleted) {
+            if(e.type === 'entree') {
+                movements.push({ date: e.date?.toDate(), amount: (e.montant || 0), type: 'APPORT EXTERNE', details: e.motif });
+            } else {
+                movements.push({ date: e.date?.toDate(), amount: -(e.montant || 0), type: 'SORTIE', details: e.motif });
+            }
+        }
     });
 
     movements.sort((a,b) => a.date - b.date);

@@ -9,7 +9,7 @@ export function setupTeamManagement() {
         btn.addEventListener('click', openTeamModal);
     }
 
-    const desktopBtn = document.getElementById('desktop-team-btn');
+    const desktopBtn = document.getElementById('desktop-team-btn'); 
     if (desktopBtn) {
         desktopBtn.addEventListener('click', openTeamModal);
     }
