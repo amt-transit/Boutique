@@ -88,11 +88,22 @@ async function loadData() {
             let desc = "", typeLabel = "VENTE", isEffectiveEntry = false, isCreditSale = false, isExpense = false;
             
             if (s.type === 'remboursement') { desc = `💰 <strong>Remboursement</strong> (${s.clientName || 'Client'})`; typeLabel = "REMB."; isEffectiveEntry = true; } 
-            else if (s.type === 'retour') { desc = `↩️ <strong>Retour Marchandise</strong>`; typeLabel = "RETOUR"; isExpense = true; }
-            else if (s.type === 'retour_credit') { desc = `↩️ <strong>Retour Crédit</strong>`; typeLabel = "RETOUR_CR"; isExpense = false; }
-            else { 
-                let pList = s.items ? s.items.map(i => `${i.nomDisplay||i.nom} (${i.qty}x${formatPrice(i.prixVente)})`).join(', ') : 'Vente'; 
-                if (s.type === 'credit') { desc = `👤 <strong>${s.clientName}</strong> : ${pList} <span class="text-xs bg-orange-100 text-orange-600 px-1 rounded ml-1">Non Payé</span>`; typeLabel = "CRÉDIT"; isCreditSale = true; } 
+            else {
+                let pList = s.items ? s.items.map(i => {
+                    let nom = i.nomDisplay || i.nom;
+                    if (i.basePrice !== undefined && i.prixVente !== i.basePrice) {
+                        nom = `<span class="text-purple-600 font-bold bg-purple-50 border border-purple-200 px-1 rounded-md" title="Prix de base: ${formatPrice(i.basePrice)}">🏷️ ${nom}</span>`;
+                    }
+                    return `${nom} (${i.qty}x${formatPrice(i.prixVente)})`;
+                }).join(', ') : 'Vente'; 
+                
+                if (s.remise > 0) {
+                    pList += ` <span class="text-red-500 font-bold text-xs bg-red-50 border border-red-100 px-1 rounded">- Remise: ${formatPrice(s.remise)}</span>`;
+                }
+                
+                if (s.type === 'retour') { desc = `↩️ <strong>Retour Marchandise</strong> : ${pList}`; typeLabel = "RETOUR"; isExpense = true; }
+                else if (s.type === 'retour_credit') { desc = `↩️ <strong>Retour Crédit</strong> : ${pList}`; typeLabel = "RETOUR_CR"; isExpense = false; }
+                else if (s.type === 'credit') { desc = `👤 <strong>${s.clientName}</strong> : ${pList} <span class="text-xs bg-orange-100 text-orange-600 px-1 rounded ml-1">Non Payé</span>`; typeLabel = "CRÉDIT"; isCreditSale = true; } 
                 else if (s.type === 'mobile_money') { desc = `📱 <strong class="text-teal-700">${s.clientName}</strong> : ${pList}`; typeLabel = "MOMO"; isEffectiveEntry = true; }
                 else { desc = s.clientName ? `👤 <strong>${s.clientName}</strong> : ${pList}` : pList; typeLabel = "CASH"; isEffectiveEntry = true; } 
             }

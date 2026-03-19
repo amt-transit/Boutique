@@ -43,6 +43,8 @@
    ========================================= */
 *, *::before, *::after { box-sizing: border-box; }
 
+.hidden { display: none !important; }
+
 body {
     font-family: var(--font-body);
     color: var(--color-text-main);

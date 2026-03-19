@@ -537,7 +537,7 @@ window.signalerPerime = () => {
 };
 
 window.deleteProduct = (id) => { 
-    showConfirmModal("Archiver le produit", "Voulez-vous vraiment archiver ce produit ?", () => {
+    showConfirmModal("Retirer", "Retirer ce produit du catalogue ?", () => {
         updateDoc(doc(db, "boutiques", state.currentBoutiqueId, "products", id), { deleted: true }); 
     }); 
 };

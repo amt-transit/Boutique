@@ -28,11 +28,17 @@ function updateDashboardUI() {
     endDate.setHours(23, 59, 59, 999);
 
     // --- 1. Filter Data based on date range ---
-    const filteredSales = allSalesData.filter(s => s.date.toDate() >= startDate && s.date.toDate() <= endDate);
-    const filteredExpenses = allExpensesData.filter(e => e.date.toDate() >= startDate && e.date.toDate() <= endDate);
+    const filteredSales = allSalesData.filter(s => {
+        const d = s.date?.toDate ? s.date.toDate() : new Date();
+        return d >= startDate && d <= endDate;
+    });
+    const filteredExpenses = allExpensesData.filter(e => {
+        const d = e.date?.toDate ? e.date.toDate() : new Date();
+        return d >= startDate && d <= endDate;
+    });
     const filteredCredits = allCreditsData.filter(c => {
         // We only care about credits created in the period for the total credits KPI
-        const createdAt = c.createdAt?.toDate();
+        const createdAt = c.createdAt?.toDate ? c.createdAt.toDate() : new Date();
         return createdAt && createdAt >= startDate && createdAt <= endDate;
     });
 
@@ -170,7 +176,8 @@ function renderDashboardCharts(sales, productStats, startDate, endDate) {
 
         sales.forEach(s => {
             if (s.type === 'cash' || s.type === 'cash_import' || s.type === 'remboursement' || s.type === 'mobile_money') {
-                const dateKey = s.date.toDate().toLocaleDateString('fr-FR', formatOptions);
+                const d = s.date?.toDate ? s.date.toDate() : new Date();
+                const dateKey = d.toLocaleDateString('fr-FR', formatOptions);
                 if (!salesByDate[dateKey]) salesByDate[dateKey] = 0;
                 salesByDate[dateKey] += s.total;
             }
@@ -270,8 +277,11 @@ function setupClickableModals(sales, productStats) {
             <table class="w-full text-sm text-left">
                 <thead class="bg-gray-50 dark:bg-slate-700"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Date</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Description</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Total</th></tr></thead>
                 <tbody>${recent.map(s => {
-                    const desc = s.items?.map(i => i.nomDisplay).join(', ') || 'Vente';
-                    return `<tr class="border-b dark:border-slate-700"><td class="p-3 text-xs dark:text-slate-300">${s.date.toDate().toLocaleString('fr-FR')}</td><td class="p-3 dark:text-slate-200">${desc}</td><td class="p-3 text-right font-bold">${formatPrice(s.total)}</td></tr>`;
+                    let desc = s.items?.map(i => i.nomDisplay).join(', ') || 'Vente';
+                    if (s.type === 'retour' || s.type === 'retour_credit') desc = `↩️ Retour: ${desc}`;
+                    const d = s.date?.toDate ? s.date.toDate() : new Date();
+                    const isReturn = s.type === 'retour' || s.type === 'retour_credit';
+                    return `<tr class="border-b dark:border-slate-700"><td class="p-3 text-xs dark:text-slate-300">${d.toLocaleString('fr-FR')}</td><td class="p-3 dark:text-slate-200">${desc}</td><td class="p-3 text-right font-bold ${isReturn ? 'text-red-500' : ''}">${isReturn ? '-' : ''}${formatPrice(s.total)}</td></tr>`;
                 }).join('')}</tbody>
             </table>`;
     });

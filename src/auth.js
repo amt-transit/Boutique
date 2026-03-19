@@ -271,9 +271,6 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     document.getElementById('top-nav-bar').classList.remove('hidden');
                     document.getElementById('global-search-container').classList.remove('hidden');
                     
-                    // AFFICHER les onglets standards de la boutique
-                    ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => showTab(t));
-                    
                     // MASQUER explicitement les onglets Admin
                     document.getElementById('admin-tab-btn').classList.add('hidden');
                     document.getElementById('admin-access-tab-btn').classList.add('hidden');
@@ -288,8 +285,23 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     if(desktopTeamBtn) desktopTeamBtn.classList.toggle('hidden', !isAdmin);
 
                     if (state.userRole === 'seller') { 
-                        switchTab('dashboard'); // Les vendeurs arrivent maintenant sur leur dashboard simplifié
+                        ['dashboard', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'audit'].forEach(t => hideTab(t));
+                        ['ventes', 'rapports'].forEach(t => showTab(t));
+                        
+                        // On renomme le tab rapports pour le vendeur
+                        const rapportTab = document.querySelector(`.tab[onclick="switchTab('rapports')"]`);
+                        if(rapportTab) {
+                            const div = rapportTab.querySelector('div');
+                            if(div) div.textContent = "Mes Ventes";
+                            // On s'assure qu'il n'est pas caché sur mobile
+                            rapportTab.classList.remove('secondary-tab');
+                        }
+
+                        switchTab('ventes'); // Le vendeur atterrit directement sur la caisse
                     } else { 
+                        ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => showTab(t));
+                        const rapportTabDiv = document.querySelector(`.tab[onclick="switchTab('rapports')"] div`);
+                        if(rapportTabDiv) rapportTabDiv.textContent = "Bilans";
                         switchTab('dashboard'); 
                     }
                     initializeApplication();

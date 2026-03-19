@@ -11,6 +11,7 @@ export let currentAccessShopId = null;
 
 export let allProducts = [];
 export let saleCart = [];
+export let cartDiscount = 0;
 export let allClients = [];
 export let allExpenses = [];
 export let loadedTransactions = [];
@@ -25,6 +26,7 @@ export const setCurrentAccessShopId = (id) => currentAccessShopId = id;
 
 export const setAllProducts = (products) => allProducts = products;
 export const setSaleCart = (cart) => saleCart = cart;
+export const setCartDiscount = (val) => cartDiscount = val;
 export const setAllClients = (clients) => allClients = clients;
 export const setAllExpenses = (expenses) => allExpenses = expenses;
 export const setLoadedTransactions = (transactions) => loadedTransactions = transactions;
@@ -46,13 +48,14 @@ export const addToCart = (product) => {
         }
         existingItem.qty++;
     } else {
-        saleCart.push({ ...product, qty: 1, addedAt: new Date() });
+        saleCart.push({ ...product, qty: 1, basePrice: product.prixVente, addedAt: new Date() });
     }
     return true;
 };
 
 export const clearCart = () => {
     saleCart = [];
+    cartDiscount = 0;
 };
 
 export const updateCartItemPrice = (index, price) => {

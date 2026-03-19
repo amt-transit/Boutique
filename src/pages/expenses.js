@@ -85,7 +85,7 @@ export function setupExpenses() {
 }
 
 window.deleteExp = (id) => { 
-    showConfirmModal("Annuler la dépense", "Voulez-vous annuler cette dépense ? L'argent sera réintégré dans le bilan.", () => {
+    showConfirmModal("Annuler", "Supprimer cette dépense ?", () => {
         updateDoc(doc(db, "boutiques", state.currentBoutiqueId, "expenses", id), { deleted: true });
     });
 };
