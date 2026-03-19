@@ -281,9 +281,11 @@ export function renderProductGrid(searchTerm = "") {
     grid.innerHTML = filtered.map(p => {
         const init = p.nomDisplay.substring(0, 2).toUpperCase();
         const colorClass = colors[p.nomDisplay.charCodeAt(0) % colors.length];
+        const stockBadgeClass = p.stock < 5 ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-gray-400';
         
         return `
-        <div onclick="window.addToCartById('${p.id}')" class="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:shadow-md active:scale-95 transition h-32 select-none">
+        <div onclick="window.addToCartById('${p.id}')" class="relative bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:shadow-md active:scale-95 transition h-32 select-none">
+            <span class="absolute top-2 right-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${stockBadgeClass} pointer-events-none">${p.stock}</span>
             <div class="w-12 h-12 rounded-full ${colorClass} flex items-center justify-center font-extrabold text-xl mb-2 shadow-sm pointer-events-none">${init}</div>
             <div class="text-[11px] font-bold text-center text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight pointer-events-none">${p.nomDisplay}</div>
             <div class="text-sm text-blue-600 dark:text-blue-400 font-extrabold mt-1 pointer-events-none">${formatPrice(p.prixVente)}</div>
