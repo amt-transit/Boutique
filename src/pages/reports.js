@@ -45,8 +45,8 @@ function renderReportsTable() {
         else { classMontant = 'text-green-600 font-bold'; classType = 'text-green-600'; } 
 
         let returnBtn = "";
-        if (state.userRole === 'admin' && (t.type === 'VENTE' || t.type === 'CRÉDIT') && !t.isReturned) {
-            returnBtn = `<button onclick="processReturn('${t.id}')" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 ml-2 border border-red-200" title="Retour">Retour</button>`;
+        if (state.userRole === 'admin' && (t.type === 'CASH' || t.type === 'MOMO' || t.type === 'CRÉDIT') && !t.isReturned) {
+            returnBtn = `<button onclick="openPartialReturnModal('${t.id}')" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 ml-2 border border-red-200" title="Retourner des articles">Retour</button>`;
         } else if (t.isReturned) {
             returnBtn = `<span class="text-xs text-gray-400 ml-2">(Annulé)</span>`;
             row.classList.add('opacity-50'); 
@@ -94,7 +94,13 @@ async function loadData() {
                     if (i.basePrice !== undefined && i.prixVente !== i.basePrice) {
                         nom = `<span class="text-purple-600 font-bold bg-purple-50 border border-purple-200 px-1 rounded-md" title="Prix de base: ${formatPrice(i.basePrice)}">🏷️ ${nom}</span>`;
                     }
-                    return `${nom} (${i.qty}x${formatPrice(i.prixVente)})`;
+                    
+                    let qtyDisplay = i.qty;
+                    if (i.returnedQty > 0) {
+                        qtyDisplay = `<span class="text-red-500 line-through mr-1">${i.qty}</span>${i.qty - i.returnedQty}`;
+                    }
+                    
+                    return `${nom} (${qtyDisplay}x${formatPrice(i.prixVente)})`;
                 }).join(', ') : 'Vente'; 
                 
                 if (s.remise > 0) {
@@ -228,41 +234,140 @@ export function setupReports() {
     observer.observe(document.getElementById('page-rapports'), { attributes: true, attributeFilter: ['class'] });
 }
 
-window.processReturn = (saleId) => {
-    showConfirmModal("Retour de marchandise", "Confirmer le retour de cette vente ? Le stock des produits sera réajusté.", async () => {
-        const t = state.loadedTransactions.find(tr => tr.id === saleId);
-        if(!t) return;
+window.openPartialReturnModal = (saleId) => {
+    let modal = document.getElementById('partial-return-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'partial-return-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 hidden flex-col items-center justify-center z-[200] p-4 backdrop-blur-sm';
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col animate-fade-in-up">
+                <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-3">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <i data-lucide="corner-down-left" class="text-red-500"></i> Retour Marchandise
+                    </h3>
+                    <button onclick="document.getElementById('partial-return-modal').classList.add('hidden')" class="bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 p-2 rounded-full text-gray-600 dark:text-gray-300 transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+                
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Spécifiez la quantité d'articles à retourner en rayon :</p>
+                
+                <input type="hidden" id="partial-return-sale-id">
+                <div id="partial-return-items" class="overflow-y-auto flex-1 mb-4 border border-gray-200 dark:border-slate-700 rounded-xl divide-y divide-gray-100 dark:divide-slate-700">
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-2">
+                    <button onclick="document.getElementById('partial-return-modal').classList.add('hidden')" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-xl font-bold transition">Annuler</button>
+                    <button onclick="submitPartialReturn()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition">
+                        Valider le retour
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    const t = state.loadedTransactions.find(tr => tr.id === saleId);
+    if(!t || !t.originalItems) return;
+
+    let html = '';
+    let hasReturnableItems = false;
+
+    t.originalItems.forEach((item, index) => {
+        const returned = item.returnedQty || 0;
+        const returnable = item.qty - returned;
         
-        try {
-            const batch = writeBatch(db);
-            if(t.originalItems) { 
-                t.originalItems.forEach(i => { 
-                    const pr = doc(db, "boutiques", state.currentBoutiqueId, "products", i.id); 
-                    batch.update(pr, { stock: increment(i.qty), quantiteVendue: increment(-i.qty) }); 
-                    const histRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
-                    batch.set(histRef, { productId: i.id, nom: i.nomDisplay, type: 'retour', quantite: i.qty, date: serverTimestamp(), user: state.userId });
-                }); 
-            }
-            
-            if(t.isCreditSale) { 
-                const sDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "ventes", saleId));
-                if(sDoc.exists() && sDoc.data().clientId) {
-                     batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", sDoc.data().clientId), { dette: increment(-t.amount) });
-                     const retRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
-                     batch.set(retRef, { date: serverTimestamp(), total: t.amount, profit: 0, type: 'retour_credit', originalRef: saleId, items: t.originalItems || [], vendeurId: state.userId, deleted: false });
-                }
-            } else {
-                const retRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
-                batch.set(retRef, { date: serverTimestamp(), total: t.amount, profit: 0, type: 'retour', originalRef: saleId, items: t.originalItems || [], vendeurId: state.userId, deleted: false });
-            }
-            
-            batch.update(doc(db, "boutiques", state.currentBoutiqueId, "ventes", saleId), { isReturned: true });
-            
-            await batch.commit(); 
-            showToast("Retour effectué !"); 
-            loadData();
-        } catch(e) { 
-            showToast("Erreur retour", "error"); 
+        if (returnable > 0) {
+            hasReturnableItems = true;
+            html += `
+                <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
+                    <div class="flex-1">
+                        <div class="font-bold text-sm text-gray-800 dark:text-gray-200">${item.nomDisplay || item.nom}</div>
+                        <div class="text-xs text-gray-500 mt-1">Acheté: <span class="font-bold">${item.qty}</span> | P.U: <span class="font-bold">${formatPrice(item.prixVente)}</span></div>
+                        ${returned > 0 ? `<div class="text-[10px] text-orange-500 font-bold mt-0.5">⚠️ Déjà retourné: ${returned}</div>` : ''}
+                    </div>
+                    <div class="w-24 text-right">
+                        <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Rendre (Qté)</label>
+                        <input type="number" id="return-qty-${index}" min="0" max="${returnable}" value="0" class="w-16 border-2 p-2 rounded-lg text-center font-bold focus:border-red-500 outline-none bg-white dark:bg-slate-900 dark:text-white">
+                    </div>
+                </div>
+            `;
         }
     });
+
+    if (!hasReturnableItems) {
+        showToast("Tous les articles de cette vente ont déjà été retournés.", "info");
+        return;
+    }
+
+    document.getElementById('partial-return-items').innerHTML = html;
+    document.getElementById('partial-return-sale-id').value = saleId;
+    
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex'; // Force display for Tailwind overrides
+};
+
+window.submitPartialReturn = async () => {
+    const saleId = document.getElementById('partial-return-sale-id').value;
+    const t = state.loadedTransactions.find(tr => tr.id === saleId);
+    if(!t || !t.originalItems) return;
+
+    const itemsToReturn = [];
+    let returnTotal = 0;
+    let allItemsFullyReturned = true;
+
+    const updatedOriginalItems = [...t.originalItems]; // Copie des articles originaux
+
+    // Parcourir les inputs pour trouver les quantités à retourner
+    for (let i = 0; i < updatedOriginalItems.length; i++) {
+        const item = updatedOriginalItems[i];
+        const input = document.getElementById(`return-qty-${i}`);
+        
+        if (input) {
+            const qtyToReturn = parseInt(input.value) || 0;
+            const returnable = item.qty - (item.returnedQty || 0);
+
+            if (qtyToReturn > 0 && qtyToReturn <= returnable) {
+                itemsToReturn.push({ ...item, qty: qtyToReturn });
+                returnTotal += qtyToReturn * item.prixVente;
+                item.returnedQty = (item.returnedQty || 0) + qtyToReturn; // Mise à jour du suivi dans la vente originale
+            }
+        }
+        
+        if ((item.returnedQty || 0) < item.qty) {
+            allItemsFullyReturned = false;
+        }
+    }
+
+    if (itemsToReturn.length === 0) {
+        return showToast("Veuillez sélectionner au moins un article (Quantité > 0).", "warning");
+    }
+
+    document.getElementById('partial-return-modal').classList.add('hidden');
+
+    try {
+        const batch = writeBatch(db);
+
+        // 1. Remettre en stock
+        itemsToReturn.forEach(i => {
+            batch.update(doc(db, "boutiques", state.currentBoutiqueId, "products", i.id), { stock: increment(i.qty), quantiteVendue: increment(-i.qty) });
+            batch.set(doc(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock")), { productId: i.id, nom: i.nomDisplay || i.nom, type: 'retour', quantite: i.qty, date: serverTimestamp(), user: state.userId });
+        });
+
+        // 2. Créer l'écriture de remboursement (Cash ou Crédit)
+        if(t.isCreditSale) {
+            const sDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "ventes", saleId));
+            if(sDoc.exists() && sDoc.data().clientId) batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", sDoc.data().clientId), { dette: increment(-returnTotal) });
+            batch.set(doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes")), { date: serverTimestamp(), total: returnTotal, profit: 0, type: 'retour_credit', originalRef: saleId, items: itemsToReturn, vendeurId: state.userId, deleted: false });
+        } else {
+            batch.set(doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes")), { date: serverTimestamp(), total: returnTotal, profit: 0, type: 'retour', originalRef: saleId, items: itemsToReturn, vendeurId: state.userId, deleted: false });
+        }
+
+        // 3. Mettre à jour la vente d'origine pour ne pas pouvoir retourner les mêmes articles
+        batch.update(doc(db, "boutiques", state.currentBoutiqueId, "ventes", saleId), { items: updatedOriginalItems, isReturned: allItemsFullyReturned });
+        
+        await batch.commit();
+        showToast("Retour partiel validé avec succès !");
+        loadData();
+    } catch(e) { console.error(e); showToast("Erreur lors du retour", "error"); }
 };
