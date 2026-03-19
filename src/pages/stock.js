@@ -1,6 +1,6 @@
 // src/pages/stock.js
 import { db, onSnapshot, collection, query, where, getDocs, doc, writeBatch, increment, serverTimestamp, updateDoc } from '../firebase.js'; 
-import { showToast, formatPrice } from '../ui.js';
+import { showToast, formatPrice, showPromptModal, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
 
 export function setupStockManagement() {
@@ -515,23 +515,29 @@ window.openEditProduct = async (encodedProduct) => {
     }
 };
 
-window.signalerPerime = async () => {
+window.signalerPerime = () => {
     const id = document.getElementById('edit-prod-id').value;
     const nom = document.getElementById('edit-prod-nom').value;
-    const qteStr = prompt("Quantité périmée ou cassée à retirer du stock :");
-    if(!qteStr) return;
-    const qte = parseInt(qteStr);
-    if(isNaN(qte) || qte <= 0) return showToast("Quantité invalide", "error");
-    try {
-        const batch = writeBatch(db);
-        const prodRef = doc(db, "boutiques", state.currentBoutiqueId, "products", id);
-        batch.update(prodRef, { stock: increment(-qte) });
-        const traceRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
-        batch.set(traceRef, { productId: id, productName: nom, type: 'perime', quantite: qte, date: serverTimestamp(), user: state.userId });
-        await batch.commit();
-        showToast(`${qte} produits retirés`);
-        document.getElementById('edit-product-modal').classList.add('hidden');
-    } catch(e) { console.error(e); showToast("Erreur", "error"); }
+    
+    showPromptModal("Signaler une perte", "Quantité périmée ou cassée à retirer du stock :", "number", async (qteStr) => {
+        if(!qteStr) return;
+        const qte = parseInt(qteStr);
+        if(isNaN(qte) || qte <= 0) return showToast("Quantité invalide", "error");
+        try {
+            const batch = writeBatch(db);
+            const prodRef = doc(db, "boutiques", state.currentBoutiqueId, "products", id);
+            batch.update(prodRef, { stock: increment(-qte) });
+            const traceRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
+            batch.set(traceRef, { productId: id, productName: nom, type: 'perime', quantite: qte, date: serverTimestamp(), user: state.userId });
+            await batch.commit();
+            showToast(`${qte} produits retirés`);
+            document.getElementById('edit-product-modal').classList.add('hidden');
+        } catch(e) { console.error(e); showToast("Erreur", "error"); }
+    });
 };
 
-window.deleteProduct = (id) => { if(confirm("Archiver ce produit ?")) updateDoc(doc(db, "boutiques", state.currentBoutiqueId, "products", id), { deleted: true }); };
+window.deleteProduct = (id) => { 
+    showConfirmModal("Archiver le produit", "Voulez-vous vraiment archiver ce produit ?", () => {
+        updateDoc(doc(db, "boutiques", state.currentBoutiqueId, "products", id), { deleted: true }); 
+    }); 
+};

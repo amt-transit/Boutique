@@ -82,6 +82,42 @@ export function showConfirmModal(title, message, onConfirm) {
     modal.classList.remove('hidden');
 }
 
+export function showPromptModal(title, message, inputType = 'text', onConfirm) {
+    const modal = document.getElementById('prompt-modal');
+    const titleEl = document.getElementById('prompt-modal-title');
+    const labelEl = document.getElementById('prompt-modal-label');
+    const inputEl = document.getElementById('prompt-modal-input');
+    const confirmBtn = document.getElementById('prompt-modal-confirm');
+    const cancelBtn = document.getElementById('prompt-modal-cancel');
+
+    if (!modal) return;
+
+    titleEl.textContent = title;
+    labelEl.textContent = message;
+    inputEl.type = inputType;
+    inputEl.value = '';
+
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    const confirmHandler = () => {
+        const val = document.getElementById('prompt-modal-input').value;
+        if (onConfirm) onConfirm(val);
+        modal.classList.add('hidden');
+    };
+
+    newConfirmBtn.addEventListener('click', confirmHandler);
+    newCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    
+    inputEl.onkeydown = (e) => { if (e.key === 'Enter') confirmHandler(); };
+
+    modal.classList.remove('hidden');
+    setTimeout(() => inputEl.focus(), 100);
+}
+
 export function setupModalListeners() {
     const invoiceClose = document.getElementById('invoice-modal-close');
     if (invoiceClose) {

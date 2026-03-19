@@ -305,8 +305,10 @@ window.removeItemFromCart = (index) => {
 }
 
 window.clearCart = () => {
-    if (state.saleCart.length > 0 && confirm("Vider le panier ?")) {
-        state.clearCart();
-        renderCart();
+    if (state.saleCart.length > 0) {
+        showConfirmModal("Vider le panier", "Voulez-vous vraiment vider le panier en cours ?", () => {
+            state.clearCart();
+            renderCart();
+        });
     }
 };

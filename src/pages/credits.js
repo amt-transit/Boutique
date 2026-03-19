@@ -1,6 +1,6 @@
 // src/pages/credits.js
 import { db, onSnapshot, collection, doc, setDoc, writeBatch, increment, serverTimestamp, updateDoc } from '../firebase.js';
-import { showToast, formatPrice } from '../ui.js';
+import { showToast, formatPrice, showPromptModal, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
 
 function renderTable() {
@@ -63,28 +63,28 @@ export function setupCredits() {
     // Note: The client form submission is handled in sales.js due to isQuickAddMode logic
 }
 
-window.rembourserClient = async (id, dette, nomClient) => { 
-    const m = prompt(`Dette: ${formatPrice(dette)}
-Montant versé :`); 
-    if(!m) return; 
-    const montant = parseFloat(m); 
-    if(isNaN(montant) || montant <= 0) return showToast("Montant invalide", "error"); 
-    try { 
-        const batch = writeBatch(db); 
-        const clientRef = doc(db, "boutiques", state.currentBoutiqueId, "clients", id); 
-        batch.update(clientRef, { dette: increment(-montant) }); 
-        const moveRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes")); 
-        batch.set(moveRef, { date: serverTimestamp(), total: montant, profit: 0, type: 'remboursement', clientName: nomClient, clientId: id, items: [], vendeurId: state.userId, deleted: false }); 
-        await batch.commit(); 
-        showToast("Remboursement encaissé !", "success"); 
-    } catch(e) { 
-        console.error(e); 
-        showToast("Erreur", "error"); 
-    } 
+window.rembourserClient = (id, dette, nomClient) => { 
+    showPromptModal("Encaisser un remboursement", `Dette Actuelle: ${formatPrice(dette)}\nMontant versé par le client :`, "number", async (m) => {
+        if(!m) return; 
+        const montant = parseFloat(m); 
+        if(isNaN(montant) || montant <= 0) return showToast("Montant invalide", "error"); 
+        try { 
+            const batch = writeBatch(db); 
+            const clientRef = doc(db, "boutiques", state.currentBoutiqueId, "clients", id); 
+            batch.update(clientRef, { dette: increment(-montant) }); 
+            const moveRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes")); 
+            batch.set(moveRef, { date: serverTimestamp(), total: montant, profit: 0, type: 'remboursement', clientName: nomClient, clientId: id, items: [], vendeurId: state.userId, deleted: false }); 
+            await batch.commit(); 
+            showToast("Remboursement encaissé !", "success"); 
+        } catch(e) { 
+            console.error(e); 
+            showToast("Erreur", "error"); 
+        } 
+    });
 };
 
 window.deleteClient = (id) => { 
-    if(confirm("Archiver ce client ? Sa dette sera conservée mais il n'apparaîtra plus dans les listes.")) {
+    showConfirmModal("Archiver le client", "Voulez-vous archiver ce client ? Sa dette sera conservée mais il n'apparaîtra plus dans les listes.", () => {
         updateDoc(doc(db, "boutiques", state.currentBoutiqueId, "clients", id), { deleted: true }); 
-    }
+    });
 };

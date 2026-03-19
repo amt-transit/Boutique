@@ -14,6 +14,7 @@ async function loadAudit() {
 
     const salesSnap = await getDocs(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
     const expSnap = await getDocs(collection(db, "boutiques", state.currentBoutiqueId, "expenses"));
+    const stockSnap = await getDocs(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
     
     let movements = [];
 
@@ -35,6 +36,14 @@ async function loadAudit() {
             } else {
                 movements.push({ date: e.date?.toDate(), amount: -(e.montant || 0), type: 'SORTIE', details: e.motif });
             }
+        }
+    });
+    
+    stockSnap.forEach(d => {
+        const m = d.data();
+        if (m.type === 'ajout' && m.prixAchat > 0 && m.quantite > 0) {
+            const totalAchat = (m.prixAchat || 0) * (m.quantite || 0);
+            movements.push({ date: m.date?.toDate(), amount: -totalAchat, type: 'ACHAT STOCK', details: `${m.nom} (x${m.quantite})` });
         }
     });
 

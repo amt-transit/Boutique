@@ -1,6 +1,6 @@
 import { db, collection, query, where, getDocs, doc, getDoc, setDoc, serverTimestamp, getFirestore } from '../firebase.js';
 import { firebaseConfig, initializeApp, getAuth, createUserWithEmailAndPassword, signOut, deleteApp } from '../firebase.js';
-import { showToast } from '../ui.js';
+import { showToast, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
 
 export function setupTeamManagement() {
@@ -84,8 +84,7 @@ async function handleAddSeller(e) {
 
         // RÈGLE : Le 2ème vendeur nécessite le statut 'actif'
         if (count >= 1 && statut !== 'actif') {
-            showToast("Limite atteinte pour la version gratuite.", "warning");
-            alert("Limite atteinte (1 vendeur gratuit).\n\nPour ajouter une deuxième vendeuse, votre boutique doit passer au statut 'Actif' (Paiement OK).");
+            showConfirmModal("Limite atteinte", "Vous avez atteint la limite (1 vendeur gratuit).\n\nPour ajouter un autre vendeur, votre boutique doit passer au statut 'Actif' (Paiement OK).", () => {});
             return;
         }
 

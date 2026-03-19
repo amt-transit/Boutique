@@ -2,7 +2,7 @@ import {
     db, auth, onAuthStateChanged, signInWithEmailAndPassword, signOut, 
     sendPasswordResetEmail, getDoc, doc, updateDoc
 } from './firebase.js';
-import { showToast, switchTab, showAllTabs, hideTab, showTab, showConfirmModal } from './ui.js'; 
+import { showToast, switchTab, showAllTabs, hideTab, showTab, showConfirmModal, showPromptModal } from './ui.js'; 
 import * as state from './state.js';
 
 export function setupLoginForm() {
@@ -75,14 +75,21 @@ export function setupLoginForm() {
     }
 
     if(forgotLink) {
-        forgotLink.addEventListener('click', async (e) => {
+        forgotLink.addEventListener('click', (e) => {
             e.preventDefault();
             let email = document.getElementById('login-email').value;
-            if (!email) email = prompt("Entrez votre email :");
-            if (email) { 
+            if (!email) {
+                showPromptModal("Mot de passe oublié", "Veuillez entrer l'adresse email associée à votre compte :", "email", async (val) => {
+                    if (val) {
+                        try { 
+                            await sendPasswordResetEmail(auth, val); 
+                            showToast("Email envoyé !", "success"); 
+                        } catch (err) { showToast(err.message, "error"); } 
+                    }
+                });
+            } else {
                 try { 
-                    await sendPasswordResetEmail(auth, email); 
-                    showToast("Email envoyé !", "success"); 
+                    sendPasswordResetEmail(auth, email).then(() => showToast("Email envoyé !", "success")).catch(err => showToast(err.message, "error")); 
                 } catch (err) { showToast(err.message, "error"); } 
             }
         });

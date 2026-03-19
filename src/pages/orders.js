@@ -1,5 +1,5 @@
 import { db, onSnapshot, query, collection, where, doc, getDoc, writeBatch, increment, serverTimestamp } from '../firebase.js';
-import { showToast, formatPrice } from '../ui.js';
+import { showToast, formatPrice, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
 
 export function setupOrdersListener() {
@@ -52,70 +52,70 @@ export function setupOrdersListener() {
     });
 }
 
-window.validateOrder = async (orderId) => {
-    if(!confirm("Le client a payé ? Confirmer la vente ?")) return;
+window.validateOrder = (orderId) => {
+    showConfirmModal("Encaisser la commande", "Le client a payé ? Confirmer la vente ?", async () => {
+        try {
+            const orderDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
+            if(!orderDoc.exists()) return;
+            const order = orderDoc.data();
 
-    try {
-        const orderDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
-        if(!orderDoc.exists()) return;
-        const order = orderDoc.data();
+            const batch = writeBatch(db);
 
-        const batch = writeBatch(db);
-
-        const saleRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
-        
-        let profit = 0;
-        for(const item of order.items) {
-            profit += (item.prixVente - (item.prixAchat || 0)) * item.qty;
+            const saleRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
             
-            const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
-            batch.update(pRef, { quantiteVendue: increment(item.qty) });
+            let profit = 0;
+            for(const item of order.items) {
+                profit += (item.prixVente - (item.prixAchat || 0)) * item.qty;
+                
+                const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
+                batch.update(pRef, { quantiteVendue: increment(item.qty) });
+            }
+
+            batch.set(saleRef, {
+                items: order.items,
+                total: order.total,
+                profit: profit,
+                date: serverTimestamp(),
+                vendeurId: state.userId,
+                type: 'cash',
+                clientName: order.client,
+                deleted: false
+            });
+
+            batch.delete(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
+
+            await batch.commit();
+            showToast("Vente encaissée avec succès !", "success");
+
+        } catch (e) {
+            console.error(e);
+            showToast("Erreur validation", "error");
         }
-
-        batch.set(saleRef, {
-            items: order.items,
-            total: order.total,
-            profit: profit,
-            date: serverTimestamp(),
-            vendeurId: state.userId,
-            type: 'cash',
-            clientName: order.client,
-            deleted: false
-        });
-
-        batch.delete(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
-
-        await batch.commit();
-        showToast("Vente encaissée avec succès !", "success");
-
-    } catch (e) {
-        console.error(e);
-        showToast("Erreur validation", "error");
-    }
+    });
 };
 
-window.cancelOrder = async (orderId) => {
-    if(!confirm("Annuler cette commande et remettre les articles en stock ?")) return;
+window.cancelOrder = (orderId) => {
+    showConfirmModal("Annuler la commande", "Annuler cette commande et remettre les articles en stock ?", async () => {
+        try {
+            const orderDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
+            if(!orderDoc.exists()) return;
+            const order = orderDoc.data();
 
-    try {
-        const orderDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
-        if(!orderDoc.exists()) return;
-        const order = orderDoc.data();
+            const batch = writeBatch(db);
 
-        const batch = writeBatch(db);
+            for (const item of order.items) {
+                const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
+                batch.update(pRef, { stock: increment(item.qty) });
+            }
 
-        for (const item of order.items) {
-            const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
-            batch.update(pRef, { stock: increment(item.qty) });
+            batch.delete(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
+
+            await batch.commit();
+            showToast("Commande annulée, stock restauré.");
+
+        } catch (e) {
+            console.error(e);
+            showToast("Erreur annulation", "error");
         }
-
-        batch.delete(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
-
-        await batch.commit();
-        showToast("Commande annulée, stock restauré.");
-
-    } catch (e) {
-        console.error(e);
-        showToast("Erreur annulation", "error");
-    }
+    });
 };

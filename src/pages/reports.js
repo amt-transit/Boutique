@@ -1,6 +1,6 @@
 // src/pages/reports.js
 import { db, getDocs, collection, doc, getDoc, updateDoc, writeBatch, increment, serverTimestamp } from '../firebase.js'; 
-import { showToast, formatPrice } from '../ui.js';
+import { showToast, formatPrice, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
 
 function renderReportsTable() {
@@ -39,6 +39,7 @@ function renderReportsTable() {
         let classType = 'text-gray-500';
         if (t.type === 'RETOUR' || t.type === 'RETOUR_CR') { classMontant = 'text-red-600 font-bold'; classType = 'text-red-500'; } 
         else if (t.isExpense) { classMontant = 'text-red-600 font-bold'; classType = 'text-red-400'; } 
+        else if (t.type === 'ACHAT') { classMontant = 'text-red-600 font-bold'; classType = 'text-blue-500'; }
         else if (t.isCreditSale) { classMontant = 'text-orange-400 italic'; classType = 'text-orange-400'; } 
         else if (t.type === 'MOMO') { classMontant = 'text-teal-600 font-bold'; classType = 'text-teal-600'; }
         else { classMontant = 'text-green-600 font-bold'; classType = 'text-green-600'; } 
@@ -78,6 +79,7 @@ async function loadData() {
     try {
         const salesSnap = await getDocs(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
         const expSnap = await getDocs(collection(db, "boutiques", state.currentBoutiqueId, "expenses"));
+        const stockSnap = await getDocs(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
         
         let transactions = [];
         salesSnap.forEach(doc => {
@@ -104,6 +106,15 @@ async function loadData() {
                 transactions.push({ date: e.date?.toDate(), desc: `🟢 ${e.motif}`, type: 'APPORT', amount: e.montant||0, isExpense: false, isEffectiveEntry: true }); 
             } else {
                 transactions.push({ date: e.date?.toDate(), desc: `🔴 ${e.motif}`, type: 'SORTIE', amount: e.montant||0, isExpense: true, isEffectiveEntry: false }); 
+            }
+        });
+        
+        stockSnap.forEach(doc => {
+            const m = doc.data();
+            // On ne compte que les ajouts de stock comme des dépenses (achats de marchandises)
+            if (m.type === 'ajout' && m.prixAchat > 0 && m.quantite > 0) {
+                const totalAchat = (m.prixAchat || 0) * (m.quantite || 0);
+                transactions.push({ date: m.date?.toDate(), desc: `📦 <strong>Achat Marchandise</strong> : ${m.nom} (${m.quantite})`, type: 'ACHAT', amount: totalAchat, isExpense: true, isEffectiveEntry: false });
             }
         });
 
@@ -206,41 +217,41 @@ export function setupReports() {
     observer.observe(document.getElementById('page-rapports'), { attributes: true, attributeFilter: ['class'] });
 }
 
-window.processReturn = async (saleId) => {
-    if(!confirm("Confirmer le retour de cette vente ? Le stock sera réajusté.")) return;
-    
-    const t = state.loadedTransactions.find(tr => tr.id === saleId);
-    if(!t) return;
-    
-    try {
-        const batch = writeBatch(db);
-        if(t.originalItems) { 
-            t.originalItems.forEach(i => { 
-                const pr = doc(db, "boutiques", state.currentBoutiqueId, "products", i.id); 
-                batch.update(pr, { stock: increment(i.qty), quantiteVendue: increment(-i.qty) }); 
-                const histRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
-                batch.set(histRef, { productId: i.id, nom: i.nomDisplay, type: 'retour', quantite: i.qty, date: serverTimestamp(), user: state.userId });
-            }); 
-        }
+window.processReturn = (saleId) => {
+    showConfirmModal("Retour de marchandise", "Confirmer le retour de cette vente ? Le stock des produits sera réajusté.", async () => {
+        const t = state.loadedTransactions.find(tr => tr.id === saleId);
+        if(!t) return;
         
-        if(t.isCreditSale) { 
-            const sDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "ventes", saleId));
-            if(sDoc.exists() && sDoc.data().clientId) {
-                 batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", sDoc.data().clientId), { dette: increment(-t.amount) });
-                 const retRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
-                 batch.set(retRef, { date: serverTimestamp(), total: t.amount, profit: 0, type: 'retour_credit', originalRef: saleId, items: t.originalItems || [], vendeurId: state.userId, deleted: false });
+        try {
+            const batch = writeBatch(db);
+            if(t.originalItems) { 
+                t.originalItems.forEach(i => { 
+                    const pr = doc(db, "boutiques", state.currentBoutiqueId, "products", i.id); 
+                    batch.update(pr, { stock: increment(i.qty), quantiteVendue: increment(-i.qty) }); 
+                    const histRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
+                    batch.set(histRef, { productId: i.id, nom: i.nomDisplay, type: 'retour', quantite: i.qty, date: serverTimestamp(), user: state.userId });
+                }); 
             }
-        } else {
-            const retRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
-            batch.set(retRef, { date: serverTimestamp(), total: t.amount, profit: 0, type: 'retour', originalRef: saleId, items: t.originalItems || [], vendeurId: state.userId, deleted: false });
+            
+            if(t.isCreditSale) { 
+                const sDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "ventes", saleId));
+                if(sDoc.exists() && sDoc.data().clientId) {
+                     batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", sDoc.data().clientId), { dette: increment(-t.amount) });
+                     const retRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
+                     batch.set(retRef, { date: serverTimestamp(), total: t.amount, profit: 0, type: 'retour_credit', originalRef: saleId, items: t.originalItems || [], vendeurId: state.userId, deleted: false });
+                }
+            } else {
+                const retRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
+                batch.set(retRef, { date: serverTimestamp(), total: t.amount, profit: 0, type: 'retour', originalRef: saleId, items: t.originalItems || [], vendeurId: state.userId, deleted: false });
+            }
+            
+            batch.update(doc(db, "boutiques", state.currentBoutiqueId, "ventes", saleId), { isReturned: true });
+            
+            await batch.commit(); 
+            showToast("Retour effectué !"); 
+            loadData();
+        } catch(e) { 
+            showToast("Erreur retour", "error"); 
         }
-        
-        batch.update(doc(db, "boutiques", state.currentBoutiqueId, "ventes", saleId), { isReturned: true });
-        
-        await batch.commit(); 
-        showToast("Retour effectué !"); 
-        loadData();
-    } catch(e) { 
-        showToast("Erreur retour", "error"); 
-    }
+    });
 };

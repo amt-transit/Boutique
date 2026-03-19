@@ -1,6 +1,6 @@
 // src/admin/main.js
 import { db, collection, getDocs, doc, setDoc, serverTimestamp, updateDoc, addDoc, query, where, getAuth, deleteApp, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, initializeApp } from '../firebase.js';
-import { showToast, showTab, hideTab, switchTab } from '../ui.js';
+import { showToast, showTab, hideTab, switchTab, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
 import { firebaseConfig } from '../firebase.js'; // Need the config for secondary app
 
@@ -375,15 +375,16 @@ export async function setupAdminAccessPage() {
     newSearchInput.addEventListener('input', (e) => render(e.target.value));
 }
 
-const sendResetMail = async (email) => {
-    if(!confirm(`Envoyer un email de réinitialisation de mot de passe à : ${email} ?`)) return;
-    try {
-        const auth = getAuth();
-        await sendPasswordResetEmail(auth, email);
-        showToast("Email envoyé avec succès !", "success");
-    } catch(e) {
-        showToast("Erreur: " + e.message, "error");
-    }
+const sendResetMail = (email) => {
+    showConfirmModal("Réinitialisation Mot de passe", `Envoyer un email de réinitialisation de mot de passe à : ${email} ?`, async () => {
+        try {
+            const auth = getAuth();
+            await sendPasswordResetEmail(auth, email);
+            showToast("Email envoyé avec succès !", "success");
+        } catch(e) {
+            showToast("Erreur: " + e.message, "error");
+        }
+    });
 };
 
 const openSubscriptionManager = function(id, nom, statut, dateString) {
@@ -419,31 +420,31 @@ const openSubscriptionManager = function(id, nom, statut, dateString) {
 // --- IMMERSION MODE ---
 let originalBoutiqueId = null;
 
-const enterImmersionMode = async function(shopId, shopName) {
-    if(!confirm(`Entrer dans la boutique "${shopName}" ?`)) return;
-    
-    originalBoutiqueId = state.currentBoutiqueId; 
-    state.setCurrentBoutiqueId(shopId);
-    state.setUserRole('admin');
+const enterImmersionMode = function(shopId, shopName) {
+    showConfirmModal("Mode Immersion", `Entrer dans la boutique "${shopName}" pour voir ce que voit le client ?`, () => {
+        originalBoutiqueId = state.currentBoutiqueId; 
+        state.setCurrentBoutiqueId(shopId);
+        state.setUserRole('admin');
 
-    document.getElementById('immersion-banner').classList.remove('hidden');
-    document.getElementById('immersion-shop-name').textContent = shopName;
-    document.getElementById('admin-tab-btn').classList.add('hidden');
-    document.getElementById('admin-access-tab-btn').classList.add('hidden');
-    document.getElementById('global-search-container').classList.remove('hidden');
+        document.getElementById('immersion-banner').classList.remove('hidden');
+        document.getElementById('immersion-shop-name').textContent = shopName;
+        document.getElementById('admin-tab-btn').classList.add('hidden');
+        document.getElementById('admin-access-tab-btn').classList.add('hidden');
+        document.getElementById('global-search-container').classList.remove('hidden');
 
-    // Afficher les onglets de la boutique pour l'immersion
-    ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => showTab(t));
+        // Afficher les onglets de la boutique pour l'immersion
+        ['dashboard', 'ventes', 'commandes', 'stock', 'fournisseurs', 'credits', 'charges', 'rapports', 'audit'].forEach(t => showTab(t));
 
-    // Correction: Vérifier si la fonction existe avant de l'appeler
-    if (typeof window.initializeApplication === 'function') {
-        window.initializeApplication();
-    } else {
-        console.warn("window.initializeApplication introuvable. Assurez-vous que le script principal est chargé.");
-    }
-    
-    switchTab('dashboard');
-    showToast(`Immersion dans ${shopName}`);
+        // Correction: Vérifier si la fonction existe avant de l'appeler
+        if (typeof window.initializeApplication === 'function') {
+            window.initializeApplication();
+        } else {
+            console.warn("window.initializeApplication introuvable. Assurez-vous que le script principal est chargé.");
+        }
+        
+        switchTab('dashboard');
+        showToast(`Immersion dans ${shopName}`);
+    });
 };
 
 // Gardé sur window car probablement appelé depuis le HTML de la bannière statique

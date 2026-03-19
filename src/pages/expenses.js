@@ -1,6 +1,6 @@
 // src/pages/expenses.js
 import { db, onSnapshot, collection, setDoc, doc, serverTimestamp, updateDoc } from '../firebase.js';
-import { showToast, formatPrice } from '../ui.js';
+import { showToast, formatPrice, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
 
 function renderTable() {
@@ -85,7 +85,7 @@ export function setupExpenses() {
 }
 
 window.deleteExp = (id) => { 
-    if(confirm("Annuler cette dépense ? L'argent sera réintégré dans le bilan.")) {
+    showConfirmModal("Annuler la dépense", "Voulez-vous annuler cette dépense ? L'argent sera réintégré dans le bilan.", () => {
         updateDoc(doc(db, "boutiques", state.currentBoutiqueId, "expenses", id), { deleted: true });
-    }
+    });
 };
