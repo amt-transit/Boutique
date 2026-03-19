@@ -63,6 +63,21 @@ function updateDashboardUI() {
         if(e.type !== 'entree') periodDepenses += (e.montant || 0);
     });
 
+    // --- Calcul de l'Investissement en Marchandises (Stock) ---
+    // Considéré comme une charge pour le commerçant lambda
+    let investissementStockGlobal = 0;
+    let valeurStockActuel = 0;
+    if (state.allProducts) {
+        state.allProducts.forEach(p => {
+            // L'argent total sorti pour acquérir la marchandise (vendue ou non)
+            investissementStockGlobal += (p.prixAchat || 0) * ((p.stock || 0) + (p.quantiteVendue || 0));
+            // Valeur immobilisée actuellement
+            if (!p.deleted) {
+                valeurStockActuel += (p.prixAchat || 0) * (p.stock || 0);
+            }
+        });
+    }
+
     // --- Calcul du Solde Global (Prend en compte toute la durée de vie) ---
     let globalEncaisse = 0;
     allSalesData.forEach(s => {
@@ -77,13 +92,21 @@ function updateDashboardUI() {
         else globalDepenses += (e.montant || 0);
     });
 
-    const soldeGlobal = caisseInitiale + globalEncaisse + globalApports - globalDepenses;
+    // Le stock est considéré comme une charge (dépense). On le soustrait donc du solde global.
+    const soldeGlobal = caisseInitiale + globalEncaisse + globalApports - globalDepenses - investissementStockGlobal;
     const totalCredits = allCreditsData.reduce((acc, c) => acc + (c.dette || 0), 0); // Total debt is global, not date-filtered
 
     // --- 3. Update UI Elements ---
     document.getElementById('dash-caisse-initiale').textContent = formatPrice(caisseInitiale);
     document.getElementById('dash-total-sales').textContent = formatPrice(totalVentesEncaissees);
     document.getElementById('dash-total-expenses').textContent = formatPrice(periodDepenses);
+    
+    const stockInfoEl = document.getElementById('dash-stock-value-info');
+    if (stockInfoEl) {
+        stockInfoEl.innerHTML = `Immobilisé en stock: <span class="font-bold">${formatPrice(valeurStockActuel)}</span>`;
+        stockInfoEl.classList.remove('hidden');
+    }
+
     document.getElementById('dash-total-credits').textContent = formatPrice(totalCredits);
     
     const elProfit = document.getElementById('dash-total-profit');
