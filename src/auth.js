@@ -29,29 +29,24 @@ export function setupLoginForm() {
     let isPinMode = true; // Par défaut on est sur le PIN
 
     const updatePinDisplay = () => {
-        const dots = document.querySelectorAll('#pin-dots div');
-        dots.forEach((dot, index) => {
-            if (index < currentPin.length) {
-                dot.classList.remove('bg-gray-200', 'dark:bg-slate-700');
-                dot.classList.add('bg-blue-600', 'dark:bg-blue-500', 'border-blue-600', 'dark:border-blue-500');
-            } else {
-                dot.classList.remove('bg-blue-600', 'dark:bg-blue-500', 'border-blue-600', 'dark:border-blue-500');
-                dot.classList.add('bg-gray-200', 'dark:bg-slate-700');
-            }
-        });
+        const container = document.getElementById('pin-dots');
+        if (!container) return;
+        container.innerHTML = '';
+        const totalDots = Math.max(4, currentPin.length);
+        for (let i = 0; i < totalDots; i++) {
+            const dot = document.createElement('div');
+            dot.className = `w-4 h-4 rounded-full transition-colors ${i < currentPin.length ? 'bg-blue-600 dark:bg-blue-500 shadow-inner' : 'bg-gray-200 dark:bg-slate-700'}`;
+            container.appendChild(dot);
+        }
     };
 
     const clearPin = () => { currentPin = ""; updatePinDisplay(); };
 
     document.querySelectorAll('.pin-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (currentPin.length < 4) {
+            if (currentPin.length < 10) { // Limitons à 10 chiffres max
                 currentPin += btn.textContent.trim();
                 updatePinDisplay();
-                if (currentPin.length === 4) {
-                    // Validation automatique dès le 4ème chiffre saisi
-                    setTimeout(() => { if(loginForm) loginForm.dispatchEvent(new Event('submit')); }, 150);
-                }
             }
         });
     });
@@ -60,6 +55,13 @@ export function setupLoginForm() {
     if (pinDelBtn) {
         pinDelBtn.addEventListener('click', () => {
             if (currentPin.length > 0) { currentPin = currentPin.slice(0, -1); updatePinDisplay(); }
+        });
+    }
+
+    const pinSubmitBtn = document.querySelector('.pin-submit');
+    if (pinSubmitBtn) {
+        pinSubmitBtn.addEventListener('click', () => {
+            if(loginForm) loginForm.dispatchEvent(new Event('submit'));
         });
     }
 
@@ -90,8 +92,9 @@ export function setupLoginForm() {
 
             let pass = "";
             if (isPinMode) {
-                if (currentPin.length < 4) return showToast("Entrez les 4 chiffres du code", "warning");
-                pass = currentPin + "00"; // Ajout de "00" pour respecter les 6 caractères minimum de Firebase
+                if (currentPin.length < 4) return showToast("Entrez au moins 4 chiffres", "warning");
+                pass = currentPin;
+                if (pass.length < 6) pass = pass.padEnd(6, '0'); // S'assure d'avoir au moins 6 caractères pour Firebase
             } else {
                 pass = document.getElementById('login-password').value;
             }
@@ -123,6 +126,9 @@ export function setupLoginForm() {
                 if(isPinMode) clearPin();
             }
         });
+
+        // Initialisation de l'affichage des points du PIN
+        updatePinDisplay();
     }
 
     if(logoutBtn) {

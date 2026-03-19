@@ -186,12 +186,15 @@ export function setupSalesPage() {
         isQuickAddMode = true; 
     });
 
-    document.getElementById('confirm-credit-sale-btn').addEventListener('click', async () => { 
-        const sel = document.getElementById('credit-client-select'); 
-        if (!sel.value) return showToast("Client?", "error"); 
-        document.getElementById('credit-sale-modal').classList.add('hidden'); 
-        await processSale('credit', sel.value, sel.options[sel.selectedIndex]?.text); 
-    });
+    const confirmCreditBtn = document.getElementById('confirm-credit-sale-btn');
+    if (confirmCreditBtn) {
+        confirmCreditBtn.addEventListener('click', async () => { 
+            const sel = document.getElementById('credit-client-select'); 
+            if (!sel.value) return showToast("Client?", "error"); 
+            document.getElementById('credit-sale-modal').classList.add('hidden'); 
+            await processSale('credit', sel.value, sel.options[sel.selectedIndex]?.text); 
+        });
+    }
 
     // Handle quick add client form
     const clientForm = document.getElementById('form-client');

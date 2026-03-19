@@ -203,8 +203,8 @@ function renderDashboardCharts(sales, productStats, startDate, endDate) {
             const existing = Chart.getChart(salesCanvas);
             if (existing) existing.destroy();
             salesChartInstance = new Chart(salesCtx, {
-                type: 'bar',
-                data: { labels, datasets: [{ label: 'CA', data, backgroundColor: 'rgba(37, 99, 235, 0.5)', borderColor: '#2563eb' }] },
+                type: 'line',
+                data: { labels, datasets: [{ label: 'CA (Ventes)', data, backgroundColor: 'rgba(37, 99, 235, 0.1)', borderColor: '#2563eb', fill: true, tension: 0.3, pointBackgroundColor: '#2563eb', pointRadius: 3, borderWidth: 2 }] },
                 options: chartOptions
             });
         }

@@ -46,12 +46,12 @@ async function loadTeamList() {
             list.innerHTML = sellers.map(s => `
                 <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50 transition">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">
+                            <div class="w-8 h-8 rounded-full ${s.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'} flex items-center justify-center font-bold text-xs">
                             ${(s.email || '?').charAt(0).toUpperCase()}
                         </div>
                         <div>
                             <div class="font-bold text-sm text-gray-800">${s.email}</div>
-                            <div class="text-[10px] uppercase font-bold text-gray-400">Vendeur</div>
+                                <div class="text-[10px] uppercase font-bold ${s.role === 'admin' ? 'text-purple-500' : 'text-green-500'}">${s.role === 'admin' ? 'Gérant' : 'Vendeur'}</div>
                         </div>
                     </div>
                 </div>
@@ -70,6 +70,7 @@ async function handleAddSeller(e) {
     e.preventDefault();
     let email = document.getElementById('seller-add-email').value.trim();
     let pass = document.getElementById('seller-add-pass').value;
+    let role = document.getElementById('seller-add-role')?.value || 'seller';
     const count = parseInt(document.getElementById('team-list').dataset.count || 0);
 
     if (!email.includes('@')) {
@@ -89,9 +90,9 @@ async function handleAddSeller(e) {
         const shopData = shopDoc.data();
         const statut = shopData.statut || 'essai';
 
-        // RÈGLE : Le 2ème vendeur nécessite le statut 'actif'
+        // RÈGLE : Le 2ème membre nécessite le statut 'actif'
         if (count >= 1 && statut !== 'actif') {
-            showConfirmModal("Limite atteinte", "Vous avez atteint la limite (1 vendeur gratuit).\n\nPour ajouter un autre vendeur, votre boutique doit passer au statut 'Actif' (Paiement OK).", () => {});
+            showConfirmModal("Limite atteinte", "Vous avez atteint la limite (1 membre supplémentaire gratuit).\n\nPour ajouter un autre accès, votre boutique doit passer au statut 'Actif' (Paiement OK).", () => {});
             return;
         }
 
@@ -108,24 +109,24 @@ async function handleAddSeller(e) {
             // Utilisation de secDb pour écrire avec les droits du nouveau vendeur
             await setDoc(doc(secDb, "users", cred.user.uid), {
                 email: email,
-                role: 'seller', 
+                role: role, 
                 password: pass, // AJOUT : Enregistrement du mot de passe pour l'admin
                 shopIds: [state.currentBoutiqueId],
-                allowedShops: [{ id: state.currentBoutiqueId, name: shopData.nom, role: 'seller' }],
+                allowedShops: [{ id: state.currentBoutiqueId, name: shopData.nom, role: role }],
                 createdAt: serverTimestamp()
             });
             
             // Ajout aussi dans la sous-collection 'members' de la boutique pour l'affichage (via db principal)
             await setDoc(doc(db, "boutiques", state.currentBoutiqueId, "members", cred.user.uid), {
                 email: email,
-                role: 'seller',
+                role: role,
                 addedAt: serverTimestamp()
             });
 
             await signOut(secAuth);
             await deleteApp(secApp);
 
-            showToast("Vendeur ajouté avec succès !", "success");
+            showToast("Accès ajouté avec succès !", "success");
             document.getElementById('form-add-seller').reset();
             loadTeamList(); 
 
