@@ -10,6 +10,7 @@ let topProductsChartInstance = null;
 let allSalesData = [];
 let allExpensesData = [];
 let allCreditsData = [];
+let allProductsData = [];
 let caisseInitiale = 0;
 let currentFondDeCaisse = 0;
 let dateFondDeCaisse = new Date(0);
@@ -67,8 +68,8 @@ function updateDashboardUI() {
     // Considéré comme une charge pour le commerçant lambda
     let investissementStockGlobal = 0;
     let valeurStockActuel = 0;
-    if (state.allProducts) {
-        state.allProducts.forEach(p => {
+    if (allProductsData) {
+        allProductsData.forEach(p => {
             // L'argent total sorti pour acquérir la marchandise (vendue ou non)
             investissementStockGlobal += (p.prixAchat || 0) * ((p.stock || 0) + (p.quantiteVendue || 0));
             // Valeur immobilisée actuellement
@@ -216,7 +217,7 @@ function renderDashboardCharts(sales, productStats, startDate, endDate) {
                 if (elements.length === 0) return;
                 const index = elements[0].index;
                 const productName = labels[index];
-                const product = state.allProducts.find(p => p.nomDisplay.toUpperCase() === productName);
+                const product = allProductsData.find(p => p.nomDisplay.toUpperCase() === productName);
                 if (product && typeof window.openEditProduct === 'function') {
                     window.openEditProduct(encodeURIComponent(JSON.stringify(product)));
                 }
@@ -252,7 +253,7 @@ function setupClickableModals(sales, productStats) {
 
     // 1. Low Stock
     setup('dash-low-stock-trigger', 'dashboard-generic-modal', 'Produits en Stock Faible', null, () => {
-        const low = state.allProducts.filter(p => !p.deleted && !p.discontinued && p.stock > 0 && p.stock < 5).sort((a, b) => a.stock - b.stock);
+        const low = allProductsData.filter(p => !p.deleted && !p.discontinued && p.stock > 0 && p.stock < 5).sort((a, b) => a.stock - b.stock);
         if (low.length === 0) return '<p class="p-4 text-center text-gray-500">Aucun produit en stock faible.</p>';
         return `
             <table class="w-full text-sm text-left">
@@ -363,6 +364,12 @@ export function setupDashboard() {
 
     onSnapshot(collection(db, "boutiques", state.currentBoutiqueId, "clients"), (snap) => {
         allCreditsData = snap.docs.map(d => ({...d.data(), id: d.id}));
+        updateDashboardUI();
+    });
+    
+    // NEW : Écoute les changements de stock en temps réel
+    onSnapshot(collection(db, "boutiques", state.currentBoutiqueId, "products"), (snap) => {
+        allProductsData = snap.docs.map(d => ({...d.data(), id: d.id}));
         updateDashboardUI();
     });
 }
