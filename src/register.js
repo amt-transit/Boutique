@@ -48,17 +48,25 @@ export function setupRegisterForm() {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('reg-shop-name').value;
-            const email = document.getElementById('reg-email').value;
-            const pass = document.getElementById('reg-password').value;
-            const confirmPass = document.getElementById('reg-confirm-password').value;
+            let email = document.getElementById('reg-email').value.trim();
+            let pass = document.getElementById('reg-password').value;
+            let confirmPass = document.getElementById('reg-confirm-password').value;
 
-            if (pass.length < 6) {
-                showToast("Le mot de passe doit faire au moins 6 caractères", "error");
+            if (!email.includes('@')) {
+                email = email.replace(/\s+/g, '').toLowerCase() + "@maboutique.app";
+            }
+
+            if (pass.length < 4) {
+                showToast("Le mot de passe/PIN doit faire au moins 4 caractères", "error");
                 return;
             }
             if (pass !== confirmPass) {
                 showToast("Les mots de passe ne correspondent pas", "error");
                 return;
+            }
+
+            if (pass.length >= 4 && pass.length < 6) {
+                pass = pass.padEnd(6, '0');
             }
 
             // AFFICHER LE LOADER

@@ -55,7 +55,6 @@ function updateDrawerThemeButton(isDark) {
     if (headerIcon) headerIcon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
     
     const desktopLabel = document.getElementById('desktop-theme-label');
-    if (desktopLabel) desktopLabel.textContent = isDark ? 'Clair' : 'Sombre';
-    
+    if (desktopLabel) desktopLabel.textContent = isDark ? 'Mode Clair' : 'Mode Sombre';
     if (window.lucide) window.lucide.createIcons();
 }

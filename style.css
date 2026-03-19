@@ -312,6 +312,7 @@ button {
         flex-direction: column;
         width: var(--nav-width-desktop);
         min-height: 100vh;
+        height: 100vh;
         padding: 20px 10px;
         border-right: 1px solid #f1f5f9;
         overflow-x: visible;

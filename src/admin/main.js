@@ -156,13 +156,22 @@ export function setupAdminFeatures() {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const nom = document.getElementById('new-boutique-name').value;
-            const aEm = document.getElementById('admin-email').value;
-            const aPs = document.getElementById('admin-password').value;
-            const sEm = document.getElementById('seller-email').value;
-            const sPs = document.getElementById('seller-password').value;
+            let aEm = document.getElementById('admin-email').value.trim();
+            let aPs = document.getElementById('admin-password').value;
+            let sEm = document.getElementById('seller-email').value.trim();
+            let sPs = document.getElementById('seller-password').value;
             const logoFile = document.getElementById('new-boutique-logo').files[0];
             
-            if(aPs.length < 6 || sPs.length < 6) return showToast("Pass trop court", "error");
+            const formatCreds = (em, ps) => {
+                let fEm = em.includes('@') ? em : em.replace(/\s+/g, '').toLowerCase() + "@maboutique.app";
+                let fPs = (ps.length >= 4 && ps.length < 6) ? ps.padEnd(6, '0') : ps;
+                return { email: fEm, pass: fPs };
+            };
+    
+            const adminCreds = formatCreds(aEm, aPs);
+            const sellerCreds = formatCreds(sEm, sPs);
+
+            if(adminCreds.pass.length < 4 || sellerCreds.pass.length < 4) return showToast("Pass ou PIN trop court (min 4)", "error");
             showToast("Création...", "warning");
 
             try {
@@ -207,13 +216,11 @@ export function setupAdminFeatures() {
                     }
                 };
 
-                await assignOrUpdateUser(aEm, aPs, 'admin', ref.id, nom);
-                await assignOrUpdateUser(sEm, sPs, 'seller', ref.id, nom);
+                await assignOrUpdateUser(adminCreds.email, adminCreds.pass, 'admin', ref.id, nom);
+                await assignOrUpdateUser(sellerCreds.email, sellerCreds.pass, 'seller', ref.id, nom);
 
                 showToast("Boutique créée et accès configurés !");
-                form.reset();
-                document.getElementById('admin-modal').classList.add('hidden');
-                setupSuperAdminDashboard();
+
                 loadBoutiquesList();
                 // Actualiser la liste d'importation si la fonction est disponible
                 if (typeof window.loadShopsForImport === 'function') window.loadShopsForImport();

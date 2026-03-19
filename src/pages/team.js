@@ -68,11 +68,18 @@ async function loadTeamList() {
 
 async function handleAddSeller(e) {
     e.preventDefault();
-    const email = document.getElementById('seller-add-email').value;
-    const pass = document.getElementById('seller-add-pass').value;
+    let email = document.getElementById('seller-add-email').value.trim();
+    let pass = document.getElementById('seller-add-pass').value;
     const count = parseInt(document.getElementById('team-list').dataset.count || 0);
 
-    if (pass.length < 6) return showToast("Mot de passe trop court (min 6).", "error");
+    if (!email.includes('@')) {
+        email = email.replace(/\s+/g, '').toLowerCase() + "@maboutique.app";
+    }
+
+    if (pass.length < 4) return showToast("Mot de passe/PIN trop court (min 4).", "error");
+    if (pass.length >= 4 && pass.length < 6) {
+        pass = pass.padEnd(6, '0');
+    }
 
     try {
         showToast("Vérification...", "info");

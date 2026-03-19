@@ -24,12 +24,83 @@ export function setupLoginForm() {
         });
     }
 
+    // --- GESTION DU CLAVIER PIN ---
+    let currentPin = "";
+    let isPinMode = true; // Par défaut on est sur le PIN
+
+    const updatePinDisplay = () => {
+        const dots = document.querySelectorAll('#pin-dots div');
+        dots.forEach((dot, index) => {
+            if (index < currentPin.length) {
+                dot.classList.remove('bg-gray-200', 'dark:bg-slate-700');
+                dot.classList.add('bg-blue-600', 'dark:bg-blue-500', 'border-blue-600', 'dark:border-blue-500');
+            } else {
+                dot.classList.remove('bg-blue-600', 'dark:bg-blue-500', 'border-blue-600', 'dark:border-blue-500');
+                dot.classList.add('bg-gray-200', 'dark:bg-slate-700');
+            }
+        });
+    };
+
+    const clearPin = () => { currentPin = ""; updatePinDisplay(); };
+
+    document.querySelectorAll('.pin-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (currentPin.length < 4) {
+                currentPin += btn.textContent.trim();
+                updatePinDisplay();
+                if (currentPin.length === 4) {
+                    // Validation automatique dès le 4ème chiffre saisi
+                    setTimeout(() => { if(loginForm) loginForm.dispatchEvent(new Event('submit')); }, 150);
+                }
+            }
+        });
+    });
+
+    const pinDelBtn = document.querySelector('.pin-del');
+    if (pinDelBtn) {
+        pinDelBtn.addEventListener('click', () => {
+            if (currentPin.length > 0) { currentPin = currentPin.slice(0, -1); updatePinDisplay(); }
+        });
+    }
+
+    const toggleModeBtn = document.getElementById('toggle-login-mode');
+    if (toggleModeBtn) {
+        toggleModeBtn.addEventListener('click', () => {
+            isPinMode = !isPinMode;
+            document.getElementById('login-pin-mode').classList.toggle('hidden', !isPinMode);
+            document.getElementById('login-keyboard-mode').classList.toggle('hidden', isPinMode);
+            document.getElementById('btn-login-submit').classList.toggle('hidden', isPinMode); // Cacher bouton en mode PIN
+            toggleModeBtn.textContent = isPinMode ? "Utiliser un mot de passe classique" : "Utiliser le code PIN (4 chiffres)";
+            if (isPinMode) clearPin();
+        });
+    }
+
     if(loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if(errorBox) errorBox.classList.add('hidden');
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
+            let rawEmail = document.getElementById('login-email').value.trim();
+            if (!rawEmail) return showToast("Veuillez saisir un identifiant", "error");
+
+            // Transformation du Pseudo en Email
+            let email = rawEmail;
+            if (!email.includes('@')) {
+                email = email.replace(/\s+/g, '').toLowerCase() + "@maboutique.app";
+            }
+
+            let pass = "";
+            if (isPinMode) {
+                if (currentPin.length < 4) return showToast("Entrez les 4 chiffres du code", "warning");
+                pass = currentPin + "00"; // Ajout de "00" pour respecter les 6 caractères minimum de Firebase
+            } else {
+                pass = document.getElementById('login-password').value;
+            }
+
+            if (!pass || pass.length < 6) {
+                showToast("Mot de passe/PIN invalide", "error");
+                if(isPinMode) clearPin();
+                return;
+            }
 
             try {
                 await signInWithEmailAndPassword(auth, email, pass);
@@ -49,6 +120,7 @@ export function setupLoginForm() {
                 
                 if(errorText) errorText.textContent = message;
                 if(errorBox) errorBox.classList.remove('hidden');
+                if(isPinMode) clearPin();
             }
         });
     }
@@ -127,6 +199,14 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     // AFFICHER les onglets Admin
                     document.getElementById('admin-tab-btn').classList.remove('hidden');
                     document.getElementById('admin-access-tab-btn').classList.remove('hidden');
+                    
+                    const desktopEmail = document.getElementById('desktop-user-email');
+                    if(desktopEmail) desktopEmail.textContent = user.email;
+                    const desktopRoleBadge = document.getElementById('desktop-user-role-badge');
+                    if(desktopRoleBadge) {
+                        desktopRoleBadge.textContent = "Super Admin";
+                        desktopRoleBadge.className = 'text-[9px] font-extrabold uppercase tracking-widest mt-1.5 inline-block px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400';
+                    }
 
                     switchTab('admin');
                     showSuperAdminInterface();
@@ -214,6 +294,12 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     if(drawerEmail) drawerEmail.textContent = user.email;
                     const desktopEmail = document.getElementById('desktop-user-email');
                     if(desktopEmail) desktopEmail.textContent = user.email;
+                    
+                    const desktopRoleBadge = document.getElementById('desktop-user-role-badge');
+                    if (desktopRoleBadge) {
+                        desktopRoleBadge.textContent = state.userRole === 'admin' ? 'Gérant' : 'Vendeur';
+                        desktopRoleBadge.className = state.userRole === 'admin' ? 'text-[9px] font-extrabold uppercase tracking-widest mt-1.5 inline-block px-2 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400' : 'text-[9px] font-extrabold uppercase tracking-widest mt-1.5 inline-block px-2 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400';
+                    }
 
                     if (shopDoc.exists()) {
                         const shopData = shopDoc.data();

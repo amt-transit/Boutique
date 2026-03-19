@@ -168,12 +168,12 @@ export function setupThemeToggle() {
             document.body.classList.add('dark');
             if (themeIcon) themeIcon.setAttribute('data-lucide', 'sun');
                 const desktopLabel = document.getElementById('desktop-theme-label');
-                if (desktopLabel) desktopLabel.textContent = 'Clair';
+            if (desktopLabel) desktopLabel.textContent = 'Mode Clair';
         } else {
             document.body.classList.remove('dark');
             if (themeIcon) themeIcon.setAttribute('data-lucide', 'moon');
                 const desktopLabel = document.getElementById('desktop-theme-label');
-                if (desktopLabel) desktopLabel.textContent = 'Sombre';
+            if (desktopLabel) desktopLabel.textContent = 'Mode Sombre';
         }
         if (window.lucide) {
             window.lucide.createIcons();
