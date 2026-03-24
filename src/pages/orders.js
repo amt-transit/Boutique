@@ -41,8 +41,9 @@ export function setupOrdersListener() {
                         <span class="text-indigo-600">${formatPrice(order.total)}</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-2 mt-2">
+                <div class="grid grid-cols-4 gap-2 mt-2">
                     <button onclick="cancelOrder('${order.id}')" class="bg-red-50 text-red-600 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition">Annuler</button>
+                    <button onclick="shareOrderWhatsApp('${order.id}')" class="bg-green-50 text-green-600 py-2 rounded-lg text-sm font-bold hover:bg-green-100 transition flex justify-center items-center gap-1" title="Envoyer sur WhatsApp"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
                     <button onclick="printOrderReceipt('${order.id}')" class="bg-blue-50 text-blue-600 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 transition flex justify-center items-center gap-1" title="Imprimer le ticket"><i data-lucide="printer" class="w-4 h-4"></i></button>
                     <button onclick="validateOrder('${order.id}')" class="bg-green-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition shadow">Encaisser</button>
                 </div>
@@ -221,5 +222,33 @@ window.printOrderReceipt = async (orderId) => {
     } catch (e) {
         console.error(e);
         showToast("Erreur lors de l'impression", "error");
+    }
+};
+
+window.shareOrderWhatsApp = async (orderId) => {
+    try {
+        const orderDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
+        if(!orderDoc.exists()) return showToast("Commande introuvable", "error");
+        
+        const order = orderDoc.data();
+        const shopName = document.getElementById('dashboard-user-name')?.textContent.trim() || "Ma Boutique";
+        const dateStr = order.date ? new Date(order.date.seconds * 1000).toLocaleDateString('fr-FR') + ' à ' + new Date(order.date.seconds * 1000).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '';
+
+        let text = `🧾 *REÇU DE COMMANDE*\n🏪 ${shopName}\n📅 ${dateStr}\n`;
+        text += `👤 Client: ${order.client}\n`;
+        if(order.telephone) text += `📞 Tel: ${order.telephone}\n`;
+        text += `----------------\n`;
+        order.items.forEach(i => {
+            text += `${i.qty}x ${i.nomDisplay || i.nom} : ${formatPrice(i.prixVente * i.qty)}\n`;
+        });
+        text += `----------------\n`;
+        text += `💰 TOTAL: ${formatPrice(order.total)}\n`;
+        text += `📌 Statut: En attente (Non payé)\n\n`;
+        text += `Merci de votre confiance !`;
+
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    } catch (e) {
+        console.error(e);
+        showToast("Erreur lors du partage", "error");
     }
 };

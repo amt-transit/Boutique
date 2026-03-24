@@ -53,12 +53,14 @@ function renderReportsTable() {
         }
 
         let printBtn = "";
+        let waBtn = "";
         if (t.id && ['CASH', 'MOMO', 'CRÉDIT', 'REMB.', 'RETOUR', 'RETOUR_CR'].includes(t.type)) {
             printBtn = `<button onclick="printTransactionReceipt('${t.id}')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 ml-2 border border-blue-200" title="Imprimer le reçu">🖨️ Imprimer</button>`;
+            waBtn = `<button onclick="shareTransactionWhatsApp('${t.id}')" class="text-xs bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100 ml-1 border border-green-200" title="Envoyer par WhatsApp">💬 WhatsApp</button>`;
         }
 
         row.className = "border-b hover:bg-gray-50 transition";
-        row.innerHTML = `<td class="p-3 text-xs">${t.date.toLocaleString()}</td><td class="p-3 text-sm text-gray-700">${t.desc} ${returnBtn} ${printBtn}</td><td class="p-3 text-center text-xs font-bold ${classType}">${t.type}</td><td class="p-3 text-right ${!t.isExpense && !t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${!t.isExpense && !t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td><td class="p-3 text-right ${t.isExpense || t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${t.isExpense || t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td>`;
+        row.innerHTML = `<td class="p-3 text-xs">${t.date.toLocaleString()}</td><td class="p-3 text-sm text-gray-700">${t.desc} ${returnBtn} ${printBtn} ${waBtn}</td><td class="p-3 text-center text-xs font-bold ${classType}">${t.type}</td><td class="p-3 text-right ${!t.isExpense && !t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${!t.isExpense && !t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td><td class="p-3 text-right ${t.isExpense || t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${t.isExpense || t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td>`;
         tbody.appendChild(row);
     });
 
@@ -437,4 +439,27 @@ window.printTransactionReceipt = (id) => {
         printableArea.innerHTML = receiptContent;
         window.print();
     }
+};
+
+window.shareTransactionWhatsApp = (id) => {
+    const t = state.loadedTransactions.find(tr => tr.id === id);
+    if (!t) return;
+
+    const shopName = document.getElementById('dashboard-user-name')?.textContent.trim() || "Ma Boutique";
+    const dateStr = t.date.toLocaleDateString('fr-FR') + ' à ' + t.date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+
+    let text = `🧾 *TICKET - ${t.type}*\n🏪 ${shopName}\n📅 ${dateStr}\n----------------\n`;
+    
+    if (t.originalItems && t.originalItems.length > 0) {
+        t.originalItems.forEach(i => {
+            text += `${i.qty}x ${i.nomDisplay || i.nom} : ${formatPrice(i.prixVente * i.qty)}\n`;
+        });
+    } else {
+        const descNet = t.desc.replace(/<[^>]*>?/gm, '').replace(/👤|📱|🟢|🔴|💰|↩️|📦/g, '').trim();
+        text += `${descNet}\n`;
+    }
+    
+    text += `----------------\n💰 TOTAL: ${formatPrice(t.amount)}\n\nMerci de votre confiance !`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 };
