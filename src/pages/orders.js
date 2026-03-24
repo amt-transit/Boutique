@@ -41,8 +41,9 @@ export function setupOrdersListener() {
                         <span class="text-indigo-600">${formatPrice(order.total)}</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2 mt-2">
+                <div class="grid grid-cols-3 gap-2 mt-2">
                     <button onclick="cancelOrder('${order.id}')" class="bg-red-50 text-red-600 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition">Annuler</button>
+                    <button onclick="printOrderReceipt('${order.id}')" class="bg-blue-50 text-blue-600 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 transition flex justify-center items-center gap-1" title="Imprimer le ticket"><i data-lucide="printer" class="w-4 h-4"></i></button>
                     <button onclick="validateOrder('${order.id}')" class="bg-green-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition shadow">Encaisser</button>
                 </div>
             `;
@@ -118,4 +119,107 @@ window.cancelOrder = (orderId) => {
             showToast("Erreur annulation", "error");
         }
     });
+};
+
+window.saveCartAsOrder = () => {
+    if (state.saleCart.length === 0) {
+        return showToast("Le panier est vide. Ajoutez des articles d'abord.", "error");
+    }
+    const modal = document.getElementById('order-modal');
+    if (modal) {
+        document.getElementById('order-client-name').value = '';
+        document.getElementById('order-client-tel').value = '';
+        modal.classList.remove('hidden');
+    }
+};
+
+window.finalizeOrder = async () => {
+    const clientName = document.getElementById('order-client-name').value.trim();
+    const clientTel = document.getElementById('order-client-tel').value.trim();
+
+    if (!clientName) {
+        return showToast("Le nom du client est requis.", "error");
+    }
+
+    try {
+        const batch = writeBatch(db);
+        const orderRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "commandes"));
+        
+        let total = 0;
+        const items = [...state.saleCart];
+        
+        for (const item of items) {
+            total += item.prixVente * item.qty;
+            // On retire les articles du stock car ils sont réservés pour la commande
+            const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
+            batch.update(pRef, { stock: increment(-item.qty) });
+        }
+
+        batch.set(orderRef, {
+            client: clientName,
+            telephone: clientTel,
+            items: items,
+            total: total,
+            status: 'en_attente',
+            date: serverTimestamp(),
+            vendeurId: state.userId
+        });
+
+        await batch.commit();
+        
+        document.getElementById('order-modal').classList.add('hidden');
+        showToast("Commande enregistrée avec succès !", "success");
+        
+        state.clearCart();
+        if (typeof window.renderCart === 'function') window.renderCart(); 
+        
+        // Impression optionnelle du ticket de commande
+        showConfirmModal("Imprimer le reçu ?", "Voulez-vous imprimer un reçu pour cette commande ?", () => {
+            const shopName = document.getElementById('dashboard-user-name')?.textContent.trim() || "Ma Boutique";
+            const dateStr = new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+            
+            let itemsHtml = items.map(i => `<tr><td class="col-qty">${i.qty}</td><td>${i.nomDisplay || i.nom}</td><td class="col-price">${formatPrice(i.prixVente * i.qty)}</td></tr>`).join('');
+
+            const printableArea = document.getElementById('printable-area');
+            if (printableArea) {
+                printableArea.innerHTML = `
+                    <div class="receipt-header"><h1>${shopName}</h1><p>${dateStr}</p><p style="font-weight: bold; margin-top: 2mm;">Ticket - COMMANDE</p><p>Client: ${clientName}</p>${clientTel ? `<p>Tel: ${clientTel}</p>` : ''}</div>
+                    <div class="receipt-items"><table><thead><tr><th class="col-qty">Qté</th><th>Désignation</th><th class="col-price">Total</th></tr></thead><tbody>${itemsHtml}</tbody></table></div>
+                    <div class="receipt-total">TOTAL: ${formatPrice(total)}</div>
+                    <div class="receipt-footer"><p>Commande non payée</p><p>Merci de votre confiance !</p></div>
+                `;
+                window.print();
+            }
+        });
+    } catch (e) {
+        console.error(e);
+        showToast("Erreur lors de l'enregistrement de la commande", "error");
+    }
+};
+
+window.printOrderReceipt = async (orderId) => {
+    try {
+        const orderDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
+        if(!orderDoc.exists()) return showToast("Commande introuvable", "error");
+        
+        const order = orderDoc.data();
+        const shopName = document.getElementById('dashboard-user-name')?.textContent.trim() || "Ma Boutique";
+        const dateStr = order.date ? new Date(order.date.seconds * 1000).toLocaleDateString('fr-FR') + ' à ' + new Date(order.date.seconds * 1000).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '';
+
+        let itemsHtml = order.items.map(i => `<tr><td class="col-qty">${i.qty}</td><td>${i.nomDisplay || i.nom}</td><td class="col-price">${formatPrice(i.prixVente * i.qty)}</td></tr>`).join('');
+
+        const printableArea = document.getElementById('printable-area');
+        if (printableArea) {
+            printableArea.innerHTML = `
+                <div class="receipt-header"><h1>${shopName}</h1><p>${dateStr}</p><p style="font-weight: bold; margin-top: 2mm;">Ticket - COMMANDE</p><p>Client: ${order.client}</p>${order.telephone ? `<p>Tel: ${order.telephone}</p>` : ''}</div>
+                <div class="receipt-items"><table><thead><tr><th class="col-qty">Qté</th><th>Désignation</th><th class="col-price">Total</th></tr></thead><tbody>${itemsHtml}</tbody></table></div>
+                <div class="receipt-total">TOTAL: ${formatPrice(order.total)}</div>
+                <div class="receipt-footer"><p>Commande non payée</p><p>Merci de votre confiance !</p></div>
+            `;
+            window.print();
+        }
+    } catch (e) {
+        console.error(e);
+        showToast("Erreur lors de l'impression", "error");
+    }
 };

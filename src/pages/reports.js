@@ -52,8 +52,13 @@ function renderReportsTable() {
             row.classList.add('opacity-50'); 
         }
 
+        let printBtn = "";
+        if (t.id && ['CASH', 'MOMO', 'CRÉDIT', 'REMB.', 'RETOUR', 'RETOUR_CR'].includes(t.type)) {
+            printBtn = `<button onclick="printTransactionReceipt('${t.id}')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 ml-2 border border-blue-200" title="Imprimer le reçu">🖨️ Imprimer</button>`;
+        }
+
         row.className = "border-b hover:bg-gray-50 transition";
-        row.innerHTML = `<td class="p-3 text-xs">${t.date.toLocaleString()}</td><td class="p-3 text-sm text-gray-700">${t.desc} ${returnBtn}</td><td class="p-3 text-center text-xs font-bold ${classType}">${t.type}</td><td class="p-3 text-right ${!t.isExpense && !t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${!t.isExpense && !t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td><td class="p-3 text-right ${t.isExpense || t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${t.isExpense || t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td>`;
+        row.innerHTML = `<td class="p-3 text-xs">${t.date.toLocaleString()}</td><td class="p-3 text-sm text-gray-700">${t.desc} ${returnBtn} ${printBtn}</td><td class="p-3 text-center text-xs font-bold ${classType}">${t.type}</td><td class="p-3 text-right ${!t.isExpense && !t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${!t.isExpense && !t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td><td class="p-3 text-right ${t.isExpense || t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${t.isExpense || t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td>`;
         tbody.appendChild(row);
     });
 
@@ -370,4 +375,66 @@ window.submitPartialReturn = async () => {
         showToast("Retour partiel validé avec succès !");
         loadData();
     } catch(e) { console.error(e); showToast("Erreur lors du retour", "error"); }
+};
+
+window.printTransactionReceipt = (id) => {
+    const t = state.loadedTransactions.find(tr => tr.id === id);
+    if (!t) return;
+
+    const shopName = document.getElementById('dashboard-user-name')?.textContent.trim() || "Ma Boutique";
+    const dateStr = t.date.toLocaleDateString('fr-FR') + ' à ' + t.date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+
+    let itemsHtml = '';
+    if (t.originalItems && t.originalItems.length > 0) {
+        itemsHtml = t.originalItems.map(i => `
+            <tr>
+                <td class="col-qty">${i.qty}</td>
+                <td>${i.nomDisplay || i.nom}</td>
+                <td class="col-price">${formatPrice(i.prixVente * i.qty)}</td>
+            </tr>
+        `).join('');
+    } else {
+        const descNet = t.desc.replace(/<[^>]*>?/gm, '').replace(/👤|📱|🟢|🔴|💰|↩️|📦/g, '').trim();
+        itemsHtml = `
+            <tr>
+                <td class="col-qty">-</td>
+                <td>${descNet}</td>
+                <td class="col-price">${formatPrice(t.amount)}</td>
+            </tr>
+        `;
+    }
+
+    const receiptContent = `
+        <div class="receipt-header">
+            <h1>${shopName}</h1>
+            <p>${dateStr}</p>
+            <p style="font-weight: bold; margin-top: 2mm;">Ticket - ${t.type}</p>
+        </div>
+        <div class="receipt-items">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-qty">Qté</th>
+                        <th>Désignation</th>
+                        <th class="col-price">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHtml}
+                </tbody>
+            </table>
+        </div>
+        <div class="receipt-total">
+            TOTAL: ${formatPrice(t.amount)}
+        </div>
+        <div class="receipt-footer">
+            <p>Merci de votre confiance !</p>
+        </div>
+    `;
+
+    const printableArea = document.getElementById('printable-area');
+    if (printableArea) {
+        printableArea.innerHTML = receiptContent;
+        window.print();
+    }
 };

@@ -76,6 +76,42 @@ window.rembourserClient = (id, dette, nomClient) => {
             batch.set(moveRef, { date: serverTimestamp(), total: montant, profit: 0, type: 'remboursement', clientName: nomClient, clientId: id, items: [], vendeurId: state.userId, deleted: false }); 
             await batch.commit(); 
             showToast("Remboursement encaissé !", "success"); 
+
+            showConfirmModal("Imprimer le reçu ?", "Le remboursement a été enregistré. Voulez-vous imprimer un reçu pour le client ?", () => {
+                const shopName = document.getElementById('dashboard-user-name')?.textContent.trim() || "Ma Boutique";
+                const dateStr = new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+                
+                const receiptContent = `
+                    <div class="receipt-header">
+                        <h1>${shopName}</h1>
+                        <p>${dateStr}</p>
+                        <p style="font-weight: bold; margin-top: 2mm;">Reçu de Paiement</p>
+                        <p>Client: ${nomClient}</p>
+                    </div>
+                    <div class="receipt-items">
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td>Remboursement Dette</td>
+                                    <td class="col-price">${formatPrice(montant)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="receipt-total">
+                        TOTAL PAYÉ: ${formatPrice(montant)}
+                    </div>
+                    <div class="receipt-footer">
+                        <p>Reste à payer: ${formatPrice(dette - montant)}</p>
+                        <p>Merci de votre confiance !</p>
+                    </div>
+                `;
+                const printableArea = document.getElementById('printable-area');
+                if (printableArea) {
+                    printableArea.innerHTML = receiptContent;
+                    window.print();
+                }
+            });
         } catch(e) { 
             console.error(e); 
             showToast("Erreur", "error"); 
