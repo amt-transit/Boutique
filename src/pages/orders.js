@@ -65,13 +65,31 @@ export function setupOrdersListener() {
             
             let itemsHtml = order.items.map(i => `<div class="flex justify-between text-sm text-gray-600"><span>${i.qty}x ${i.nomDisplay}</span><span>${formatPrice(i.prixVente * i.qty)}</span></div>`).join('');
 
+            // Formatage des contacts (Appel et WhatsApp)
+            let contactHtml = '<div class="text-xs text-gray-400">Aucun numéro</div>';
+            if (order.telephone) {
+                const cleanPhone = order.telephone.replace(/[^\d+]/g, ''); // Conserve uniquement les chiffres et le +
+                contactHtml = `
+                <div class="flex items-center gap-2 text-gray-700">
+                    <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                    <a href="tel:${order.telephone}" class="hover:text-blue-600 hover:underline font-semibold font-mono tracking-tight">${order.telephone}</a>
+                    <a href="https://wa.me/${cleanPhone}" target="_blank" class="text-[#25D366] hover:text-[#20bd5a] ml-1 bg-green-50 p-1.5 rounded-lg transition-transform hover:scale-105" title="Envoyer un message WhatsApp">
+                        <i data-lucide="message-circle" class="w-4 h-4 fill-current"></i>
+                    </a>
+                </div>`;
+            }
+            let addressHtml = order.adresse ? `<div class="flex items-start gap-2 text-gray-500 text-xs mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100"><i data-lucide="map-pin" class="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-red-400"></i> <span>${order.adresse}</span></div>` : '';
+
             card.innerHTML = `
                 <div class="mb-4">
                     <div class="flex justify-between items-start mb-2">
                         <h4 class="font-bold text-lg text-indigo-900">${order.client}</h4>
                         <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded">${dateStr}</span>
                     </div>
-                    <div class="text-xs text-gray-400 mb-3">${order.telephone}</div>
+                    <div class="mb-3 border-b border-gray-50 pb-3">
+                        ${contactHtml}
+                        ${addressHtml}
+                    </div>
                     <div class="space-y-1 border-t border-b py-2 my-2 border-gray-100 max-h-32 overflow-y-auto">
                         ${itemsHtml}
                     </div>
@@ -105,11 +123,19 @@ window.validateOrder = (orderId) => {
             const saleRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
             
             let profit = 0;
+            
+            // Rétrocompatibilité absolue : Les commandes locales ont un vendeurId. Celles du web n'en ont pas.
+            const isStockAlreadyReserved = order.stockReserved === true || (order.stockReserved === undefined && !!order.vendeurId);
+
             for(const item of order.items) {
                 profit += (item.prixVente - (item.prixAchat || 0)) * item.qty;
                 
                 const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
-                batch.update(pRef, { quantiteVendue: increment(item.qty) });
+                let updateData = { quantiteVendue: increment(item.qty) };
+                if (!isStockAlreadyReserved) {
+                    updateData.stock = increment(-item.qty); // On déduit le stock si ce n'était pas encore fait
+                }
+                batch.update(pRef, updateData);
             }
 
             batch.set(saleRef, {
@@ -120,6 +146,9 @@ window.validateOrder = (orderId) => {
                 vendeurId: state.userId,
                 type: 'cash',
                 clientName: order.client,
+                clientId: null,
+                remise: 0,
+                isReturned: false,
                 deleted: false
             });
 
@@ -144,9 +173,14 @@ window.cancelOrder = (orderId) => {
 
             const batch = writeBatch(db);
 
-            for (const item of order.items) {
-                const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
-                batch.update(pRef, { stock: increment(item.qty) });
+            const isStockAlreadyReserved = order.stockReserved === true || (order.stockReserved === undefined && !!order.vendeurId);
+            
+            // On ne restaure le stock que s'il avait été déduit au moment de la commande
+            if (isStockAlreadyReserved) {
+                for (const item of order.items) {
+                    const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
+                    batch.update(pRef, { stock: increment(item.qty) });
+                }
             }
 
             batch.delete(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
@@ -202,7 +236,8 @@ window.finalizeOrder = async () => {
             total: total,
             status: 'en_attente',
             date: serverTimestamp(),
-            vendeurId: state.userId
+            vendeurId: state.userId,
+            stockReserved: true // Marqueur pour dire que la version locale réserve le stock
         });
 
         await batch.commit();

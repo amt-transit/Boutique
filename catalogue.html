@@ -15,6 +15,11 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        @media print {
+            body > *:not(#printable-receipt) { display: none !important; }
+            #printable-receipt { display: block !important; background: white; color: black; }
+        }
     </style>
 </head>
 <body class="text-slate-800 pb-24 bg-slate-50 relative selection:bg-blue-200 selection:text-blue-900">
@@ -101,6 +106,7 @@
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Informations de livraison</p>
                     <input type="text" id="client-name" placeholder="Votre nom et prénom" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all" required>
                     <input type="tel" id="client-tel" placeholder="Votre numéro de téléphone" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all" required>
+                    <input type="text" id="client-address" placeholder="Adresse de livraison (Facultatif)" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all">
                     
                     <button type="submit" id="btn-submit-order" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 mt-4 flex justify-center items-center gap-2 hover:bg-blue-700 transition transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none">
                         Valider la commande <i data-lucide="check-circle"></i>
@@ -110,11 +116,43 @@
         </div>
     </div>
 
+    <!-- Modale de Succès de Commande -->
+    <div id="success-modal" class="fixed inset-0 bg-slate-900/90 z-[100] hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl">
+            <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="check-circle" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Commande envoyée !</h2>
+            <p class="text-slate-500 mb-6 text-sm font-medium">Votre commande a bien été transmise à la boutique. <br>Vous pouvez <span class="text-blue-600 font-bold">télécharger le reçu</span> pour garder une trace.</p>
+
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left mb-6">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-3">Détails de la commande</p>
+                <div id="success-order-details" class="text-sm font-semibold text-slate-700 space-y-2 mb-4 max-h-40 overflow-y-auto"></div>
+                <div class="border-t border-slate-200 pt-3 flex justify-between items-center font-black text-lg text-blue-600">
+                    <span>Total</span>
+                    <span id="success-order-total"></span>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button type="button" onclick="window.print()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow flex justify-center items-center gap-2 transition-colors">
+                    <i data-lucide="download"></i> Télécharger le reçu
+                </button>
+                <button type="button" onclick="document.getElementById('success-modal').classList.add('hidden')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-xl transition-colors">
+                    Fermer et retourner au catalogue
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="fixed top-24 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold text-sm shadow-2xl z-[100] transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 border border-slate-700">
         <i data-lucide="info" class="w-4 h-4 text-blue-400"></i>
         Message
     </div>
+    
+    <!-- Zone invisible pour générer le reçu PDF client -->
+    <div id="printable-receipt" style="display: none;"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -312,14 +350,53 @@
             lucide.createIcons();
 
             const total = cart.reduce((acc, item) => acc + (item.prixVente * item.qty), 0);
-            const commande = { client: document.getElementById('client-name').value, telephone: document.getElementById('client-tel').value, items: cart, total: total, status: 'en_attente', date: serverTimestamp(), source: 'catalogue_web' };
+            const clientAddr = document.getElementById('client-address').value.trim();
+            const commande = { client: document.getElementById('client-name').value, telephone: document.getElementById('client-tel').value, adresse: clientAddr, items: cart, total: total, status: 'en_attente', date: serverTimestamp(), source: 'catalogue_web', stockReserved: false };
 
             try {
                 await addDoc(collection(db, "boutiques", boutiqueId, "commandes"), commande);
                 document.getElementById('cart-modal').classList.add('hidden');
-                cart = []; updateCartUI();
+                
+                // Afficher le reçu
+                let detailsHtml = cart.map(i => `<div class="flex justify-between items-start gap-2"><span>${i.qty}x ${i.nomDisplay}</span><span class="text-right text-blue-600 whitespace-nowrap">${formatPrice(i.prixVente * i.qty)}</span></div>`).join('');
+                document.getElementById('success-order-details').innerHTML = detailsHtml;
+                document.getElementById('success-order-total').textContent = formatPrice(total);
+                document.getElementById('success-modal').classList.remove('hidden');
+                
+                // Préparer le reçu imprimable pour le client
+                const orderDate = new Date().toLocaleString('fr-FR');
+                const shopNameTitle = document.getElementById('shop-name').textContent;
+                let printItemsHtml = cart.map(i => `
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
+                        <span>${i.qty}x ${i.nomDisplay}</span>
+                        <span style="font-weight: bold;">${formatPrice(i.prixVente * i.qty)}</span>
+                    </div>
+                `).join('');
+                
+                document.getElementById('printable-receipt').innerHTML = `
+                    <div style="max-width: 400px; margin: 0 auto; font-family: 'Plus Jakarta Sans', sans-serif, system-ui;">
+                        <h1 style="text-align: center; font-size: 24px; margin-bottom: 5px;">${shopNameTitle}</h1>
+                        <p style="text-align: center; color: #666; font-size: 12px; margin-top: 0;">Reçu de Commande en ligne</p>
+                        <hr style="margin: 15px 0;">
+                        <p><strong>Date :</strong> ${orderDate}</p>
+                        <p><strong>Client :</strong> ${commande.client}</p>
+                        <p><strong>Tel :</strong> ${commande.telephone}</p>
+                        ${commande.adresse ? `<p><strong>Adresse :</strong> ${commande.adresse}</p>` : ''}
+                        <hr style="margin: 15px 0;">
+                        <div style="margin-bottom: 15px;">${printItemsHtml}</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
+                            <span>TOTAL :</span>
+                            <span>${formatPrice(total)}</span>
+                        </div>
+                        <hr style="margin: 15px 0;">
+                        <p style="text-align: center; font-style: italic; font-size: 12px; color: #666;">Merci de votre commande ! Le vendeur vous contactera très bientôt.</p>
+                    </div>
+                `;
+
+                // Réinitialiser le panier
+                cart = []; 
+                updateCartUI();
                 e.target.reset(); btn.disabled = false; btn.innerHTML = 'Valider la commande <i data-lucide="check-circle"></i>'; lucide.createIcons();
-                alert("✅ Votre commande a été envoyée avec succès au vendeur ! Il vous contactera très vite.");
             } catch (err) { btn.disabled = false; showToast("Erreur d'envoi"); }
         });
 
