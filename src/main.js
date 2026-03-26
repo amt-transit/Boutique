@@ -1,5 +1,5 @@
 // src/main.js
-import { setupLoginForm, setupAuthListener } from './auth.js';
+import { setupLoginForm, setupAuthListener, setupProfileManagement } from './auth.js';
 import { setupRegisterForm } from './register.js';
 import { setupModalListeners, switchTab, showTab, hideTab, setupThemeToggle, setupScrollToTop } from './ui.js';
 import { setupDashboard } from './pages/dashboard.js';
@@ -78,6 +78,7 @@ function main() {
     setupThemeToggle();
     setupScrollToTop();
     setupHamburgerMenu();
+    setupProfileManagement();
 }
 
 // Start the application

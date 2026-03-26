@@ -354,6 +354,13 @@ export function setupDashboard() {
             currentFondDeCaisse = docSnap.data().fondDeCaisse || 0;
             dateFondDeCaisse = docSnap.data().dateFondDeCaisse?.toDate() || new Date(0);
             
+            window.shopGlobalInfo = {
+                nom: docSnap.data().nom || "Ma Boutique",
+                telephone: docSnap.data().telephone || "",
+                adresse: docSnap.data().adresse || "",
+                messageTicket: docSnap.data().messageTicket || "Merci pour votre achat !"
+            };
+            
             updateDashboardUI();
             applyRoleBasedVisibility();
             updateSoldeTheorique();

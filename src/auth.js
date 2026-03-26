@@ -1,6 +1,6 @@
 import { 
     db, auth, onAuthStateChanged, signInWithEmailAndPassword, signOut, 
-    sendPasswordResetEmail, getDoc, doc, updateDoc
+    sendPasswordResetEmail, getDoc, doc, updateDoc, storage, ref, uploadString, getDownloadURL
 } from './firebase.js';
 import { showToast, switchTab, showAllTabs, hideTab, showTab, showConfirmModal, showPromptModal } from './ui.js'; 
 import * as state from './state.js';
@@ -416,4 +416,143 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
             hideSplash();
         }
     });
+}
+
+export function setupProfileManagement() {
+    const desktopBtn = document.getElementById('desktop-profile-btn');
+    const mobileBtn = document.getElementById('mobile-profile-btn');
+    const modal = document.getElementById('profile-modal');
+    const form = document.getElementById('form-profile');
+
+    const openProfile = async () => {
+        if (!state.currentBoutiqueId) return;
+        modal.classList.remove('hidden');
+
+        document.getElementById('profile-email').value = auth.currentUser?.email || '';
+        const roleEl = document.getElementById('profile-role');
+        roleEl.textContent = state.userRole === 'admin' ? 'Propriétaire / Gérant' : 'Vendeur';
+        roleEl.className = state.userRole === 'admin' ? 'text-sm font-bold text-purple-600' : 'text-sm font-bold text-green-600';
+
+        const adminSection = document.getElementById('profile-admin-section');
+        const saveBtn = document.getElementById('profile-save-btn');
+
+        if (state.userRole === 'admin') {
+            adminSection.classList.remove('hidden');
+            saveBtn.classList.remove('hidden');
+
+            try {
+                const shopDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId));
+                if (shopDoc.exists()) {
+                    const data = shopDoc.data();
+                    document.getElementById('profile-shop-name').value = data.nom || '';
+                    document.getElementById('profile-shop-phone').value = data.telephone || '';
+                    document.getElementById('profile-shop-address').value = data.adresse || '';
+                    document.getElementById('profile-shop-msg').value = data.messageTicket || '';
+                    
+                    const logoPreview = document.getElementById('profile-logo-preview');
+                    if (data.logo) {
+                        logoPreview.src = data.logo;
+                        logoPreview.classList.remove('hidden');
+                    } else {
+                        logoPreview.src = '';
+                        logoPreview.classList.add('hidden');
+                    }
+                }
+            } catch(e) { console.error(e); }
+        } else {
+            adminSection.classList.add('hidden');
+            saveBtn.classList.add('hidden');
+        }
+    };
+
+    if (desktopBtn) desktopBtn.addEventListener('click', openProfile);
+    if (mobileBtn) {
+        mobileBtn.addEventListener('click', () => {
+            if(window.closeHamburgerMenu) window.closeHamburgerMenu();
+            openProfile();
+        });
+    }
+
+    const logoInput = document.getElementById('profile-logo-input');
+    const logoPreview = document.getElementById('profile-logo-preview');
+    let compressedLogo = null;
+
+    if (logoInput) {
+        logoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width; let height = img.height;
+                    const maxSize = 400; // Format léger pour le logo
+                    if (width > height) { if (width > maxSize) { height *= maxSize / width; width = maxSize; } } 
+                    else { if (height > maxSize) { width *= maxSize / height; height = maxSize; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    compressedLogo = canvas.toDataURL('image/jpeg', 0.8);
+                    logoPreview.src = compressedLogo;
+                    logoPreview.classList.remove('hidden');
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (state.userRole !== 'admin') return;
+
+            const saveBtn = document.getElementById('profile-save-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline"></i>...';
+
+            try {
+                const updateData = {
+                    nom: document.getElementById('profile-shop-name').value.trim(),
+                    telephone: document.getElementById('profile-shop-phone').value.trim(),
+                    adresse: document.getElementById('profile-shop-address').value.trim(),
+                    messageTicket: document.getElementById('profile-shop-msg').value.trim()
+                };
+
+                if (compressedLogo) {
+                    showToast("Enregistrement du logo...", "info");
+                    const fileName = `logos/${state.currentBoutiqueId}_${Date.now()}.jpg`;
+                    const storageRef = ref(storage, fileName);
+                    await uploadString(storageRef, compressedLogo, 'data_url');
+                    updateData.logo = await getDownloadURL(storageRef);
+                }
+
+                await updateDoc(doc(db, "boutiques", state.currentBoutiqueId), updateData);
+                
+                // Mettre à jour le nom dans les accès utilisateurs si le nom a changé
+                const userDocRef = doc(db, "users", state.userId);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    let shops = userData.allowedShops || [];
+                    const shopIndex = shops.findIndex(s => s.id === state.currentBoutiqueId);
+                    if(shopIndex !== -1) {
+                        shops[shopIndex].name = updateData.nom;
+                        await updateDoc(userDocRef, { allowedShops: shops });
+                    }
+                }
+
+                showToast("Paramètres sauvegardés avec succès !", "success");
+                modal.classList.add('hidden');
+                compressedLogo = null;
+            } catch(err) {
+                console.error(err);
+                showToast("Erreur lors de la sauvegarde", "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Enregistrer';
+            }
+        });
+    }
 }

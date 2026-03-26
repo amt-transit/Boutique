@@ -259,8 +259,11 @@
             
             <div class="max-md:hidden flex flex-col gap-2 w-full px-2 mb-2">
                 <div class="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col gap-2 shadow-sm w-full">
-                    <div>
-                        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Compte Connecté</div>
+                    <div id="desktop-profile-btn" class="cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 p-1.5 -mx-1.5 -mt-1.5 rounded-lg transition group">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Compte Connecté</div>
+                            <i data-lucide="settings" class="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 transition"></i>
+                        </div>
                         <div id="desktop-user-email" class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate" title="Email">...</div>
                         <div id="desktop-user-role-badge" class="text-[9px] font-extrabold uppercase tracking-widest mt-1.5 inline-block px-2 py-0.5 rounded bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-gray-300">...</div>
                     </div>
@@ -351,9 +354,12 @@
 
                     <p class="hamburger-section-label mt-4 text-red-400">Compte</p>
                     
-                    <div class="px-3 py-2 bg-gray-50 dark:bg-slate-800 rounded-lg mb-2 border border-gray-100 dark:border-slate-700">
-                        <p class="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Connecté en tant que</p>
-                        <p class="text-xs font-bold text-gray-800 dark:text-gray-300 truncate" id="drawer-user-email">...</p>
+                    <div id="mobile-profile-btn" class="px-3 py-2 bg-gray-50 dark:bg-slate-800 rounded-lg mb-2 border border-gray-100 dark:border-slate-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700 transition flex justify-between items-center group">
+                        <div>
+                            <p class="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Connecté en tant que</p>
+                            <p class="text-xs font-bold text-gray-800 dark:text-gray-300 truncate" id="drawer-user-email">...</p>
+                        </div>
+                        <i data-lucide="settings" class="w-4 h-4 text-gray-400 group-hover:text-blue-500"></i>
                     </div>
 
                     <button id="drawer-logout-btn" class="drawer-tab text-red-500 hover:text-red-600 hover:bg-red-50">
@@ -1655,6 +1661,63 @@
     <div id="printable-area" class="hidden"></div>
     <div id="toast-container"></div>
     
+    <!-- MODALE PROFIL ET PARAMETRES BOUTIQUE -->
+    <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-[200] backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+            <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-2">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2"><i data-lucide="user"></i> Mon Profil & Boutique</h3>
+                <button onclick="document.getElementById('profile-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><i data-lucide="x"></i></button>
+            </div>
+            <form id="form-profile" class="space-y-4">
+                <div class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-700">
+                    <label class="text-xs font-bold text-gray-500 block mb-1 uppercase">Identifiant / Email</label>
+                    <input type="text" id="profile-email" class="w-full bg-transparent text-gray-800 dark:text-gray-200 font-bold outline-none" readonly disabled>
+                    <label class="text-xs font-bold text-gray-500 block mb-1 mt-2 uppercase">Rôle actuel</label>
+                    <div id="profile-role" class="text-sm font-bold text-blue-600">...</div>
+                </div>
+
+                <div id="profile-admin-section" class="space-y-4 hidden">
+                    <h4 class="text-sm font-bold text-blue-800 dark:text-blue-400 border-b border-blue-100 dark:border-slate-700 pb-1 mt-2 uppercase">Paramètres de la Boutique</h4>
+                    
+                    <div class="flex items-center gap-4">
+                        <div class="relative w-16 h-16 flex-shrink-0 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg flex items-center justify-center bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer overflow-hidden group transition">
+                            <input type="file" id="profile-logo-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Changer le logo">
+                            <i data-lucide="camera" class="w-6 h-6 text-gray-400 group-hover:text-blue-500 transition"></i>
+                            <img id="profile-logo-preview" src="" class="absolute inset-0 w-full h-full object-contain hidden z-0 bg-white">
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Logo de la boutique (Affiché sur le tableau de bord et les reçus).</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nom de la boutique <span class="text-red-500">*</span></label>
+                        <input type="text" id="profile-shop-name" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-600" required>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Téléphone Contact</label>
+                            <input type="tel" id="profile-shop-phone" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-600" placeholder="0707...">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Adresse / Ville</label>
+                            <input type="text" id="profile-shop-address" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-600" placeholder="Ex: Abidjan, Cocody">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Message de bas de ticket (Reçu)</label>
+                        <input type="text" id="profile-shop-msg" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-600" placeholder="Ex: Merci de votre confiance !">
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t dark:border-slate-700 flex justify-end gap-2">
+                    <button type="button" onclick="document.getElementById('profile-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition font-bold text-sm">Fermer</button>
+                    <button type="submit" id="profile-save-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-bold shadow text-sm hidden">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- BULLE D'AIDE GLOBALE -->
     <div id="global-tooltip" class="fixed z-[10000] px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-bold rounded-lg shadow-xl opacity-0 pointer-events-none transition-opacity duration-200 max-w-[220px] text-center hidden"></div>
     

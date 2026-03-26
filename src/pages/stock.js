@@ -409,8 +409,28 @@ function renderStockTable() {
         let statusBadge = p.discontinued ? '<span class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold border border-gray-300 ml-2" title="Ce produit ne sera plus approvisionné">⛔ Fin</span>' : "";
         let variantBadge = p.isVariant ? '<span class="bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded text-[9px] font-bold ml-2 uppercase tracking-wide">Variante</span>' : '';
 
+        // NOUVEAU : Créer la miniature
+        let imgThumb = p.image 
+            ? `<img src="${p.image}" class="w-8 h-8 rounded object-cover border border-gray-200 shadow-sm flex-shrink-0">` 
+            : `<div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200 shadow-sm flex-shrink-0"><i data-lucide="image" class="w-4 h-4"></i></div>`;
+
         tr.className = rowClass;
-        tr.innerHTML = `<td ${rowAction} class="p-4 text-xs text-gray-400">${dateStr}</td><td ${rowAction} class="p-4 font-medium text-gray-800">${p.nomDisplay || p.nom} ${variantBadge} ${statusBadge} ${p.deleted ? '(Archivé)' : ''}</td><td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td><td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td><td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td><td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td><td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td><td class="p-4 text-right">${deleteBtn}</td>`;
+        // J'ai ajouté un <div class="flex items-center gap-3"> autour de l'image et du nom
+        tr.innerHTML = `<td ${rowAction} class="p-4 text-xs text-gray-400">${dateStr}</td>
+        <td ${rowAction} class="p-4 font-medium text-gray-800">
+            <div class="flex items-center gap-3">
+                ${imgThumb}
+                <div>
+                    ${p.nomDisplay || p.nom} ${variantBadge} ${statusBadge} ${p.deleted ? '(Archivé)' : ''}
+                </div>
+            </div>
+        </td>
+        <td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td>
+        <td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td>
+        <td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td>
+        <td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td>
+        <td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td>
+        <td class="p-4 text-right">${deleteBtn}</td>`;
         tbody.appendChild(tr);
     });
     
