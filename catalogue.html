@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boutique en ligne</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" href="data:,">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .glass-header { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="text-gray-800 pb-24">
+
+    <!-- Loader -->
+    <div id="loader" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
+        <i data-lucide="loader-2" class="w-10 h-10 text-blue-600 animate-spin mb-4"></i>
+        <p class="font-bold text-gray-500 animate-pulse">Chargement du catalogue...</p>
+    </div>
+
+    <!-- Erreur si pas d'ID -->
+    <div id="error-screen" class="hidden fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
+        <i data-lucide="store" class="w-16 h-16 text-gray-300 mb-4"></i>
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Boutique introuvable</h2>
+        <p class="text-gray-500 text-sm">Le lien que vous avez suivi semble incomplet ou invalide.</p>
+    </div>
+
+    <!-- En-tête -->
+    <header class="glass-header fixed top-0 w-full z-40 border-b border-gray-200 shadow-sm px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <img id="shop-logo" src="" alt="Logo" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm hidden">
+            <div id="shop-logo-placeholder" class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xl shadow-sm"></div>
+            <h1 id="shop-name" class="font-extrabold text-lg text-gray-900 tracking-tight">...</h1>
+        </div>
+        <button id="btn-open-cart" class="relative bg-gray-100 p-2.5 rounded-full hover:bg-gray-200 transition">
+            <i data-lucide="shopping-cart" class="w-5 h-5 text-gray-700"></i>
+            <span id="cart-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow hidden">0</span>
+        </button>
+    </header>
+
+    <!-- Barre de recherche -->
+    <div class="pt-20 px-4 mb-6 max-w-2xl mx-auto">
+        <div class="relative">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+            <input type="text" id="search-input" placeholder="Rechercher un article..." class="w-full pl-12 p-4 bg-white border border-gray-200 rounded-2xl shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition text-sm font-semibold">
+        </div>
+    </div>
+
+    <!-- Grille des produits -->
+    <main class="px-4 max-w-6xl mx-auto">
+        <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Produits injectés ici -->
+        </div>
+        <div id="no-products" class="hidden text-center py-10 text-gray-400 font-bold">Aucun article trouvé.</div>
+    </main>
+
+    <!-- Modale du Panier -->
+    <div id="cart-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex flex-col justify-end backdrop-blur-sm transition-opacity">
+        <div class="bg-white w-full max-h-[85vh] rounded-t-3xl flex flex-col shadow-2xl transform transition-transform translate-y-0">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h2 class="font-bold text-lg flex items-center gap-2"><i data-lucide="shopping-bag" class="text-blue-600"></i> Mon Panier</h2>
+                <button id="btn-close-cart" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-4" id="cart-items">
+                <!-- Articles du panier -->
+            </div>
+
+            <div class="p-4 border-t bg-gray-50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-bold text-gray-500">Total</span>
+                    <span id="cart-total" class="font-extrabold text-2xl text-blue-600">0 CFA</span>
+                </div>
+
+                <form id="order-form" class="space-y-3 mb-4">
+                    <p class="text-xs font-bold text-gray-500 uppercase">Vos informations</p>
+                    <input type="text" id="client-name" placeholder="Votre nom et prénom" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-semibold" required>
+                    <input type="tel" id="client-tel" placeholder="Votre numéro de téléphone" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-semibold" required>
+                    
+                    <button type="submit" id="btn-submit-order" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg mt-2 flex justify-center items-center gap-2 hover:bg-blue-700 transition disabled:opacity-50">
+                        Valider la commande <i data-lucide="check-circle"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full font-bold text-sm shadow-xl z-[100] transition-opacity duration-300 opacity-0 pointer-events-none">
+        Message
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Config Firebase (Idem que l'app)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCluRVv-olQsTuZZBPjjJns1jHq0vkhjSw",
+            authDomain: "maboutique-7891.firebaseapp.com",
+            projectId: "maboutique-7891",
+            storageBucket: "maboutique-7891.firebasestorage.app",
+            messagingSenderId: "402820959115",
+            appId: "1:402820959115:web:6fb6b2c78fc9c5fe203d8e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Paramètres URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const boutiqueId = urlParams.get('id');
+
+        let allProducts = [];
+        let cart = [];
+
+        // Format monétaire
+        const formatPrice = (p) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(p);
+
+        // Toast
+        const showToast = (msg) => {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 3000);
+        };
+
+        async function init() {
+            if (!boutiqueId) {
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('error-screen').classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            try {
+                // 1. Charger les infos de la boutique
+                const shopDoc = await getDoc(doc(db, "boutiques", boutiqueId));
+                if (!shopDoc.exists()) throw new Error("Boutique inexistante");
+                
+                const shopData = shopDoc.data();
+                document.title = shopData.nom + " - Catalogue";
+                document.getElementById('shop-name').textContent = shopData.nom;
+                
+                if (shopData.logo) {
+                    const img = document.getElementById('shop-logo');
+                    img.src = shopData.logo;
+                    img.classList.remove('hidden');
+                    document.getElementById('shop-logo-placeholder').classList.add('hidden');
+                } else {
+                    document.getElementById('shop-logo-placeholder').textContent = shopData.nom.charAt(0).toUpperCase();
+                }
+
+                // 2. Charger les produits (stock > 0 et non supprimés)
+                const productsSnap = await getDocs(collection(db, "boutiques", boutiqueId, "products"));
+                productsSnap.forEach(d => {
+                    const p = { id: d.id, ...d.data() };
+                    if (!p.deleted && p.stock > 0) {
+                        allProducts.push(p);
+                    }
+                });
+                
+                allProducts.sort((a, b) => a.nomDisplay.localeCompare(b.nomDisplay));
+                renderProducts();
+                
+                document.getElementById('loader').classList.add('hidden');
+                lucide.createIcons();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('error-screen').classList.remove('hidden');
+                lucide.createIcons();
+            }
+        }
+
+        function renderProducts(searchTerm = "") {
+            const grid = document.getElementById('products-grid');
+            const term = searchTerm.toLowerCase();
+            const filtered = allProducts.filter(p => p.nomDisplay.toLowerCase().includes(term));
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                document.getElementById('no-products').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('no-products').classList.add('hidden');
+
+            grid.innerHTML = filtered.map(p => {
+                const imgHtml = p.image 
+                    ? `<img src="${p.image}" class="w-full h-32 object-cover rounded-xl mb-3 shadow-sm">`
+                    : `<div class="w-full h-32 bg-gray-100 rounded-xl mb-3 flex items-center justify-center text-gray-300 shadow-sm"><i data-lucide="image" class="w-8 h-8"></i></div>`;
+                
+                return `
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full">
+                    ${imgHtml}
+                    <div class="text-xs font-bold text-gray-800 line-clamp-2 leading-snug flex-1">${p.nomDisplay}</div>
+                    <div class="font-extrabold text-blue-600 mt-2 text-sm">${formatPrice(p.prixVente)}</div>
+                    <button onclick="addToCart('${p.id}')" class="mt-3 w-full bg-gray-50 hover:bg-blue-50 text-blue-600 font-bold py-2 rounded-xl text-xs transition border border-gray-100 hover:border-blue-200 flex justify-center items-center gap-1">
+                        <i data-lucide="plus" class="w-3 h-3"></i> Ajouter
+                    </button>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        window.addToCart = (id) => {
+            const p = allProducts.find(x => x.id === id);
+            if(!p) return;
+            const existing = cart.find(item => item.id === id);
+            if (existing) {
+                if (existing.qty < p.stock) existing.qty++;
+                else return showToast("Stock maximum atteint");
+            } else {
+                cart.push({ ...p, qty: 1 });
+            }
+            showToast("Ajouté au panier !");
+            updateCartUI();
+        };
+
+        window.updateQty = (index, delta) => {
+            const item = cart[index];
+            const p = allProducts.find(x => x.id === item.id);
+            if (delta > 0 && item.qty >= p.stock) return showToast("Stock max atteint");
+            item.qty += delta;
+            if (item.qty <= 0) cart.splice(index, 1);
+            updateCartUI();
+        };
+
+        function updateCartUI() {
+            const badge = document.getElementById('cart-badge');
+            const totalQty = cart.reduce((acc, item) => acc + item.qty, 0);
+            
+            if (totalQty > 0) { badge.textContent = totalQty; badge.classList.remove('hidden'); } 
+            else badge.classList.add('hidden');
+
+            const list = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-400 font-bold mt-10">Votre panier est vide.</p>';
+                document.getElementById('cart-total').textContent = '0 CFA';
+                return;
+            }
+
+            let total = 0;
+            list.innerHTML = cart.map((i, index) => {
+                total += i.prixVente * i.qty;
+                return `
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl mb-2 border border-gray-100">
+                    <div class="flex-1 pr-2">
+                        <div class="font-bold text-sm text-gray-800">${i.nomDisplay}</div>
+                        <div class="text-xs text-blue-600 font-extrabold mt-0.5">${formatPrice(i.prixVente)}/u</div>
+                    </div>
+                    <div class="flex items-center gap-3 bg-white px-2 py-1 rounded-lg border shadow-sm">
+                        <button onclick="updateQty(${index}, -1)" class="w-6 h-6 flex items-center justify-center font-bold text-gray-500 hover:text-red-500">-</button>
+                        <span class="font-bold text-sm w-4 text-center">${i.qty}</span>
+                        <button onclick="updateQty(${index}, 1)" class="w-6 h-6 flex items-center justify-center font-bold text-gray-500 hover:text-green-500">+</button>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('cart-total').textContent = formatPrice(total);
+        }
+
+        // Event Listeners
+        document.getElementById('search-input').addEventListener('input', (e) => renderProducts(e.target.value));
+        document.getElementById('btn-open-cart').addEventListener('click', () => document.getElementById('cart-modal').classList.remove('hidden'));
+        document.getElementById('btn-close-cart').addEventListener('click', () => document.getElementById('cart-modal').classList.add('hidden'));
+
+        document.getElementById('order-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (cart.length === 0) return showToast("Votre panier est vide");
+            
+            const btn = document.getElementById('btn-submit-order');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i> Envoi...';
+            lucide.createIcons();
+
+            const total = cart.reduce((acc, item) => acc + (item.prixVente * item.qty), 0);
+            const commande = { client: document.getElementById('client-name').value, telephone: document.getElementById('client-tel').value, items: cart, total: total, status: 'en_attente', date: serverTimestamp(), source: 'catalogue_web' };
+
+            try {
+                await addDoc(collection(db, "boutiques", boutiqueId, "commandes"), commande);
+                document.getElementById('cart-modal').classList.add('hidden');
+                cart = []; updateCartUI();
+                e.target.reset(); btn.disabled = false; btn.innerHTML = 'Valider la commande <i data-lucide="check-circle"></i>'; lucide.createIcons();
+                alert("✅ Votre commande a été envoyée avec succès au vendeur ! Il vous contactera très vite.");
+            } catch (err) { btn.disabled = false; showToast("Erreur d'envoi"); }
+        });
+
+        // Démarrage
+        init();
+    </script>
+</body>
+</html>

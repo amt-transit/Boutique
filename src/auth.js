@@ -473,6 +473,22 @@ export function setupProfileManagement() {
         });
     }
 
+    // Gestion de la copie du lien du catalogue
+    const copyCatalogBtn = document.getElementById('btn-copy-catalog');
+    if (copyCatalogBtn) {
+        copyCatalogBtn.addEventListener('click', () => {
+            if (!state.currentBoutiqueId) return;
+            const baseUrl = window.location.origin + window.location.pathname.replace(/app\.html|index\.html$/, '');
+            const catalogUrl = `${baseUrl}catalogue.html?id=${state.currentBoutiqueId}`;
+            
+            navigator.clipboard.writeText(catalogUrl).then(() => {
+                showToast("Lien du catalogue copié !", "success");
+            }).catch(err => {
+                showToast("Impossible de copier le lien.", "error");
+            });
+        });
+    }
+
     const logoInput = document.getElementById('profile-logo-input');
     const logoPreview = document.getElementById('profile-logo-preview');
     let compressedLogo = null;

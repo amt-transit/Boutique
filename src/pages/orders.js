@@ -9,9 +9,48 @@ export function setupOrdersListener() {
     // Make sure we only set up the listener if we have a boutiqueId
     if (!state.currentBoutiqueId) return;
 
+    // Demander la permission pour les notifications navigateur (Push)
+    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+
+    let isInitialOrdersLoad = true;
+
     onSnapshot(query(collection(db, "boutiques", state.currentBoutiqueId, "commandes"), where("status", "==", "en_attente")), (snap) => {
         container.innerHTML = '';
         
+        // --- GESTION DU BADGE ROUGE ---
+        const pendingCount = snap.size;
+        const mainBadge = document.getElementById('badge-commandes-main');
+        const drawerBadge = document.getElementById('badge-commandes-drawer');
+        
+        if (mainBadge) {
+            mainBadge.textContent = pendingCount;
+            mainBadge.classList.toggle('hidden', pendingCount === 0);
+        }
+        if (drawerBadge) {
+            drawerBadge.textContent = pendingCount;
+            drawerBadge.classList.toggle('hidden', pendingCount === 0);
+        }
+
+        // --- NOTIFICATION SONORE ET VISUELLE POUR LES NOUVELLES COMMANDES ---
+        if (!isInitialOrdersLoad) {
+            let hasNewOrder = false;
+            // On vérifie s'il y a eu un AJOUT dans la base de données
+            snap.docChanges().forEach(change => {
+                if (change.type === 'added') hasNewOrder = true;
+            });
+            
+            if (hasNewOrder) {
+                new Audio('https://actions.google.com/sounds/v1/ui/message_notification.ogg').play().catch(e => console.log('Audio blocked', e));
+                
+                if (Notification.permission === "granted") {
+                    new Notification("Nouvelle Commande !", { body: "Une nouvelle commande est en attente dans votre boutique." });
+                }
+            }
+        }
+        isInitialOrdersLoad = false;
+
         if (snap.empty) {
             container.innerHTML = '<div class="col-span-full text-center text-gray-400 p-8 bg-white rounded-xl">Aucune commande en attente.</div>';
             return;
