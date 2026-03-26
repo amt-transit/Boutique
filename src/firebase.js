@@ -8,6 +8,9 @@ import {
     onSnapshot, query, where, orderBy, limit, serverTimestamp, writeBatch, deleteDoc, 
     increment, setLogLevel, initializeFirestore, persistentLocalCache
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { 
+    getStorage, ref, uploadString, getDownloadURL 
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 export const firebaseConfig = {
     apiKey: "AIzaSyCluRVv-olQsTuZZBPjjJns1jHq0vkhjSw",
@@ -23,6 +26,7 @@ const db = initializeFirestore(app, {localCache: persistentLocalCache()});
 console.log("Mode hors-ligne activé");
 
 const auth = getAuth(app);
+const storage = getStorage(app);
 setLogLevel('error');
 
 export { 
@@ -56,5 +60,10 @@ export {
     serverTimestamp, 
     writeBatch, 
     deleteDoc, 
-    increment
+    increment,
+    // Storage exports
+    storage,
+    ref,
+    uploadString,
+    getDownloadURL
 };

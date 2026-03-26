@@ -231,27 +231,27 @@
                 </div>
                 <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:-0.02em;color:#0f172a;" class="dark:text-white">Ma Boutique</span>
             </div>
-            <button class="tab active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i><div>Accueil</div></button>
-            <button class="tab" onclick="switchTab('ventes')"><i data-lucide="shopping-cart"></i><div>Vente</div></button>
-            <button class="tab secondary-tab" onclick="switchTab('commandes')"><i data-lucide="clipboard-list"></i><div>Commandes</div></button>
-            <button class="tab" onclick="switchTab('stock')"><i data-lucide="package"></i><div>Stock</div></button>
-            <button class="tab secondary-tab" onclick="switchTab('fournisseurs')"><i data-lucide="truck"></i><div>Fournisseurs</div></button>
-            <button class="tab" onclick="switchTab('credits')"><i data-lucide="users"></i><div>Clients & Crédits</div></button>
-            <button class="tab" onclick="switchTab('charges')"><i data-lucide="arrow-left-right"></i><div>Dépenses</div></button>
-            <button class="tab secondary-tab" onclick="switchTab('rapports')"><i data-lucide="bar-chart-3"></i><div>Bilan</div></button>
-            <button class="tab secondary-tab" onclick="switchTab('audit')"><i data-lucide="activity"></i><div>Journal</div></button>
+            <button class="tab active" onclick="switchTab('dashboard')" data-desc="Tableau de bord : Vue d'ensemble de vos statistiques et chiffres clés"><i data-lucide="layout-dashboard"></i><div>Accueil</div></button>
+            <button class="tab" onclick="switchTab('ventes')" data-desc="Caisse : Enregistrez vos ventes et encaissez vos clients"><i data-lucide="shopping-cart"></i><div>Vente</div></button>
+            <button class="tab secondary-tab" onclick="switchTab('commandes')" data-desc="Commandes : Gérez les réservations et commandes non payées"><i data-lucide="clipboard-list"></i><div>Commandes</div></button>
+            <button class="tab" onclick="switchTab('stock')" data-desc="Stock : Ajoutez de nouveaux articles, modifiez les prix et surveillez l'inventaire"><i data-lucide="package"></i><div>Stock</div></button>
+            <button class="tab secondary-tab" onclick="switchTab('fournisseurs')" data-desc="Fournisseurs : Répertoire de vos fournisseurs"><i data-lucide="truck"></i><div>Fournisseurs</div></button>
+            <button class="tab" onclick="switchTab('credits')" data-desc="Clients & Crédits : Suivez les dettes de vos clients"><i data-lucide="users"></i><div>Clients & Crédits</div></button>
+            <button class="tab" onclick="switchTab('charges')" data-desc="Dépenses : Notez vos factures, salaires et autres charges"><i data-lucide="arrow-left-right"></i><div>Dépenses</div></button>
+            <button class="tab secondary-tab" onclick="switchTab('rapports')" data-desc="Bilan : Consultez vos bénéfices sur une période donnée"><i data-lucide="bar-chart-3"></i><div>Bilan</div></button>
+            <button class="tab secondary-tab" onclick="switchTab('audit')" data-desc="Journal : Historique complet des entrées/sorties d'argent"><i data-lucide="activity"></i><div>Journal</div></button>
             
             <!-- Wrapper pour cacher le bouton Bureau sur mobile (évite le doublon dans la barre du bas) -->
             <div class="max-md:hidden w-full">
-                <button class="tab hidden" id="desktop-team-btn">
+                <button class="tab hidden" id="desktop-team-btn" data-desc="Gérer les accès des vendeurs de votre boutique">
                     <i data-lucide="users" class="text-blue-600"></i><div class="text-blue-600">Équipe</div>
                 </button>
             </div>
             
-            <button class="tab hidden" id="admin-tab-btn" onclick="switchTab('admin')">
+            <button class="tab hidden" id="admin-tab-btn" onclick="switchTab('admin')" data-desc="Administration globale des boutiques">
                 <i data-lucide="settings" class="text-red-500"></i><div class="text-red-500">Admin</div>
             </button>
-            <button class="tab hidden" id="admin-access-tab-btn" onclick="switchTab('admin-access')">
+            <button class="tab hidden" id="admin-access-tab-btn" onclick="switchTab('admin-access')" data-desc="Gestion des accès utilisateurs globale">
                 <i data-lucide="users-2" class="text-purple-600"></i><div class="text-purple-600">Utilisateurs</div>
             </button>
             
@@ -265,16 +265,20 @@
                         <div id="desktop-user-role-badge" class="text-[9px] font-extrabold uppercase tracking-widest mt-1.5 inline-block px-2 py-0.5 rounded bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-gray-300">...</div>
                     </div>
                     <div class="border-t border-gray-200 dark:border-slate-700 my-1"></div>
-                    <button id="theme-toggle" class="w-full flex items-center justify-between text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition focus:outline-none group">
+                    <button id="theme-toggle" class="w-full flex items-center justify-between text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition focus:outline-none group" data-desc="Basculer entre le mode clair et le mode sombre">
                         <span class="text-xs font-bold" id="desktop-theme-label">Mode Sombre</span>
                         <div class="p-1.5 bg-white dark:bg-slate-700 rounded-lg shadow-sm border border-gray-100 dark:border-slate-600 group-hover:shadow transition">
                             <i data-lucide="moon" class="w-3.5 h-3.5"></i>
                         </div>
                     </button>
+                    <label class="w-full flex items-center justify-between text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer group mt-2" data-desc="Activer ou désactiver les bulles d'aide explicatives (survol PC / appui long Mobile)">
+                        <span class="text-[11px] font-bold">Aide (Descriptifs)</span>
+                        <input type="checkbox" id="desktop-tooltip-toggle" class="w-4 h-4 rounded text-blue-600 cursor-pointer">
+                    </label>
                 </div>
             </div>
             
-            <button class="tab" id="bottom-logout-btn"><i data-lucide="log-out" class="text-red-400"></i><div class="text-red-400">Sortir</div></button>
+            <button class="tab" id="bottom-logout-btn" data-desc="Déconnecter votre compte de cet appareil"><i data-lucide="log-out" class="text-red-400"></i><div class="text-red-400">Sortir</div></button>
         </div>
 
         <main class="flex-1 w-full bg-gray-50 h-auto md:h-full md:flex md:flex-col relative overflow-y-auto">
@@ -300,7 +304,7 @@
                 </button>
                 <div class="relative flex-1">
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6"></i>
-                    <input type="text" id="global-search-input" placeholder="Rechercher un produit, un client..." class="w-full pl-14 pr-4 py-3 bg-white/70 dark:bg-slate-800/70 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-lg outline-none transition duration-300">
+                    <input type="text" id="global-search-input" placeholder="Rechercher un produit, un client..." class="w-full pl-14 pr-4 py-3 bg-white/70 dark:bg-slate-800/70 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-lg outline-none transition duration-300" data-desc="Barre de recherche rapide pour trouver un produit ou un client">
                     <div id="global-search-results" class="hidden absolute w-full mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-96 overflow-y-auto">
                         <!-- Search results will be injected here -->
                     </div>
@@ -322,21 +326,28 @@
                 </div>
                 <div class="hamburger-drawer-body">
                     <p class="hamburger-section-label md:hidden">Navigation</p>
-                    <button class="drawer-tab md:hidden" onclick="switchTab('commandes'); closeHamburgerMenu();"><i data-lucide="clipboard-list"></i><span>Commandes</span></button>
-                    <button class="drawer-tab md:hidden" onclick="switchTab('fournisseurs'); closeHamburgerMenu();"><i data-lucide="truck"></i><span>Fournisseurs</span></button>
-                    <button class="drawer-tab md:hidden" onclick="switchTab('audit'); closeHamburgerMenu();"><i data-lucide="activity"></i><span>Journal</span></button>
-                    <button class="drawer-tab md:hidden" onclick="switchTab('rapports'); closeHamburgerMenu();"><i data-lucide="bar-chart-3"></i><span>Bilans</span></button>
+                    <button class="drawer-tab md:hidden" onclick="switchTab('commandes'); closeHamburgerMenu();" data-desc="Commandes : Gérez les réservations et commandes non payées"><i data-lucide="clipboard-list"></i><span>Commandes</span></button>
+                    <button class="drawer-tab md:hidden" onclick="switchTab('fournisseurs'); closeHamburgerMenu();" data-desc="Fournisseurs : Répertoire de vos fournisseurs"><i data-lucide="truck"></i><span>Fournisseurs</span></button>
+                    <button class="drawer-tab md:hidden" onclick="switchTab('audit'); closeHamburgerMenu();" data-desc="Journal : Historique complet des entrées/sorties d'argent"><i data-lucide="activity"></i><span>Journal</span></button>
+                    <button class="drawer-tab md:hidden" onclick="switchTab('rapports'); closeHamburgerMenu();" data-desc="Bilan : Consultez vos bénéfices sur une période donnée"><i data-lucide="bar-chart-3"></i><span>Bilans</span></button>
                     
                     <!-- Bouton Équipe Mobile (Préservé) -->
-                    <button id="drawer-team-btn" class="drawer-tab hidden">
+                    <button id="drawer-team-btn" class="drawer-tab hidden" data-desc="Gérer les accès des vendeurs de votre boutique">
                         <i data-lucide="users"></i><span>Gestion Équipe</span>
                     </button>
 
                     <p class="hamburger-section-label mt-4">Préférences</p>
-                    <button id="drawer-theme-toggle" class="drawer-tab">
+                    <button id="drawer-theme-toggle" class="drawer-tab" data-desc="Basculer l'affichage en mode sombre ou clair">
                         <i id="drawer-theme-icon" data-lucide="moon"></i>
                         <span id="drawer-theme-label">Mode sombre</span>
                     </button>
+                    <label class="drawer-tab flex justify-between items-center cursor-pointer mb-2" data-desc="Affiche des explications sur les éléments de l'application lors d'un appui long">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="help-circle"></i>
+                            <span>Aide (Descriptifs)</span>
+                        </div>
+                        <input type="checkbox" id="mobile-tooltip-toggle" class="w-5 h-5 rounded text-blue-600 cursor-pointer">
+                    </label>
 
                     <p class="hamburger-section-label mt-4 text-red-400">Compte</p>
                     
@@ -404,7 +415,7 @@
                 <div class="dash-kpi-grid">
 
                     <!-- Caisse initiale -->
-                    <div class="kpi-card kpi-slate" id="card-caisse">
+                    <div class="kpi-card kpi-slate" id="card-caisse" data-desc="Fonds de caisse initial pour démarrer la journée">
                         <div class="kpi-top">
                             <div class="kpi-icon-wrap kpi-icon-slate">
                                 <i data-lucide="wallet" class="w-5 h-5"></i>
@@ -419,7 +430,7 @@
                     </div>
 
                     <!-- Ventes cash -->
-                    <div class="kpi-card kpi-blue" id="card-sales">
+                    <div class="kpi-card kpi-blue" id="card-sales" data-desc="Total de l'argent encaissé aujourd'hui ou sur la période choisie">
                         <div class="kpi-top">
                             <div class="kpi-icon-wrap kpi-icon-blue">
                                 <i data-lucide="trending-up" class="w-5 h-5"></i>
@@ -434,7 +445,7 @@
                     </div>
 
                     <!-- Bénéfice -->
-                    <div class="kpi-card kpi-green" id="card-profit">
+                    <div class="kpi-card kpi-green" id="card-profit" data-desc="Argent réel actuellement disponible (Caisse + Ventes - Dépenses)">
                         <div class="kpi-top">
                             <div class="kpi-icon-wrap kpi-icon-green">
                                 <i data-lucide="piggy-bank" class="w-5 h-5"></i>
@@ -449,7 +460,7 @@
                     </div>
 
                     <!-- Crédits -->
-                    <div class="kpi-card kpi-orange" id="card-credits">
+                    <div class="kpi-card kpi-orange" id="card-credits" data-desc="Total de l'argent que vos clients vous doivent">
                         <div class="kpi-top">
                             <div class="kpi-icon-wrap kpi-icon-orange">
                                 <i data-lucide="users" class="w-5 h-5"></i>
@@ -464,7 +475,7 @@
                     </div>
 
                     <!-- Dépenses -->
-                    <div class="kpi-card kpi-red" id="card-expenses">
+                    <div class="kpi-card kpi-red" id="card-expenses" data-desc="Total de vos dépenses et charges">
                         <div class="kpi-top">
                             <div class="kpi-icon-wrap kpi-icon-red">
                                 <i data-lucide="credit-card" class="w-5 h-5"></i>
@@ -650,7 +661,7 @@
                             </div>
 
                             <div class="grid grid-cols-2 gap-2 mb-3">
-                                <button id="btn-validate-cash" class="col-span-2 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-extrabold text-xl shadow-lg flex justify-center items-center gap-2 transition transform active:scale-95">
+                                <button id="btn-validate-cash" class="col-span-2 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-extrabold text-xl shadow-lg flex justify-center items-center gap-2 transition transform active:scale-95" data-desc="Valide le panier actuel et encaisse la somme en espèces">
                                     <i data-lucide="banknote"></i> ENCAISSER
                                 </button>
                                 
@@ -699,11 +710,11 @@
                         <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Gestion du Stock</h1>
                         <div class="flex items-center gap-2">
                             <button id="open-print-labels-modal"
-                                    class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
+                                    class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition" data-desc="Imprimer des étiquettes avec code-barres pour vos produits">
                                 <i data-lucide="printer" class="w-5 h-5"></i> Imprimer Étiquettes
                             </button>
                             <button onclick="document.getElementById('add-product-form').classList.toggle('hidden')" 
-                                    class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition">
+                                    class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-sm transition" data-desc="Ajouter un nouvel article dans le stock">
                                 <i data-lucide="plus-circle" class="w-5 h-5"></i> Nouveau Produit
                             </button>
                         </div>
@@ -712,10 +723,18 @@
                     <div id="add-product-form" class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-4 hidden">
                         <h3 class="font-bold text-lg mb-4 text-gray-700">Ajouter / Modifier</h3>
                         <form id="form-stock" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                            <div class="lg:col-span-4 relative">
-                                <label class="text-xs font-bold text-gray-500 uppercase">Nom du Produit (Modèle de base)</label>
-                                <input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded outline-none" placeholder="Ex: Basket Air Force 1" required autocomplete="off">
-                                <div id="prod-nom-suggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg max-h-48 overflow-y-auto top-full left-0"></div>
+                            <div class="lg:col-span-4 relative flex gap-3 items-end">
+                                <div class="relative w-16 h-16 flex-shrink-0 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer overflow-hidden group transition">
+                                    <input type="file" id="prod-image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Ajouter une photo">
+                                    <i data-lucide="camera" class="w-6 h-6 text-gray-400 group-hover:text-blue-500 transition"></i>
+                                    <img id="prod-image-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden z-0">
+                                </div>
+                                
+                                <div class="flex-1 relative">
+                                    <label class="text-xs font-bold text-gray-500 uppercase">Nom du Produit (Modèle de base)</label>
+                                    <input type="text" id="prod-nom" class="w-full mt-1 border p-2 rounded outline-none" placeholder="Ex: Basket Air Force 1" required autocomplete="off">
+                                    <div id="prod-nom-suggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg max-h-48 overflow-y-auto top-full left-0"></div>
+                                </div>
                             </div>
                             <div class="lg:col-span-1">
                                 <label class="text-xs font-bold text-gray-500 uppercase">Prix Achat</label>
@@ -1249,9 +1268,16 @@
                         <h4 class="text-sm font-bold text-blue-800 dark:text-blue-300 mb-3 uppercase border-b pb-1 dark:border-slate-600">1. Modifier Informations</h4>
                         <form id="form-edit-product" class="space-y-3">
                             <input type="hidden" id="edit-prod-id">
-                            <div>
-                                <label class="text-xs font-bold text-gray-500 dark:text-slate-400">Nom du produit</label>
-                                <input type="text" id="edit-prod-nom" class="w-full p-2 border dark:border-slate-600 rounded bg-gray-200 dark:bg-slate-700" readonly>
+                            <div class="flex gap-3 items-end">
+                                <div class="relative w-16 h-16 flex-shrink-0 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg flex items-center justify-center bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer overflow-hidden group transition">
+                                    <input type="file" id="edit-prod-image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Ajouter / Modifier la photo">
+                                    <i data-lucide="camera" class="w-6 h-6 text-gray-400 group-hover:text-blue-500 transition"></i>
+                                    <img id="edit-prod-image-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden z-0">
+                                </div>
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-gray-500 dark:text-slate-400">Nom du produit</label>
+                                    <input type="text" id="edit-prod-nom" class="w-full p-2 border dark:border-slate-600 rounded bg-gray-200 dark:bg-slate-700" readonly>
+                                </div>
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
@@ -1628,6 +1654,76 @@
     </button>
     <div id="printable-area" class="hidden"></div>
     <div id="toast-container"></div>
+    
+    <!-- BULLE D'AIDE GLOBALE -->
+    <div id="global-tooltip" class="fixed z-[10000] px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-bold rounded-lg shadow-xl opacity-0 pointer-events-none transition-opacity duration-200 max-w-[220px] text-center hidden"></div>
+    
+    <!-- SCRIPT GESTION DES BULLES D'AIDE -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let tooltipsEnabled = false;
+        const desktopToggle = document.getElementById('desktop-tooltip-toggle');
+        const mobileToggle = document.getElementById('mobile-tooltip-toggle');
+        const tooltipEl = document.getElementById('global-tooltip');
+        let longPressTimer;
+
+        function updateTooltipState(enabled) {
+            tooltipsEnabled = enabled;
+            if (desktopToggle) desktopToggle.checked = enabled;
+            if (mobileToggle) mobileToggle.checked = enabled;
+            localStorage.setItem('tooltipsEnabled', enabled ? 'true' : 'false');
+        }
+
+        if (desktopToggle) desktopToggle.addEventListener('change', (e) => updateTooltipState(e.target.checked));
+        if (mobileToggle) mobileToggle.addEventListener('change', (e) => updateTooltipState(e.target.checked));
+
+        const savedState = localStorage.getItem('tooltipsEnabled');
+        if (savedState === 'true') updateTooltipState(true);
+
+        function showTooltip(element, x, y) {
+            if (!tooltipsEnabled) return;
+            const desc = element.getAttribute('data-desc');
+            if (!desc) return;
+
+            tooltipEl.textContent = desc;
+            tooltipEl.classList.remove('hidden');
+            
+            requestAnimationFrame(() => {
+                tooltipEl.style.opacity = '1';
+                positionTooltip(x, y);
+            });
+        }
+
+        function hideTooltip() {
+            tooltipEl.style.opacity = '0';
+            setTimeout(() => { if(tooltipEl.style.opacity === '0') tooltipEl.classList.add('hidden'); }, 200);
+        }
+
+        function positionTooltip(x, y) {
+            const rect = tooltipEl.getBoundingClientRect();
+            const offset = 15;
+            let posX = x + offset;
+            let posY = y + offset;
+            if (posX + rect.width > window.innerWidth) posX = x - rect.width - offset;
+            if (posY + rect.height > window.innerHeight) posY = y - rect.height - offset;
+            if (posX < 0) posX = 5;
+            if (posY < 0) posY = 5;
+            tooltipEl.style.left = `${posX}px`;
+            tooltipEl.style.top = `${posY}px`;
+        }
+
+        // PC (Survol)
+        document.addEventListener('mouseover', (e) => { const target = e.target.closest('[data-desc]'); if (target) showTooltip(target, e.clientX, e.clientY); });
+        document.addEventListener('mousemove', (e) => { if (tooltipEl.style.opacity === '1') { const target = e.target.closest('[data-desc]'); if (target) { positionTooltip(e.clientX, e.clientY); } else { hideTooltip(); } } });
+        document.addEventListener('mouseout', (e) => { const target = e.target.closest('[data-desc]'); if (target) hideTooltip(); });
+
+        // Mobile (Appui long)
+        document.addEventListener('touchstart', (e) => { const target = e.target.closest('[data-desc]'); if (target && e.touches.length > 0) { longPressTimer = setTimeout(() => { showTooltip(target, e.touches[0].clientX, e.touches[0].clientY); }, 500); } }, {passive: true});
+        document.addEventListener('touchend', () => { clearTimeout(longPressTimer); hideTooltip(); });
+        document.addEventListener('touchmove', () => { clearTimeout(longPressTimer); hideTooltip(); }, {passive: true});
+    });
+    </script>
+
     <script type="module" src="src/main.js"></script>
     
 </body>

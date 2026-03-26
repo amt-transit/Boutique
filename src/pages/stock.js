@@ -1,7 +1,42 @@
 // src/pages/stock.js
-import { db, onSnapshot, collection, query, where, getDocs, doc, writeBatch, increment, serverTimestamp, updateDoc } from '../firebase.js'; 
+import { db, onSnapshot, collection, query, where, getDocs, doc, writeBatch, increment, serverTimestamp, updateDoc, storage, ref, uploadString, getDownloadURL } from '../firebase.js'; 
 import { showToast, formatPrice, showPromptModal, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
+
+// --- COMPRESSEUR D'IMAGE ---
+// Prend un fichier image et le réduit à ~50-100Ko max
+function compressImage(file, maxSize = 800) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Redimensionnement
+                if (width > height) {
+                    if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+                } else {
+                    if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Compression en JPEG qualité moyenne (0.7)
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.onerror = e => reject(e);
+        };
+        reader.onerror = e => reject(e);
+    });
+}
 
 export function setupStockManagement() {
     if (!state.currentBoutiqueId) return;
@@ -121,6 +156,40 @@ export function setupStockManagement() {
         });
     }
 
+    // --- GESTION DE L'IMAGE DU PRODUIT ---
+    const imageInput = document.getElementById('prod-image');
+    const imagePreview = document.getElementById('prod-image-preview');
+    let compressedImageDataUrl = null;
+
+    if (imageInput) {
+        imageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                compressedImageDataUrl = await compressImage(file);
+                imagePreview.src = compressedImageDataUrl;
+                imagePreview.classList.remove('hidden');
+            } catch(err) { console.error(err); showToast("Erreur de compression d'image", "error"); }
+        });
+    }
+
+    // --- GESTION DE L'IMAGE D'EDITION ---
+    const editImageInput = document.getElementById('edit-prod-image');
+    const editImagePreview = document.getElementById('edit-prod-image-preview');
+    let compressedEditImageDataUrl = null;
+
+    if (editImageInput) {
+        editImageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                compressedEditImageDataUrl = await compressImage(file);
+                editImagePreview.src = compressedEditImageDataUrl;
+                editImagePreview.classList.remove('hidden');
+            } catch(err) { console.error(err); showToast("Erreur compression d'image", "error"); }
+        });
+    }
+
     if(stockForm) {
         stockForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -131,6 +200,21 @@ export function setupStockManagement() {
             const isVariantMode = checkboxVariants.checked;
 
             try {
+                // --- UPLOAD IMAGE (SI EXISTANTE) ---
+                let finalImageUrl = null;
+                if (compressedImageDataUrl) {
+                    showToast("Envoi de l'image en cours...", "info");
+                    const fileName = `products/${state.currentBoutiqueId}_${Date.now()}.jpg`;
+                    const storageRef = ref(storage, fileName);
+                    try {
+                        await uploadString(storageRef, compressedImageDataUrl, 'data_url');
+                        finalImageUrl = await getDownloadURL(storageRef);
+                    } catch(uploadErr) {
+                        console.error("Erreur Upload:", uploadErr);
+                        showToast("L'image n'a pas pu être envoyée.", "warning");
+                    }
+                }
+
                 const batch = writeBatch(db);
                 let productsToCreate = [];
 
@@ -146,7 +230,8 @@ export function setupStockManagement() {
                                 codeBarre: row.querySelector('.var-code').value.trim(),
                                 qte: parseInt(row.querySelector('.var-qte').value) || 0,
                                 isVariant: true,
-                                parentName: nomBaseBrut
+                                parentName: nomBaseBrut,
+                                image: finalImageUrl
                             });
                         }
                     });
@@ -157,7 +242,8 @@ export function setupStockManagement() {
                         codeBarre: document.getElementById('prod-code').value.trim(),
                         qte: parseInt(document.getElementById('prod-qte').value) || 0,
                         isVariant: false,
-                        parentName: null
+                        parentName: null,
+                        image: finalImageUrl
                     });
                 }
 
@@ -179,12 +265,14 @@ export function setupStockManagement() {
                         if (existingData) {
                             productId = existingData.id;
                             const ref = doc(db, "boutiques", state.currentBoutiqueId, "products", productId);
-                            batch.update(ref, { stock: increment(item.qte), prixAchat: pAchat, prixVente: pVente, codeBarre: item.codeBarre || existingData.codeBarre, lastRestock: serverTimestamp() });
+                            let updateData = { stock: increment(item.qte), prixAchat: pAchat, prixVente: pVente, codeBarre: item.codeBarre || existingData.codeBarre, lastRestock: serverTimestamp() };
+                            if (item.image) updateData.image = item.image;
+                            batch.update(ref, updateData);
                         }
                     } else {
                         const newRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "products"));
                         productId = newRef.id;
-                        batch.set(newRef, { nom: item.nom, nomDisplay: item.nomBrut, codeBarre: item.codeBarre, prixVente: pVente, prixAchat: pAchat, stock: item.qte, quantiteVendue: 0, isVariant: item.isVariant, parentName: item.parentName, createdAt: serverTimestamp(), deleted: false });
+                        batch.set(newRef, { nom: item.nom, nomDisplay: item.nomBrut, codeBarre: item.codeBarre, prixVente: pVente, prixAchat: pAchat, stock: item.qte, quantiteVendue: 0, isVariant: item.isVariant, parentName: item.parentName, image: item.image || null, createdAt: serverTimestamp(), deleted: false });
                     }
 
                     if (item.qte > 0 && productId) {
@@ -206,6 +294,12 @@ export function setupStockManagement() {
                 for (let i = 1; i < rows.length; i++) rows[i].remove();
                 if(suggestionsDiv) suggestionsDiv.classList.add('hidden');
                 state.setIsScanningForNewProduct(false);
+                
+                if (imagePreview) {
+                    imagePreview.src = '';
+                    imagePreview.classList.add('hidden');
+                    compressedImageDataUrl = null;
+                }
 
             } catch (err) { 
                 console.error(err); 
@@ -230,15 +324,36 @@ export function setupStockManagement() {
             const discontinued = document.getElementById('edit-prod-discontinued').checked;
 
             try {
+                let finalImageUrl = null;
+                if (compressedEditImageDataUrl) {
+                    showToast("Envoi de la nouvelle image...", "info");
+                    const fileName = `products/${state.currentBoutiqueId}_${id}_${Date.now()}.jpg`;
+                    const storageRef = ref(storage, fileName);
+                    try {
+                        await uploadString(storageRef, compressedEditImageDataUrl, 'data_url');
+                        finalImageUrl = await getDownloadURL(storageRef);
+                    } catch(uploadErr) {
+                        console.error("Erreur Upload Édition:", uploadErr);
+                        showToast("La nouvelle image n'a pas pu être envoyée.", "warning");
+                    }
+                }
+
                 const batch = writeBatch(db);
                 const prodRef = doc(db, "boutiques", state.currentBoutiqueId, "products", id);
-                batch.update(prodRef, { prixAchat: newAchat, prixVente: newVente, stock: newStock, discontinued: discontinued, lastModified: serverTimestamp() });
+                
+                let updateData = { prixAchat: newAchat, prixVente: newVente, stock: newStock, discontinued: discontinued, lastModified: serverTimestamp() };
+                if (finalImageUrl) {
+                    updateData.image = finalImageUrl;
+                }
+                
+                batch.update(prodRef, updateData);
                 
                 let changes = [];
                 if (newAchat !== oldAchat) changes.push(`Achat`);
                 if (newVente !== oldVente) changes.push(`Vente`);
                 if (newStock !== oldStock) changes.push(`Stock`);
                 if (discontinued) changes.push(`Arrêt Appro.`);
+                if (finalImageUrl) changes.push(`Photo`);
 
                 if (changes.length > 0) {
                     const traceRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
@@ -246,6 +361,7 @@ export function setupStockManagement() {
                 }
                 await batch.commit();
                 showToast("Modifié avec succès");
+                compressedEditImageDataUrl = null; // Reset de la compression temporaire
                 document.getElementById('edit-product-modal').classList.add('hidden');
             } catch (err) { console.error(err); showToast("Erreur modification", "error"); }
         });
@@ -486,6 +602,21 @@ window.openEditProduct = async (encodedProduct) => {
     document.getElementById('edit-prod-stock').value = p.stock;
     document.getElementById('edit-prod-discontinued').checked = p.discontinued || false;
     
+    const editImagePreview = document.getElementById('edit-prod-image-preview');
+    const editImageInput = document.getElementById('edit-prod-image');
+    
+    // Réinitialiser la zone d'image ou afficher l'image existante
+    if (editImageInput) editImageInput.value = '';
+    if (editImagePreview) {
+        if (p.image) {
+            editImagePreview.src = p.image;
+            editImagePreview.classList.remove('hidden');
+        } else {
+            editImagePreview.src = '';
+            editImagePreview.classList.add('hidden');
+        }
+    }
+
     const form = document.getElementById('form-edit-product');
     if(form) { form.dataset.oldAchat = p.prixAchat; form.dataset.oldVente = p.prixVente; form.dataset.oldStock = p.stock; }
     document.getElementById('edit-product-modal').classList.remove('hidden');
