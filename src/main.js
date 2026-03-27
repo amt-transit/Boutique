@@ -79,7 +79,17 @@ function main() {
     setupScrollToTop();
     setupHamburgerMenu();
     setupProfileManagement();
+    // Détection vieux appareils pour activer perf-mode
+   const isOldDevice = (() => {
+       const ua = navigator.userAgent;
+       const isAndroidOld = /Android [1-7]\./.test(ua);
+       const isSlowGPU = navigator.hardwareConcurrency <= 2;
+       const noBackdrop = !CSS.supports('backdrop-filter', 'blur(1px)');
+       return isAndroidOld || (isSlowGPU && noBackdrop);
+   })();
+   if (isOldDevice) document.body.classList.add('perf-mode');
 }
+
 
 // Start the application
 document.addEventListener('DOMContentLoaded', main);
