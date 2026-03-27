@@ -400,7 +400,7 @@ function renderStockTable() {
         const total = reste + vendu;
         const dateStr = p.createdAt ? new Date(p.createdAt.seconds*1000).toLocaleDateString() : '-';
 
-        const deleteBtn = (state.userRole === 'admin' && !p.deleted) ? `<button class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 p-2 rounded-lg transition shadow-sm" onclick="event.stopPropagation(); deleteProduct('${p.id}')" title="Archiver"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+        const deleteBtn = (state.userRole === 'admin' && !p.deleted) ? `<button class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900 p-2 rounded-lg transition shadow-sm" onclick="event.stopPropagation(); deleteProduct('${p.id}')" title="Archiver"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
 
         let statusBadge = p.discontinued ? '<span class="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-[9px] font-bold border border-gray-300 ml-1">⛔ Fin</span>' : "";
         let variantBadge = p.isVariant ? '<span class="bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded text-[9px] font-bold ml-1 uppercase tracking-wide">Var.</span>' : '';
@@ -458,7 +458,7 @@ function renderStockTable() {
             let cardClass = "flex items-center gap-3 p-3 bg-white dark:bg-slate-800 transition";
             
             if (p.deleted) cardClass += " opacity-50 grayscale bg-gray-50 dark:bg-slate-900";
-            else cardClass += " hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer";
+            else cardClass += " hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer";
             
             div.className = cardClass;
 
@@ -531,7 +531,7 @@ function setupLabelPrinting() {
         }
 
         productListDiv.innerHTML = `
-            <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border-b dark:border-slate-700 mb-1">
+            <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900 border-b dark:border-slate-700 mb-1">
                 <div class="flex items-center gap-2">
                     <input type="checkbox" id="select-all-labels" class="h-4 w-4 rounded accent-blue-600">
                     <label for="select-all-labels" class="text-sm font-bold text-blue-700 dark:text-blue-300 cursor-pointer">Tout sélectionner</label>
@@ -541,7 +541,7 @@ function setupLabelPrinting() {
             ${activeProducts.map(p => {
                 const hasBarcode = !!p.codeBarre;
                 return `
-                <div class="flex items-center justify-between p-2 border-b dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50" data-product-id="${p.id}" data-has-barcode="${hasBarcode}">
+                <div class="flex items-center justify-between p-2 border-b dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700" data-product-id="${p.id}" data-has-barcode="${hasBarcode}">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
                         <input type="checkbox" class="h-4 w-4 rounded flex-shrink-0 label-checkbox accent-blue-600">
                         <div class="min-w-0">

@@ -307,7 +307,7 @@ export function renderProductGrid(searchTerm = "") {
     const colors = ['bg-red-100 text-red-600', 'bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-purple-100 text-purple-600', 'bg-orange-100 text-orange-600', 'bg-teal-100 text-teal-600', 'bg-pink-100 text-pink-600'];
 
     grid.innerHTML = filtered.map(p => {
-        const stockBadgeClass = p.stock < 5 ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-gray-400';
+        const stockBadgeClass = p.stock < 5 ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-gray-400';
         
         let visualElement = '';
         if (p.image) {
@@ -382,7 +382,7 @@ export function renderCart() {
     }
     
     tb.innerHTML = state.saleCart.map((i, x) => {
-        return `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
+        return `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition">
             <td class="p-2 border-b dark:border-slate-700"><div class="font-extrabold text-sm text-gray-800 dark:text-gray-200 leading-tight">${i.nomDisplay}</div><div class="text-[10px] text-blue-500 font-bold cursor-pointer inline-flex items-center gap-1 hover:text-blue-700 uppercase tracking-wide mt-0.5" onclick="promptEditPrice(${x})" title="Modifier le prix de cet article">${formatPrice(i.prixVente)}/u <i data-lucide="edit-2" class="w-3 h-3"></i></div></td>
             <td class="p-2 border-b dark:border-slate-700 text-center"><div class="flex justify-center items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded p-1"><button onclick="updateQty(${x}, -1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">-</button><span class="w-6 font-extrabold text-sm text-center dark:text-white">${i.qty}</span><button onclick="updateQty(${x}, 1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">+</button></div></td>
             <td class="p-2 border-b dark:border-slate-700 text-right font-extrabold text-blue-600 dark:text-blue-400 text-sm">${formatPrice(i.prixVente * i.qty)}</td>

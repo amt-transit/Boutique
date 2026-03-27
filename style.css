@@ -107,7 +107,7 @@ h2.text-4xl {
    ========================================= */
 .bg-white,
 .bg-white.rounded-xl {
-    background: #ffffff !important;
+    background-color: #ffffff !important;
     border: 1px solid var(--color-border) !important;
     box-shadow: var(--shadow-card) !important;
     border-radius: var(--radius-card) !important;
@@ -454,10 +454,8 @@ button {
    GLOBAL SEARCH — Kweeli-style pill
    ========================================= */
 #global-search-container {
-    background: transparent !important;
+    background-color: #ffffff !important;
     border-bottom: 1px solid rgba(241, 245, 249, 0.8) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     padding: 10px 16px;
 }
 
@@ -714,7 +712,7 @@ body.dark {
 
 body.dark .bg-white,
 body.dark .bg-white.rounded-xl {
-    background: var(--color-bg-card) !important;
+    background-color: var(--color-bg-card) !important;
     border-color: var(--color-border) !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2) !important;
 }

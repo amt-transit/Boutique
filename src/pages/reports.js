@@ -287,8 +287,7 @@ window.openPartialReturnModal = (saleId) => {
         if (returnable > 0) {
             hasReturnableItems = true;
             html += `
-                <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
-                    <div class="flex-1">
+                <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-slate-700
                         <div class="font-bold text-sm text-gray-800 dark:text-gray-200">${item.nomDisplay || item.nom}</div>
                         <div class="text-xs text-gray-500 mt-1">Acheté: <span class="font-bold">${item.qty}</span> | P.U: <span class="font-bold">${formatPrice(item.prixVente)}</span></div>
                         ${returned > 0 ? `<div class="text-[10px] text-orange-500 font-bold mt-0.5">⚠️ Déjà retourné: ${returned}</div>` : ''}
