@@ -604,9 +604,15 @@
                     </div>
                 </div>
 
-                <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0 overflow-y-auto lg:overflow-hidden">
+                <!-- TOGGLE MOBILE VUE CAISSE -->
+                <div class="flex md:hidden bg-gray-200 dark:bg-slate-800 p-1 rounded-xl mb-3 shrink-0">
+                    <button onclick="togglePosMobileView('prods')" id="pos-tab-prods" class="flex-1 bg-white dark:bg-slate-700 shadow-sm rounded-lg py-2.5 text-sm font-bold text-blue-600 transition">📦 Catalogue</button>
+                    <button onclick="togglePosMobileView('cart')" id="pos-tab-cart" class="flex-1 py-2.5 text-sm font-bold text-gray-500 dark:text-gray-400 transition flex justify-center items-center gap-2">🛒 Panier <span id="mobile-cart-count" class="bg-red-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full hidden transition-transform duration-200">0</span></button>
+                </div>
+
+                <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0">
                     
-                    <div class="lg:col-span-2 bg-gray-100 dark:bg-slate-900 rounded-xl flex flex-col overflow-hidden h-[42vh] shrink-0 lg:min-h-0 lg:h-full border border-gray-200 dark:border-slate-800">
+                    <div id="pos-section-prods" class="md:col-span-2 bg-gray-100 dark:bg-slate-900 rounded-xl flex flex-col overflow-hidden h-full border border-gray-200 dark:border-slate-800">
                         
                         <div class="p-3 border-b z-20 bg-white dark:bg-slate-800 flex-none">
                             <div class="flex gap-2"> <div class="relative flex-1">
@@ -624,7 +630,7 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col h-auto min-h-[50vh] shrink-0 lg:min-h-0 lg:h-full bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden"> 
+                    <div id="pos-section-cart" class="hide-on-mobile flex flex-col h-full bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden"> 
                             
                         <div class="bg-blue-50 dark:bg-slate-900/50 p-2 lg:p-3 border-b border-blue-100 dark:border-slate-700 flex flex-col gap-1.5 lg:gap-2 flex-none">
                             <div class="flex justify-between items-center">
@@ -648,10 +654,10 @@
                             <table class="w-full text-sm">
                                 <thead class="bg-gray-50 dark:bg-slate-900 text-gray-600 text-[10px] uppercase sticky top-0 z-10">
                                     <tr>
-                                        <th class="p-1.5 lg:p-2 text-left">Article</th>
-                                        <th class="p-1.5 lg:p-2 text-center">Qté</th>
-                                        <th class="p-1.5 lg:p-2 text-right">Total</th>
-                                        <th class="p-1.5 lg:p-2 w-8"></th>
+                                        <th class="p-2 text-left">Article</th>
+                                        <th class="p-2 text-center">Qté</th>
+                                        <th class="p-2 text-right">Total</th>
+                                        <th class="p-2 w-8"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="cart-table-body" class="divide-y divide-gray-100 dark:divide-slate-700">
@@ -667,26 +673,26 @@
                                 </button>
                                 <span id="cart-discount-display" class="text-xs font-bold text-red-500 hidden">- 0 CFA</span>
                             </div>
-                            <div class="flex justify-between items-center mb-1.5 md:mb-3">
+                            <div class="flex justify-between items-center mb-3">
                                 <p class="text-gray-500 font-bold text-xs uppercase tracking-wider">À Payer</p>
                                 <h2 id="cart-total-display" class="text-3xl font-extrabold text-blue-600 dark:text-blue-400">0 CFA</h2>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-1.5 lg:gap-2 mb-1.5 lg:mb-3">
-                                <button id="btn-validate-cash" class="col-span-2 bg-green-600 hover:bg-green-700 text-white py-2.5 lg:py-4 rounded-xl font-extrabold text-base lg:text-xl shadow-lg flex justify-center items-center gap-2 transition transform active:scale-95" data-desc="Valide le panier actuel et encaisse la somme en espèces">
+                            <div class="grid grid-cols-2 gap-2 mb-3">
+                                <button id="btn-validate-cash" class="col-span-2 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-extrabold text-xl shadow-lg flex justify-center items-center gap-2 transition transform active:scale-95" data-desc="Valide le panier actuel et encaisse la somme en espèces">
                                     <i data-lucide="banknote"></i> ENCAISSER
                                 </button>
                                 
-                                <button id="btn-open-momo-modal" class="bg-teal-500 hover:bg-teal-600 text-white py-2 lg:py-3 rounded-xl font-bold text-xs lg:text-sm flex justify-center items-center gap-1 transition">
+                                <button id="btn-open-momo-modal" class="bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-1 transition">
                                     <i data-lucide="smartphone"></i> Mobile Money
                                 </button>
                                 
-                                <button id="btn-open-credit-modal" class="bg-orange-100 hover:bg-orange-200 text-orange-700 py-2 lg:py-3 rounded-xl font-bold text-xs lg:text-sm flex justify-center items-center gap-1 transition">
+                                <button id="btn-open-credit-modal" class="bg-orange-100 hover:bg-orange-200 text-orange-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-1 transition">
                                     <i data-lucide="user-plus"></i> Crédit Client
                                 </button>
                             </div>
 
-                            <button onclick="clearCart()" class="w-full text-red-400 hover:text-red-600 py-1 lg:py-2 mt-1 text-xs font-bold flex justify-center items-center gap-1 bg-red-50 rounded-lg transition">
+                            <button onclick="clearCart()" class="w-full text-red-400 hover:text-red-600 py-2 mt-1 text-xs font-bold flex justify-center items-center gap-1 bg-red-50 rounded-lg transition">
                                 <i data-lucide="trash-2" class="w-3 h-3"></i> Vider le panier
                             </button>
                         </div>

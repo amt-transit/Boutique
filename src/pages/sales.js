@@ -139,6 +139,34 @@ async function processSale(type, clientId, clientName) {
     }
 }
 
+// Logique de bascule Mobile (Catalogue <-> Panier)
+window.togglePosMobileView = (view) => {
+    const prods = document.getElementById('pos-section-prods');
+    const cart = document.getElementById('pos-section-cart');
+    const tabProds = document.getElementById('pos-tab-prods');
+    const tabCart = document.getElementById('pos-tab-cart');
+
+    if (view === 'prods') {
+        prods.classList.remove('hide-on-mobile');
+        cart.classList.add('hide-on-mobile');
+        
+        tabProds.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'text-blue-600');
+        tabProds.classList.remove('text-gray-500', 'dark:text-gray-400');
+        
+        tabCart.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'text-blue-600');
+        tabCart.classList.add('text-gray-500', 'dark:text-gray-400');
+    } else {
+        prods.classList.add('hide-on-mobile');
+        cart.classList.remove('hide-on-mobile');
+
+        tabCart.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'text-blue-600');
+        tabCart.classList.remove('text-gray-500', 'dark:text-gray-400');
+        
+        tabProds.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'text-blue-600');
+        tabProds.classList.add('text-gray-500', 'dark:text-gray-400');
+    }
+};
+
 export function setupSalesPage() {
     if (!state.currentBoutiqueId) return;
 
@@ -305,6 +333,15 @@ window.addToCartById = (id) => {
     if(p) {
         if (state.addToCart(p)) {
             renderCart();
+            // Animation du badge mobile et notification
+            const badge = document.getElementById('mobile-cart-count');
+            if (badge) {
+                badge.classList.remove('scale-100');
+                badge.classList.add('scale-125');
+                setTimeout(() => badge.classList.remove('scale-125'), 200);
+            }
+            // Afficher une petite notif native uniquement sur mobile pour rassurer l'utilisateur
+            if (window.innerWidth < 1024) showToast(`${p.nomDisplay} ajouté au panier`, "success");
         } else {
             showToast("Stock insuffisant !", "warning");
         }
@@ -327,6 +364,18 @@ export function renderCart() {
         } else discountDisplay.classList.add('hidden');
     }
     
+    // Mise à jour du badge mobile
+    const mobileBadge = document.getElementById('mobile-cart-count');
+    if (mobileBadge) {
+        const totalItems = state.saleCart.reduce((acc, item) => acc + item.qty, 0);
+        if (totalItems > 0) {
+            mobileBadge.textContent = totalItems;
+            mobileBadge.classList.remove('hidden');
+        } else {
+            mobileBadge.classList.add('hidden');
+        }
+    }
+
     if (state.saleCart.length === 0) {
         tb.innerHTML = '<tr><td colspan="4" class="p-10 text-center text-gray-400 italic font-medium">Panier vide.</td></tr>';
         return;
@@ -334,10 +383,10 @@ export function renderCart() {
     
     tb.innerHTML = state.saleCart.map((i, x) => {
         return `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
-            <td class="p-1.5 lg:p-2 border-b dark:border-slate-700"><div class="font-extrabold text-xs lg:text-sm text-gray-800 dark:text-gray-200 leading-tight">${i.nomDisplay}</div><div class="text-[10px] text-blue-500 font-bold cursor-pointer inline-flex items-center gap-1 hover:text-blue-700 uppercase tracking-wide mt-0.5" onclick="promptEditPrice(${x})" title="Modifier le prix de cet article">${formatPrice(i.prixVente)}/u <i data-lucide="edit-2" class="w-2.5 h-2.5 lg:w-3 lg:h-3"></i></div></td>
-            <td class="p-1.5 lg:p-2 border-b dark:border-slate-700 text-center"><div class="flex justify-center items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded p-0.5 lg:p-1"><button onclick="updateQty(${x}, -1)" class="w-5 h-5 lg:w-6 lg:h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">-</button><span class="w-4 lg:w-6 font-extrabold text-xs lg:text-sm text-center dark:text-white">${i.qty}</span><button onclick="updateQty(${x}, 1)" class="w-5 h-5 lg:w-6 lg:h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">+</button></div></td>
-            <td class="p-1.5 lg:p-2 border-b dark:border-slate-700 text-right font-extrabold text-blue-600 dark:text-blue-400 text-xs lg:text-sm">${formatPrice(i.prixVente * i.qty)}</td>
-            <td class="p-1.5 lg:p-2 border-b dark:border-slate-700 text-right"><button onclick="removeItemFromCart(${x})" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1 lg:p-1.5 rounded-lg transition"><i data-lucide="x" class="w-3.5 h-3.5 lg:w-4 lg:h-4"></i></button></td>
+            <td class="p-2 border-b dark:border-slate-700"><div class="font-extrabold text-sm text-gray-800 dark:text-gray-200 leading-tight">${i.nomDisplay}</div><div class="text-[10px] text-blue-500 font-bold cursor-pointer inline-flex items-center gap-1 hover:text-blue-700 uppercase tracking-wide mt-0.5" onclick="promptEditPrice(${x})" title="Modifier le prix de cet article">${formatPrice(i.prixVente)}/u <i data-lucide="edit-2" class="w-3 h-3"></i></div></td>
+            <td class="p-2 border-b dark:border-slate-700 text-center"><div class="flex justify-center items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded p-1"><button onclick="updateQty(${x}, -1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">-</button><span class="w-6 font-extrabold text-sm text-center dark:text-white">${i.qty}</span><button onclick="updateQty(${x}, 1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">+</button></div></td>
+            <td class="p-2 border-b dark:border-slate-700 text-right font-extrabold text-blue-600 dark:text-blue-400 text-sm">${formatPrice(i.prixVente * i.qty)}</td>
+            <td class="p-2 border-b dark:border-slate-700 text-right"><button onclick="removeItemFromCart(${x})" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-4 h-4"></i></button></td>
         </tr>`;
     }).join('');
     if(window.lucide) window.lucide.createIcons();
