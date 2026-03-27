@@ -775,9 +775,9 @@ body.dark h1, body.dark h2, body.dark h3, body.dark h4, body.dark h5 {
 
 body.dark .text-gray-800, body.dark .text-gray-900 { color: #f1f5f9 !important; }
 body.dark .text-gray-700 { color: #e2e8f0 !important; }
-body.dark .text-gray-600 { color: #cbd5e1 !important; }
-body.dark .text-gray-500 { color: #94a3b8 !important; }
-body.dark .text-gray-400 { color: #64748b !important; }
+body.dark .text-gray-600 { color: #e2e8f0 !important; } /* Plus clair et lisible */
+body.dark .text-gray-500 { color: #cbd5e1 !important; } /* Plus clair et lisible */
+body.dark .text-gray-400 { color: #94a3b8 !important; } /* Plus clair et lisible */
 
 /* Dark form elements */
 body.dark input[type="text"],
@@ -802,7 +802,7 @@ body.dark select:focus {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
-body.dark input::placeholder { color: #334155 !important; }
+body.dark input::placeholder { color: #64748b !important; } /* Placeholder lisible */
 
 /* Dark backgrounds */
 body.dark .bg-gray-50, body.dark .bg-gray-100 { background-color: #0f172a !important; }
@@ -812,7 +812,7 @@ body.dark .bg-white.dark\:bg-slate-800\/60 { background-color: #0f172a !importan
 /* Dark table headers */
 body.dark thead th, body.dark thead {
     background-color: #0f172a !important;
-    color: #64748b !important;
+    color: #94a3b8 !important; /* Contraste amélioré sur fond sombre */
     border-bottom-color: #1e293b !important;
 }
 
@@ -1258,20 +1258,6 @@ body.dark .drawer-tab.active {
         line-height: 1.2 !important;
     }
 
-    /* --- Texte courant (tableaux, listes) --- */
-    p, span, div, td, th, li {
-        font-size: 0.8125rem !important;    /* ~13px */
-    }
-
-    /* --- Petits textes secondaires --- */
-    .text-xs {
-        font-size: 0.7rem !important;       /* ~11px */
-    }
-
-    .text-sm {
-        font-size: 0.8125rem !important;    /* ~13px */
-    }
-
     /* --- Boutons --- */
     button, .btn {
         font-size: 0.8125rem !important;
@@ -1307,17 +1293,11 @@ body.dark .drawer-tab.active {
 
     /* --- En-têtes de tableaux --- */
     thead th {
-        font-size: 0.65rem !important;
+        font-size: 0.75rem !important;      /* Rehaussé de 10px à 12px minimum */
         font-weight: 700 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.07em !important;
         color: #94a3b8 !important;
-    }
-
-    /* --- Cellules de tableaux --- */
-    tbody td {
-        font-size: 0.8125rem !important;
-        padding: 0.625rem 0.75rem !important;
     }
 
     /* --- Cards / cartes --- */
@@ -2144,7 +2124,7 @@ body.perf-mode.dark .bg-white.rounded-xl {
     /* Tableaux encore plus compacts */
     th, td {
         padding: 5px 6px !important;
-        font-size: 0.68rem !important;
+        font-size: 0.75rem !important; /* Min 12px. En dessous de ça, c'est illisible */
     }
 
     /* Boutons moins hauts */
