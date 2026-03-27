@@ -833,20 +833,8 @@
                 </div>
 
                 <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
-                    <div class="overflow-auto flex-1"> <table class="w-full text-left border-collapse relative">
-                            <thead class="bg-gray-100 border-b border-gray-200 sticky top-0 z-10 shadow-sm"> <tr>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Date</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Produit</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Achat</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm">Vente</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm text-center">Total</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm text-center">Vendu</th>
-                                    <th class="p-4 font-semibold text-blue-600 text-sm text-center">Reste</th>
-                                    <th class="p-4 font-semibold text-gray-600 text-sm text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stock-table-body" class="divide-y divide-gray-100"></tbody>
-                        </table>
+                    <div class="overflow-auto flex-1">
+                        <div id="stock-list-container" class="flex flex-col divide-y divide-gray-100 dark:divide-slate-700"></div>
                     </div>
                 </div>
             </div>
