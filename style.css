@@ -127,8 +127,12 @@ input.bg-white, select.bg-white, button.bg-white,
 table .bg-white, thead .bg-white {
     padding: revert;
     border-radius: revert;
-    box-shadow: none;
+        box-shadow: none !important;
     transform: none !important;
+        background: #ffffff !important;
+        border: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
 }
 
 /* =========================================
@@ -410,14 +414,6 @@ button {
 
     .top-tabs .flex-1 { display: none; }
     #bottom-logout-btn { display: none; }
-
-    /* Approche Google : Laisser le texte lisible et permettre le défilement horizontal */
-    .page-content table {
-        display: block;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch; /* Défilement doux sur iOS */
-        width: 100%;
-    }
 
     th, td {
         padding: 8px 10px !important; /* Plus d'espace pour respirer (Touch target size) */
@@ -2302,19 +2298,6 @@ body.perf-mode.dark .bg-white.rounded-xl {
     html, body {
         overflow-x: hidden !important;
         max-width: 100vw !important;
-    }
-
-    /* Empêcher les tableaux de faire déborder la page */
-    .page-content table,
-    #stock-table-body,
-    #credits-table-body,
-    #expenses-table-body,
-    #reports-table-body,
-    #audit-table-body {
-        display: block;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        max-width: 100%;
     }
 
     /* Conteneurs flex/grid : pas de débordement */
