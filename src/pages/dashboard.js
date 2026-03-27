@@ -263,9 +263,9 @@ function setupClickableModals(sales, productStats) {
         const low = allProductsData.filter(p => !p.deleted && !p.discontinued && p.stock > 0 && p.stock < 5).sort((a, b) => a.stock - b.stock);
         if (low.length === 0) return '<p class="p-4 text-center text-gray-500">Aucun produit en stock faible.</p>';
         return `
-            <table class="w-full text-sm text-left">
-                <thead class="bg-gray-50 dark:bg-slate-700"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Produit</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Stock Restant</th></tr></thead>
-                <tbody>${low.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200">${p.nomDisplay}</td><td class="p-3 text-right font-bold text-red-600">${p.stock}</td></tr>`).join('')}</tbody>
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 dark:bg-slate-700 text-[10px] uppercase tracking-wider"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Produit</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Stock Restant</th></tr></thead>
+                <tbody>${low.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200 text-sm font-bold">${p.nomDisplay}</td><td class="p-3 text-right font-extrabold text-red-600 text-sm">${p.stock}</td></tr>`).join('')}</tbody>
             </table>`;
     });
 
@@ -274,14 +274,14 @@ function setupClickableModals(sales, productStats) {
         const recent = d.slice(0, 20); // Already sorted by date desc
         if (recent.length === 0) return '<p class="p-4 text-center text-gray-500">Aucune vente sur cette période.</p>';
         return `
-            <table class="w-full text-sm text-left">
-                <thead class="bg-gray-50 dark:bg-slate-700"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Date</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Description</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Total</th></tr></thead>
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 dark:bg-slate-700 text-[10px] uppercase tracking-wider"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Date</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Description</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Total</th></tr></thead>
                 <tbody>${recent.map(s => {
                     let desc = s.items?.map(i => i.nomDisplay).join(', ') || 'Vente';
                     if (s.type === 'retour' || s.type === 'retour_credit') desc = `↩️ Retour: ${desc}`;
                     const d = s.date?.toDate ? s.date.toDate() : new Date();
                     const isReturn = s.type === 'retour' || s.type === 'retour_credit';
-                    return `<tr class="border-b dark:border-slate-700"><td class="p-3 text-xs dark:text-slate-300">${d.toLocaleString('fr-FR')}</td><td class="p-3 dark:text-slate-200">${desc}</td><td class="p-3 text-right font-bold ${isReturn ? 'text-red-500' : ''}">${isReturn ? '-' : ''}${formatPrice(s.total)}</td></tr>`;
+                    return `<tr class="border-b dark:border-slate-700"><td class="p-3 text-[10px] uppercase tracking-widest dark:text-slate-300">${d.toLocaleString('fr-FR')}</td><td class="p-3 dark:text-slate-200 text-sm font-bold">${desc}</td><td class="p-3 text-right font-extrabold text-sm ${isReturn ? 'text-red-500' : ''}">${isReturn ? '-' : ''}${formatPrice(s.total)}</td></tr>`;
                 }).join('')}</tbody>
             </table>`;
     });
@@ -291,9 +291,9 @@ function setupClickableModals(sales, productStats) {
         const top = Object.values(d).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
         if (top.length === 0) return '<p class="p-4 text-center text-gray-500">Aucune donnée de rentabilité sur cette période.</p>';
         return `
-            <table class="w-full text-sm text-left">
-                <thead class="bg-gray-50 dark:bg-slate-700"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Produit</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Revenu Généré</th></tr></thead>
-                <tbody>${top.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200">${p.name}</td><td class="p-3 text-right font-bold text-green-600">${formatPrice(p.revenue)}</td></tr>`).join('')}</tbody>
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 dark:bg-slate-700 text-[10px] uppercase tracking-wider"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Produit</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Revenu Généré</th></tr></thead>
+                <tbody>${top.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200 text-sm font-bold">${p.name}</td><td class="p-3 text-right font-extrabold text-green-600 text-sm">${formatPrice(p.revenue)}</td></tr>`).join('')}</tbody>
             </table>`;
     });
 
@@ -302,9 +302,9 @@ function setupClickableModals(sales, productStats) {
         const top = Object.values(d).sort((a, b) => b.qty - a.qty).slice(0, 10);
         if (top.length === 0) return '<p class="p-4 text-center text-gray-500">Aucun produit vendu sur cette période.</p>';
         return `
-            <table class="w-full text-sm text-left">
-                <thead class="bg-gray-50 dark:bg-slate-700"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Produit</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Quantité Vendue</th></tr></thead>
-                <tbody>${top.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200">${p.name}</td><td class="p-3 text-right font-bold text-blue-600">${p.qty}</td></tr>`).join('')}</tbody>
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 dark:bg-slate-700 text-[10px] uppercase tracking-wider"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Produit</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Quantité Vendue</th></tr></thead>
+                <tbody>${top.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200 text-sm font-bold">${p.name}</td><td class="p-3 text-right font-extrabold text-blue-600 text-sm">${p.qty}</td></tr>`).join('')}</tbody>
             </table>`;
     });
 }

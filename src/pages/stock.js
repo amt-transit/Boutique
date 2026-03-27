@@ -415,21 +415,20 @@ function renderStockTable() {
             : `<div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200 shadow-sm flex-shrink-0"><i data-lucide="image" class="w-4 h-4"></i></div>`;
 
         tr.className = rowClass;
-        // J'ai ajouté un <div class="flex items-center gap-3"> autour de l'image et du nom
-        tr.innerHTML = `<td ${rowAction} class="p-4 text-xs text-gray-400">${dateStr}</td>
+        tr.innerHTML = `<td ${rowAction} class="p-4 text-[10px] uppercase tracking-widest text-gray-400">${dateStr}</td>
         <td ${rowAction} class="p-4 font-medium text-gray-800">
             <div class="flex items-center gap-3">
                 ${imgThumb}
                 <div>
-                    ${p.nomDisplay || p.nom} ${variantBadge} ${statusBadge} ${p.deleted ? '(Archivé)' : ''}
+                    <div class="text-sm font-extrabold">${p.nomDisplay || p.nom}</div> ${variantBadge} ${statusBadge} <span class="text-[10px] uppercase">${p.deleted ? '(Archivé)' : ''}</span>
                 </div>
             </div>
         </td>
-        <td ${rowAction} class="p-4 font-bold text-blue-600">${formatPrice(p.prixAchat || 0)}</td>
-        <td ${rowAction} class="p-4 text-gray-500 text-sm">${formatPrice(p.prixVente || 0)}</td>
-        <td ${rowAction} class="p-4 text-center font-bold text-gray-500">${total}</td>
-        <td ${rowAction} class="p-4 text-center font-bold text-orange-600">${vendu}</td>
-        <td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-xs font-bold">${reste}</span></td>
+        <td ${rowAction} class="p-4 font-extrabold text-blue-600 text-sm">${formatPrice(p.prixAchat || 0)}</td>
+        <td ${rowAction} class="p-4 font-extrabold text-gray-700 text-sm">${formatPrice(p.prixVente || 0)}</td>
+        <td ${rowAction} class="p-4 text-center font-bold text-gray-500 text-sm">${total}</td>
+        <td ${rowAction} class="p-4 text-center font-bold text-orange-600 text-sm">${vendu}</td>
+        <td ${rowAction} class="p-4 text-center"><span class="${reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} px-3 py-1 rounded-full text-sm font-extrabold">${reste}</span></td>
         <td class="p-4 text-right">${deleteBtn}</td>`;
         tbody.appendChild(tr);
     });
@@ -652,7 +651,7 @@ window.openEditProduct = async (encodedProduct) => {
             moves.sort((a,b) => (b.date?.seconds||0) - (a.date?.seconds||0));
 
             historyBody.innerHTML = moves.length === 0 
-                ? '<tr><td colspan="3" class="p-2 text-center text-gray-400 italic">Aucun historique</td></tr>'
+                ? '<tr><td colspan="3" class="p-2 text-center text-[10px] uppercase text-gray-400 italic">Aucun historique</td></tr>'
                 : moves.map(m => {
                     const dateStr = m.date ? new Date(m.date.seconds*1000).toLocaleDateString() : '-';
                     let label = "", color = "text-gray-600", details = "";
@@ -660,7 +659,7 @@ window.openEditProduct = async (encodedProduct) => {
                     else if (m.type === 'perime') { label = `🗑️ Perte`; color = "text-red-600 font-bold"; details = `-${m.quantite}`; } 
                     else if (m.type === 'modif') { label = `✏️ Modif`; color = "text-blue-600"; details = "Infos"; }
                     else if (m.type === 'retour') { label = `↩️ Retour`; color = "text-blue-600 font-bold"; details = `+${m.quantite}`; }
-                    return `<tr class="border-b last:border-0 hover:bg-gray-50"><td class="p-2 text-gray-500 text-xs">${dateStr}</td><td class="p-2 text-xs ${color}">${label}</td><td class="p-2 text-xs text-right">${details}</td></tr>`;
+                    return `<tr class="border-b last:border-0 hover:bg-gray-50"><td class="p-2 text-gray-500 text-[10px] uppercase tracking-widest">${dateStr}</td><td class="p-2 text-[10px] uppercase font-bold ${color}">${label}</td><td class="p-2 text-[10px] text-right font-bold">${details}</td></tr>`;
                 }).join('');
         } catch (e) { console.error(e); }
     }

@@ -1239,9 +1239,9 @@ body.dark .drawer-tab.active {
     .stat-label,
     [class*="kpi"] .label,
     .dashboard-card .label {
-        font-size: max(10px, 0.65rem) !important; /* Protection des vieux écrans */
+        font-size: 0.65rem !important; /* Micro-typographie */
         font-weight: 700 !important;
-        letter-spacing: 0.09em !important;
+        letter-spacing: 0.05em !important;
         text-transform: uppercase !important;
         color: #94a3b8 !important;
     }
@@ -1293,10 +1293,10 @@ body.dark .drawer-tab.active {
 
     /* --- En-têtes de tableaux --- */
     thead th {
-        font-size: 0.75rem !important;      /* Rehaussé de 10px à 12px minimum */
+        font-size: 0.65rem !important;      /* Micro-typographie */
         font-weight: 700 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.07em !important;
+        letter-spacing: 0.05em !important;
         color: #94a3b8 !important;
     }
 
