@@ -370,8 +370,12 @@ export function setupStockManagement() {
 
 function renderStockTable() {
     const listContainer = document.getElementById('stock-list-container');
-    if(!listContainer) return;
-    listContainer.innerHTML = '';
+    const tbody = document.getElementById('stock-table-body');
+    
+    if(!listContainer && !tbody) return;
+    
+    if(listContainer) listContainer.innerHTML = '';
+    if(tbody) tbody.innerHTML = '';
 
     let filteredData = [...state.allProducts];
     const searchInput = document.getElementById('stock-search-input');
@@ -391,21 +395,10 @@ function renderStockTable() {
     }
 
     filteredData.forEach(p => {
-        const div = document.createElement('div');
-        let cardClass = "flex items-center gap-3 p-3 bg-white dark:bg-slate-800 transition";
-        
-        if (p.deleted) cardClass += " opacity-50 grayscale bg-gray-50 dark:bg-slate-900";
-        else cardClass += " hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer";
-        
-        div.className = cardClass;
-
-        if (state.userRole === 'admin' && !p.deleted) { 
-            const productData = encodeURIComponent(JSON.stringify(p)); 
-            div.setAttribute('onclick', `openEditProduct('${productData}')`);
-        }
-        
         const reste = p.stock || 0; 
         const vendu = p.quantiteVendue || 0; 
+        const total = reste + vendu;
+        const dateStr = p.createdAt ? new Date(p.createdAt.seconds*1000).toLocaleDateString() : '-';
 
         const deleteBtn = (state.userRole === 'admin' && !p.deleted) ? `<button class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 p-2 rounded-lg transition shadow-sm" onclick="event.stopPropagation(); deleteProduct('${p.id}')" title="Archiver"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
 
@@ -413,37 +406,88 @@ function renderStockTable() {
         let variantBadge = p.isVariant ? '<span class="bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded text-[9px] font-bold ml-1 uppercase tracking-wide">Var.</span>' : '';
 
         const colors = ['bg-red-100 text-red-600', 'bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-purple-100 text-purple-600', 'bg-orange-100 text-orange-600', 'bg-teal-100 text-teal-600'];
-        let visualElement = '';
+        let visualElementList = '';
+        let visualElementTable = '';
         if (p.image) {
-            visualElement = `<img src="${p.image}" class="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-200 dark:border-slate-600 shadow-sm" alt="img">`;
+            visualElementList = `<img src="${p.image}" class="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-200 dark:border-slate-600 shadow-sm" alt="img">`;
+            visualElementTable = `<img src="${p.image}" class="w-8 h-8 rounded object-cover border border-gray-200 shadow-sm flex-shrink-0">`;
         } else {
             const init = (p.nomDisplay || "?").substring(0, 2).toUpperCase();
             const colorClass = colors[(p.nomDisplay || "A").charCodeAt(0) % colors.length];
-            visualElement = `<div class="w-12 h-12 rounded-lg flex-shrink-0 ${colorClass} flex items-center justify-center font-extrabold text-lg shadow-sm">${init}</div>`;
+            visualElementList = `<div class="w-12 h-12 rounded-lg flex-shrink-0 ${colorClass} flex items-center justify-center font-extrabold text-lg shadow-sm">${init}</div>`;
+            visualElementTable = `<div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200 shadow-sm flex-shrink-0"><i data-lucide="image" class="w-4 h-4"></i></div>`;
         }
 
-        const resteClass = reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-green-50 text-green-700';
+        const resteClassList = reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-green-50 text-green-700';
+        const resteClassTable = reste < 5 && !p.deleted ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700';
 
-        div.innerHTML = `
-            ${visualElement}
-            <div class="flex-1 min-w-0 flex flex-col justify-center">
-                <div class="font-bold text-sm text-gray-800 dark:text-gray-100 leading-tight flex items-center truncate">
-                    <span class="truncate">${p.nomDisplay || p.nom}</span> ${variantBadge} ${statusBadge} <span class="text-[10px] uppercase text-red-500 font-bold ml-1">${p.deleted ? '(Archivé)' : ''}</span>
+        // --- 1. Rendu Ligne du Tableau (PC) ---
+        if (tbody) {
+            const tr = document.createElement('tr');
+            let rowClass = p.deleted ? "deleted-row opacity-50" : "border-b border-gray-100 hover:bg-gray-50 transition";
+            let rowAction = "";
+            
+            if (state.userRole === 'admin' && !p.deleted) { 
+                const productData = encodeURIComponent(JSON.stringify(p)); 
+                rowAction = `onclick="openEditProduct('${productData}')"`; 
+                rowClass += " cursor-pointer hover:bg-blue-50"; 
+            }
+
+            tr.className = rowClass;
+            tr.innerHTML = `<td ${rowAction} class="p-4 text-xs uppercase tracking-wider text-gray-400">${dateStr}</td>
+            <td ${rowAction} class="p-4 font-medium text-gray-800">
+                <div class="flex items-center gap-3">
+                    ${visualElementTable}
+                    <div>
+                        <div class="text-sm font-extrabold">${p.nomDisplay || p.nom}</div> ${variantBadge} ${statusBadge} <span class="text-xs uppercase text-red-500">${p.deleted ? '(Archivé)' : ''}</span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2 mt-1">
-                    <span class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Achat: ${formatPrice(p.prixAchat || 0)}</span>
-                    <span class="text-sm font-extrabold text-blue-600 dark:text-blue-400">${formatPrice(p.prixVente || 0)}</span>
+            </td>
+            <td ${rowAction} class="p-4 font-extrabold text-blue-600 text-sm">${formatPrice(p.prixAchat || 0)}</td>
+            <td ${rowAction} class="p-4 font-extrabold text-gray-700 text-sm">${formatPrice(p.prixVente || 0)}</td>
+            <td ${rowAction} class="p-4 text-center font-bold text-gray-500 text-sm">${total}</td>
+            <td ${rowAction} class="p-4 text-center font-bold text-orange-600 text-sm">${vendu}</td>
+            <td ${rowAction} class="p-4 text-center"><span class="${resteClassTable} px-3 py-1 rounded-full text-sm font-extrabold">${reste}</span></td>
+            <td class="p-4 text-right">${deleteBtn}</td>`;
+            tbody.appendChild(tr);
+        }
+
+        // --- 2. Rendu Liste (Mobile) ---
+        if (listContainer) {
+            const div = document.createElement('div');
+            let cardClass = "flex items-center gap-3 p-3 bg-white dark:bg-slate-800 transition";
+            
+            if (p.deleted) cardClass += " opacity-50 grayscale bg-gray-50 dark:bg-slate-900";
+            else cardClass += " hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer";
+            
+            div.className = cardClass;
+
+            if (state.userRole === 'admin' && !p.deleted) { 
+                const productData = encodeURIComponent(JSON.stringify(p)); 
+                div.setAttribute('onclick', `openEditProduct('${productData}')`);
+            }
+
+            div.innerHTML = `
+                ${visualElementList}
+                <div class="flex-1 min-w-0 flex flex-col justify-center">
+                    <div class="font-bold text-sm text-gray-800 dark:text-gray-100 leading-tight flex items-center truncate">
+                        <span class="truncate">${p.nomDisplay || p.nom}</span> ${variantBadge} ${statusBadge} <span class="text-[10px] uppercase text-red-500 font-bold ml-1">${p.deleted ? '(Archivé)' : ''}</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Achat: ${formatPrice(p.prixAchat || 0)}</span>
+                        <span class="text-sm font-extrabold text-blue-600 dark:text-blue-400">${formatPrice(p.prixVente || 0)}</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="text-[10px] text-orange-500 font-medium">Vendu: ${vendu}</span>
+                        <span class="text-[10px] font-bold ${resteClassList} px-1.5 py-0.5 rounded">Reste: ${reste}</span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-[10px] text-orange-500 font-medium">Vendu: ${vendu}</span>
-                    <span class="text-[10px] font-bold ${resteClass} px-1.5 py-0.5 rounded">Reste: ${reste}</span>
+                <div class="flex-shrink-0 pl-2">
+                    ${deleteBtn}
                 </div>
-            </div>
-            <div class="flex-shrink-0 pl-2">
-                ${deleteBtn}
-            </div>
-        `;
-        listContainer.appendChild(div);
+            `;
+            listContainer.appendChild(div);
+        }
     });
     
     if (window.lucide) window.lucide.createIcons();

@@ -283,19 +283,19 @@ export function renderProductGrid(searchTerm = "") {
         
         let visualElement = '';
         if (p.image) {
-            visualElement = `<img src="${p.image}" class="w-12 h-12 rounded-full object-cover mb-2 shadow-sm pointer-events-none border border-gray-200 dark:border-slate-600" alt="${p.nomDisplay}">`;
+            visualElement = `<img src="${p.image}" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover mb-1 lg:mb-2 shadow-sm pointer-events-none border border-gray-200 dark:border-slate-600" alt="${p.nomDisplay}">`;
         } else {
             const init = (p.nomDisplay || "?").substring(0, 2).toUpperCase();
             const colorClass = colors[(p.nomDisplay || "A").charCodeAt(0) % colors.length];
-            visualElement = `<div class="w-12 h-12 rounded-full ${colorClass} flex items-center justify-center font-extrabold text-xl mb-2 shadow-sm pointer-events-none">${init}</div>`;
+            visualElement = `<div class="w-10 h-10 lg:w-12 lg:h-12 rounded-full ${colorClass} flex items-center justify-center font-extrabold text-lg lg:text-xl mb-1 lg:mb-2 shadow-sm pointer-events-none">${init}</div>`;
         }
 
         return `
-        <div onclick="window.addToCartById('${p.id}')" class="relative bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:shadow-md active:scale-95 transition h-32 select-none">
-            <span class="absolute top-2 right-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${stockBadgeClass} pointer-events-none">${p.stock}</span>
+        <div onclick="window.addToCartById('${p.id}')" class="relative bg-white dark:bg-slate-800 rounded-xl p-2 lg:p-3 shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:shadow-md active:scale-95 transition h-auto min-h-[6.5rem] lg:h-32 select-none">
+            <span class="absolute top-1.5 right-1.5 lg:top-2 lg:right-2 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${stockBadgeClass} pointer-events-none">${p.stock}</span>
             ${visualElement}
-            <div class="text-[11px] font-bold text-center text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight pointer-events-none">${p.nomDisplay}</div>
-            <div class="text-sm text-blue-600 dark:text-blue-400 font-extrabold mt-1 pointer-events-none">${formatPrice(p.prixVente)}</div>
+            <div class="text-[10px] lg:text-xs font-bold text-center text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight pointer-events-none w-full px-1">${p.nomDisplay}</div>
+            <div class="text-xs lg:text-sm text-blue-600 dark:text-blue-400 font-extrabold mt-0.5 lg:mt-1.5 pointer-events-none">${formatPrice(p.prixVente)}</div>
         </div>`;
     }).join('');
 }
@@ -334,10 +334,10 @@ export function renderCart() {
     
     tb.innerHTML = state.saleCart.map((i, x) => {
         return `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
-            <td class="p-2 border-b dark:border-slate-700"><div class="font-bold text-xs text-gray-800 dark:text-gray-200">${i.nomDisplay}</div><div class="text-[10px] text-blue-500 font-bold cursor-pointer inline-flex items-center gap-1 hover:text-blue-700" onclick="promptEditPrice(${x})" title="Modifier le prix de cet article">${formatPrice(i.prixVente)}/u <i data-lucide="edit-2" class="w-3 h-3"></i></div></td>
-            <td class="p-2 border-b dark:border-slate-700 text-center"><div class="flex justify-center items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded p-1"><button onclick="updateQty(${x}, -1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold">-</button><span class="w-6 font-extrabold text-sm text-center dark:text-white">${i.qty}</span><button onclick="updateQty(${x}, 1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold">+</button></div></td>
-            <td class="p-2 border-b dark:border-slate-700 text-right font-extrabold text-blue-600 dark:text-blue-400 text-sm">${formatPrice(i.prixVente * i.qty)}</td>
-            <td class="p-2 border-b dark:border-slate-700 text-right"><button onclick="removeItemFromCart(${x})" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-4 h-4"></i></button></td>
+            <td class="p-1.5 lg:p-2 border-b dark:border-slate-700"><div class="font-extrabold text-xs lg:text-sm text-gray-800 dark:text-gray-200 leading-tight">${i.nomDisplay}</div><div class="text-[10px] text-blue-500 font-bold cursor-pointer inline-flex items-center gap-1 hover:text-blue-700 uppercase tracking-wide mt-0.5" onclick="promptEditPrice(${x})" title="Modifier le prix de cet article">${formatPrice(i.prixVente)}/u <i data-lucide="edit-2" class="w-2.5 h-2.5 lg:w-3 lg:h-3"></i></div></td>
+            <td class="p-1.5 lg:p-2 border-b dark:border-slate-700 text-center"><div class="flex justify-center items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded p-0.5 lg:p-1"><button onclick="updateQty(${x}, -1)" class="w-5 h-5 lg:w-6 lg:h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">-</button><span class="w-4 lg:w-6 font-extrabold text-xs lg:text-sm text-center dark:text-white">${i.qty}</span><button onclick="updateQty(${x}, 1)" class="w-5 h-5 lg:w-6 lg:h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">+</button></div></td>
+            <td class="p-1.5 lg:p-2 border-b dark:border-slate-700 text-right font-extrabold text-blue-600 dark:text-blue-400 text-xs lg:text-sm">${formatPrice(i.prixVente * i.qty)}</td>
+            <td class="p-1.5 lg:p-2 border-b dark:border-slate-700 text-right"><button onclick="removeItemFromCart(${x})" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1 lg:p-1.5 rounded-lg transition"><i data-lucide="x" class="w-3.5 h-3.5 lg:w-4 lg:h-4"></i></button></td>
         </tr>`;
     }).join('');
     if(window.lucide) window.lucide.createIcons();

@@ -45,6 +45,16 @@
 
 .hidden { display: none !important; }
 
+/* =========================================
+   RESPONSIVE VISIBILITY HELPERS
+========================================= */
+@media (max-width: 767px) {
+    .hide-on-mobile { display: none !important; }
+}
+@media (min-width: 768px) {
+    .hide-on-desktop { display: none !important; }
+}
+
 body {
     font-family: var(--font-body);
     color: var(--color-text-main);

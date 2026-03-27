@@ -604,9 +604,9 @@
                     </div>
                 </div>
 
-                <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0 overflow-hidden">
+                <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0 overflow-y-auto lg:overflow-hidden">
                     
-                    <div class="lg:col-span-2 bg-gray-100 dark:bg-slate-900 rounded-xl flex flex-col overflow-hidden h-full border border-gray-200 dark:border-slate-800">
+                    <div class="lg:col-span-2 bg-gray-100 dark:bg-slate-900 rounded-xl flex flex-col overflow-hidden h-[42vh] shrink-0 lg:min-h-0 lg:h-full border border-gray-200 dark:border-slate-800">
                         
                         <div class="p-3 border-b z-20 bg-white dark:bg-slate-800 flex-none">
                             <div class="flex gap-2"> <div class="relative flex-1">
@@ -619,21 +619,21 @@
                             </div>
                         </div>
 
-                        <div id="pos-product-grid" class="flex-1 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 content-start">
+                        <div id="pos-product-grid" class="flex-1 overflow-y-auto p-2 lg:p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 lg:gap-3 content-start">
                             <div class="col-span-full text-center p-10 text-gray-400 font-bold">Chargement des articles...</div>
                         </div>
                     </div>
 
-                    <div class="flex flex-col h-full bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden"> 
+                    <div class="flex flex-col h-auto min-h-[50vh] shrink-0 lg:min-h-0 lg:h-full bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden"> 
                             
-                        <div class="bg-blue-50 dark:bg-slate-900/50 p-3 border-b border-blue-100 dark:border-slate-700 flex flex-col gap-2 flex-none">
+                        <div class="bg-blue-50 dark:bg-slate-900/50 p-2 lg:p-3 border-b border-blue-100 dark:border-slate-700 flex flex-col gap-1.5 lg:gap-2 flex-none">
                             <div class="flex justify-between items-center">
                                 <div>
                                     <p class="text-xs font-extrabold text-blue-800 uppercase tracking-wider">Monnaie du matin</p>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" id="fond-caisse-input" placeholder="0" class="w-20 text-right font-bold text-lg p-1.5 rounded-lg border border-blue-200 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                                    <button id="btn-save-fond-caisse" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg shadow-sm transition" title="Enregistrer la monnaie">
+                                    <input type="number" id="fond-caisse-input" placeholder="0" class="w-16 lg:w-20 text-right font-bold text-base lg:text-lg p-1 lg:p-1.5 rounded-lg border border-blue-200 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                    <button id="btn-save-fond-caisse" class="bg-blue-600 hover:bg-blue-700 text-white p-1.5 lg:p-2 rounded-lg shadow-sm transition" title="Enregistrer la monnaie">
                                         <i data-lucide="save" class="w-4 h-4"></i>
                                     </button>
                                 </div>
@@ -648,10 +648,10 @@
                             <table class="w-full text-sm">
                                 <thead class="bg-gray-50 dark:bg-slate-900 text-gray-600 text-[10px] uppercase sticky top-0 z-10">
                                     <tr>
-                                        <th class="p-2 text-left">Article</th>
-                                        <th class="p-2 text-center">Qté</th>
-                                        <th class="p-2 text-right">Total</th>
-                                        <th class="p-2 w-8"></th>
+                                        <th class="p-1.5 lg:p-2 text-left">Article</th>
+                                        <th class="p-1.5 lg:p-2 text-center">Qté</th>
+                                        <th class="p-1.5 lg:p-2 text-right">Total</th>
+                                        <th class="p-1.5 lg:p-2 w-8"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="cart-table-body" class="divide-y divide-gray-100 dark:divide-slate-700">
@@ -667,26 +667,26 @@
                                 </button>
                                 <span id="cart-discount-display" class="text-xs font-bold text-red-500 hidden">- 0 CFA</span>
                             </div>
-                            <div class="flex justify-between items-center mb-3">
+                            <div class="flex justify-between items-center mb-1.5 md:mb-3">
                                 <p class="text-gray-500 font-bold text-xs uppercase tracking-wider">À Payer</p>
                                 <h2 id="cart-total-display" class="text-3xl font-extrabold text-blue-600 dark:text-blue-400">0 CFA</h2>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-2 mb-3">
-                                <button id="btn-validate-cash" class="col-span-2 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-extrabold text-xl shadow-lg flex justify-center items-center gap-2 transition transform active:scale-95" data-desc="Valide le panier actuel et encaisse la somme en espèces">
+                            <div class="grid grid-cols-2 gap-1.5 lg:gap-2 mb-1.5 lg:mb-3">
+                                <button id="btn-validate-cash" class="col-span-2 bg-green-600 hover:bg-green-700 text-white py-2.5 lg:py-4 rounded-xl font-extrabold text-base lg:text-xl shadow-lg flex justify-center items-center gap-2 transition transform active:scale-95" data-desc="Valide le panier actuel et encaisse la somme en espèces">
                                     <i data-lucide="banknote"></i> ENCAISSER
                                 </button>
                                 
-                                <button id="btn-open-momo-modal" class="bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-1 transition">
+                                <button id="btn-open-momo-modal" class="bg-teal-500 hover:bg-teal-600 text-white py-2 lg:py-3 rounded-xl font-bold text-xs lg:text-sm flex justify-center items-center gap-1 transition">
                                     <i data-lucide="smartphone"></i> Mobile Money
                                 </button>
                                 
-                                <button id="btn-open-credit-modal" class="bg-orange-100 hover:bg-orange-200 text-orange-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-1 transition">
+                                <button id="btn-open-credit-modal" class="bg-orange-100 hover:bg-orange-200 text-orange-700 py-2 lg:py-3 rounded-xl font-bold text-xs lg:text-sm flex justify-center items-center gap-1 transition">
                                     <i data-lucide="user-plus"></i> Crédit Client
                                 </button>
                             </div>
 
-                            <button onclick="clearCart()" class="w-full text-red-400 hover:text-red-600 py-2 text-xs font-bold flex justify-center items-center gap-1 bg-red-50 rounded-lg transition">
+                            <button onclick="clearCart()" class="w-full text-red-400 hover:text-red-600 py-1 lg:py-2 mt-1 text-xs font-bold flex justify-center items-center gap-1 bg-red-50 rounded-lg transition">
                                 <i data-lucide="trash-2" class="w-3 h-3"></i> Vider le panier
                             </button>
                         </div>
@@ -834,7 +834,24 @@
 
                 <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 md:overflow-hidden flex flex-col min-h-0">
                     <div class="overflow-auto flex-1">
-                        <div id="stock-list-container" class="flex flex-col divide-y divide-gray-100 dark:divide-slate-700"></div>
+                        <!-- Affichage classique en Tableau (Masqué sur mobile, visible sur PC) -->
+                        <table class="w-full text-left border-collapse relative hide-on-mobile">
+                            <thead class="bg-gray-100 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Date</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Produit</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Achat</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm">Vente</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm text-center">Total</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm text-center">Vendu</th>
+                                    <th class="p-4 font-semibold text-blue-600 text-sm text-center">Reste</th>
+                                    <th class="p-4 font-semibold text-gray-600 text-sm text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stock-table-body" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                        <!-- Affichage en Liste (Visible sur mobile, masqué sur PC) -->
+                        <div id="stock-list-container" class="flex flex-col divide-y divide-gray-100 dark:divide-slate-700 hide-on-desktop"></div>
                     </div>
                 </div>
             </div>
