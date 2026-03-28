@@ -690,6 +690,10 @@
                                 <button id="btn-open-credit-modal" class="bg-orange-100 hover:bg-orange-200 text-orange-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-1 transition">
                                     <i data-lucide="user-plus"></i> Crédit Client
                                 </button>
+                                
+                                <button onclick="saveCartAsOrder()" class="col-span-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition border border-indigo-100 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400" data-desc="Enregistrer ce panier comme une commande en attente (Le stock sera réservé)">
+                                    <i data-lucide="clipboard-list" class="w-4 h-4"></i> Mettre en Commande (Réservation)
+                                </button>
                             </div>
 
                             <button onclick="clearCart()" class="w-full text-red-400 hover:text-red-600 py-2 mt-1 text-xs font-bold flex justify-center items-center gap-1 bg-red-50 rounded-lg transition">
@@ -1535,6 +1539,27 @@
                 <div class="flex justify-end gap-3 pt-2">
                     <button onclick="document.getElementById('order-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
                     <button onclick="finalizeOrder()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded shadow">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale de validation de commande (Paiement) -->
+    <div id="validate-order-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[400] p-4 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i data-lucide="check-circle" class="text-green-500"></i> Encaisser la commande
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">Sélectionnez le mode de paiement final utilisé par le client :</p>
+            <div class="space-y-4">
+                <select id="validate-order-payment" class="w-full border-2 p-3 rounded-xl outline-none focus:border-green-500 text-sm font-bold text-gray-700 bg-gray-50 cursor-pointer">
+                    <option value="cash">Espèces (Cash)</option>
+                    <option value="mobile_money">Mobile Money (OM, Wave, etc.)</option>
+                </select>
+                <input type="hidden" id="validate-order-id">
+                <div class="flex justify-end gap-3 pt-2">
+                    <button onclick="closeValidateOrderModal()" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition">Annuler</button>
+                    <button onclick="confirmValidateOrder()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow transition">Valider</button>
                 </div>
             </div>
         </div>

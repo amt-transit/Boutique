@@ -1,4 +1,4 @@
-const CACHE_NAME = 'maboutique-cache-v1';
+const CACHE_NAME = 'maboutique-cache-v3';
 
 // Liste des ressources de base à mettre en cache pour un accès hors ligne
 const ASSETS_TO_CACHE = [
@@ -41,12 +41,28 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Interception des requêtes : Stratégie "Cache First, fallback to Network"
+// Interception des requêtes : Stratégie "Network First, fallback to Cache"
 self.addEventListener('fetch', event => {
+    // L'API Cache ne supporte que les requêtes GET.
+    // On ignore les requêtes POST, PUT, DELETE (utilisées par Firebase) ou les schémas non-http.
+    if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+        return;
+    }
+
     event.respondWith(
-        caches.match(event.request)
+        fetch(event.request)
         .then(response => {
-            return response || fetch(event.request);
+            // Vérifier si la réponse est valide avant de la mettre en cache
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+                return response;
+            }
+            
+            if (event.request.method === 'GET') {
+                const responseClone = response.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+            }
+            return response;
         })
+        .catch(() => caches.match(event.request))
     );
 });
