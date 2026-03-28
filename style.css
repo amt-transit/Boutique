@@ -2377,6 +2377,7 @@ body.perf-mode.dark .bg-white.rounded-xl {
     .desktop-floating-btn-fix { display: none !important; }
     .desktop-hide-top-categories { display: none !important; }
     .desktop-hide-hamburger { display: none !important; }
+    .desktop-hide-cart-close { display: none !important; }
     
     .desktop-sidebar-fix {
         display: flex !important; 

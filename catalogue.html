@@ -78,7 +78,7 @@
     </div>
 
     <!-- Layout Principal (Grille + Panier) -->
-    <div class="max-w-[1400px] w-full mx-auto px-4 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start relative z-10 desktop-layout-fix">
+    <div class="max-w-[1400px] w-full mx-auto px-4 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start desktop-layout-fix">
         
         <!-- Colonne Gauche : Catégories (Desktop Sidebar) -->
         <aside class="hidden lg:flex flex-col w-[260px] xl:w-[280px] flex-shrink-0 sticky top-24 h-[calc(100vh-120px)] bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden desktop-sidebar-fix">
@@ -97,7 +97,7 @@
         </aside>
 
         <!-- Colonne gauche : Grille des produits -->
-        <main class="w-full lg:w-auto lg:flex-1 min-w-0 desktop-main-fix">
+        <main class="w-full lg:w-auto lg:flex-1 min-w-0 desktop-main-fix relative z-10">
             
             <!-- Barre de recherche et Catégories -->
             <div class="mb-8 w-full relative z-10">
@@ -137,7 +137,7 @@
         </button>
 
         <!-- Colonne droite : Panier (sidebar desktop / modale mobile) -->
-        <div id="cart-modal" onclick="if(event.target === this && window.innerWidth < 1024) this.classList.add('hidden')" class="fixed inset-0 bg-slate-900/40 z-50 hidden flex-col justify-end backdrop-blur-sm transition-opacity lg:relative lg:inset-auto lg:bg-transparent lg:z-10 lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:p-0 lg:max-h-none desktop-cart-fix">
+        <div id="cart-modal" onclick="if(event.target === this && window.innerWidth < 1024) this.classList.add('hidden')" class="fixed inset-0 bg-slate-900/40 z-[100] hidden flex-col justify-end backdrop-blur-sm transition-opacity lg:relative lg:inset-auto lg:bg-transparent lg:z-10 lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:p-0 lg:max-h-none desktop-cart-fix">
             <div class="bg-white w-full max-h-[85vh] rounded-t-[32px] flex flex-col shadow-2xl transform transition-transform translate-y-0 lg:h-full lg:max-h-none lg:rounded-3xl lg:border lg:border-slate-200 lg:shadow-xl lg:transform-none lg:translate-y-0">
                 <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[32px]">
                     <h2 class="font-bold text-lg flex items-center gap-2"><i data-lucide="shopping-bag" class="text-blue-600"></i> Mon Panier</h2>
@@ -186,7 +186,7 @@
     <div id="category-drawer" class="fixed top-0 left-0 w-80 max-w-[85vw] h-full bg-white z-[110] transform -translate-x-full transition-transform duration-300 flex flex-col shadow-2xl lg:hidden desktop-hide-hamburger">
         <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h2 class="font-bold text-lg flex items-center gap-2"><i data-lucide="layout-grid" class="text-blue-600 w-5 h-5"></i> Catégories</h2>
-            <button onclick="closeCategoryDrawer()" class="p-2 bg-white rounded-full hover:bg-slate-100 text-slate-600 shadow-sm border border-slate-200 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <button type="button" onclick="closeCategoryDrawer()" class="p-2 bg-white rounded-full hover:bg-slate-100 text-slate-600 shadow-sm border border-slate-200 transition-colors z-50 relative"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
         <div class="p-4 border-b border-slate-100">
             <div class="relative">
@@ -224,7 +224,7 @@
         <div class="bg-white w-full max-h-[85vh] rounded-t-[32px] flex flex-col shadow-2xl transform transition-transform translate-y-0 lg:h-full lg:max-h-none lg:rounded-3xl lg:border lg:border-slate-200 lg:shadow-xl lg:transform-none lg:translate-y-0">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[32px]">
                 <h2 class="font-bold text-lg flex items-center gap-2"><i data-lucide="shopping-bag" class="text-blue-600"></i> Mon Panier</h2>
-                <button id="btn-close-cart" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-600 transition-colors lg:hidden"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button id="btn-close-cart" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-600 transition-colors lg:hidden desktop-hide-cart-close"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             
             <div class="flex-1 overflow-y-auto p-5 space-y-3" id="cart-items">
@@ -476,11 +476,15 @@
             setTimeout(() => { document.getElementById('category-drawer').classList.remove('-translate-x-full'); }, 10);
             renderDrawerCategories();
             document.getElementById('category-search-input').value = '';
+            document.body.style.overflow = 'hidden'; // Empêche le scroll du fond
         };
 
         window.closeCategoryDrawer = () => {
-            document.getElementById('category-drawer').classList.add('-translate-x-full');
-            setTimeout(() => { document.getElementById('category-drawer-overlay').classList.add('hidden'); }, 300);
+            const drawer = document.getElementById('category-drawer');
+            const overlay = document.getElementById('category-drawer-overlay');
+            if (drawer) drawer.classList.add('-translate-x-full');
+            document.body.style.overflow = ''; // Restaure le scroll
+            setTimeout(() => { if (overlay) overlay.classList.add('hidden'); }, 300);
         };
 
         function renderDrawerCategories(searchTerm = "") {
