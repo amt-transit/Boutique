@@ -434,19 +434,19 @@ function renderStockTable() {
             }
 
             tr.className = rowClass;
-            tr.innerHTML = `<td ${rowAction} class="p-4 text-xs uppercase tracking-wider text-gray-400">${dateStr}</td>
-            <td ${rowAction} class="p-4 font-medium text-gray-800">
+            tr.innerHTML = `<td ${rowAction} class="p-4 text-xs uppercase tracking-wider text-gray-500">${dateStr}</td>
+            <td ${rowAction} class="p-4 font-medium text-gray-900">
                 <div class="flex items-center gap-3">
                     ${visualElementTable}
                     <div>
-                        <div class="text-sm font-extrabold">${p.nomDisplay || p.nom}</div> ${variantBadge} ${statusBadge} <span class="text-xs uppercase text-red-500">${p.deleted ? '(Archivé)' : ''}</span>
+                        <div class="text-sm font-extrabold text-gray-900">${p.nomDisplay || p.nom}</div> ${variantBadge} ${statusBadge} <span class="text-xs uppercase text-red-600 font-bold">${p.deleted ? '(Archivé)' : ''}</span>
                     </div>
                 </div>
             </td>
-            <td ${rowAction} class="p-4 font-extrabold text-blue-600 text-sm">${formatPrice(p.prixAchat || 0)}</td>
-            <td ${rowAction} class="p-4 font-extrabold text-gray-700 text-sm">${formatPrice(p.prixVente || 0)}</td>
+            <td ${rowAction} class="p-4 font-extrabold text-blue-700 text-sm">${formatPrice(p.prixAchat || 0)}</td>
+            <td ${rowAction} class="p-4 font-extrabold text-gray-900 text-sm">${formatPrice(p.prixVente || 0)}</td>
             <td ${rowAction} class="p-4 text-center font-bold text-gray-500 text-sm">${total}</td>
-            <td ${rowAction} class="p-4 text-center font-bold text-orange-600 text-sm">${vendu}</td>
+            <td ${rowAction} class="p-4 text-center font-bold text-orange-700 text-sm">${vendu}</td>
             <td ${rowAction} class="p-4 text-center"><span class="${resteClassTable} px-3 py-1 rounded-full text-sm font-extrabold">${reste}</span></td>
             <td class="p-4 text-right">${deleteBtn}</td>`;
             tbody.appendChild(tr);
@@ -470,15 +470,15 @@ function renderStockTable() {
             div.innerHTML = `
                 ${visualElementList}
                 <div class="flex-1 min-w-0 flex flex-col justify-center">
-                    <div class="font-bold text-sm text-gray-800 dark:text-gray-100 leading-tight flex items-center truncate">
-                        <span class="truncate">${p.nomDisplay || p.nom}</span> ${variantBadge} ${statusBadge} <span class="text-[10px] uppercase text-red-500 font-bold ml-1">${p.deleted ? '(Archivé)' : ''}</span>
+                    <div class="font-bold text-sm text-gray-900 dark:text-gray-100 leading-tight flex items-center truncate">
+                        <span class="truncate">${p.nomDisplay || p.nom}</span> ${variantBadge} ${statusBadge} <span class="text-[10px] uppercase text-red-600 font-bold ml-1">${p.deleted ? '(Archivé)' : ''}</span>
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Achat: ${formatPrice(p.prixAchat || 0)}</span>
-                        <span class="text-sm font-extrabold text-blue-600 dark:text-blue-400">${formatPrice(p.prixVente || 0)}</span>
+                        <span class="text-sm font-extrabold text-blue-700 dark:text-blue-400">${formatPrice(p.prixVente || 0)}</span>
                     </div>
                     <div class="flex items-center gap-2 mt-0.5">
-                        <span class="text-[10px] text-orange-500 font-medium">Vendu: ${vendu}</span>
+                        <span class="text-[10px] text-orange-600 font-medium">Vendu: ${vendu}</span>
                         <span class="text-[10px] font-bold ${resteClassList} px-1.5 py-0.5 rounded">Reste: ${reste}</span>
                     </div>
                 </div>

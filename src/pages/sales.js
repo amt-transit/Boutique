@@ -319,10 +319,10 @@ export function renderProductGrid(searchTerm = "") {
         }
 
         return `
-        <div onclick="window.addToCartById('${p.id}')" class="relative bg-white dark:bg-slate-800 rounded-xl p-2 lg:p-3 shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:shadow-md active:scale-95 transition h-auto min-h-[6.5rem] lg:h-32 select-none">
+        <div onclick="window.addToCartById('${p.id}')" class="relative bg-white dark:bg-slate-800 rounded-xl p-2 lg:p-3 shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-slate-700 hover:shadow-md active:scale-95 transition h-auto min-h-[6.5rem] lg:h-32 select-none">
             <span class="absolute top-1.5 right-1.5 lg:top-2 lg:right-2 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${stockBadgeClass} pointer-events-none">${p.stock}</span>
             ${visualElement}
-            <div class="text-[10px] lg:text-xs font-bold text-center text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight pointer-events-none w-full px-1">${p.nomDisplay}</div>
+            <div class="text-[10px] lg:text-xs font-bold text-center text-gray-900 dark:text-gray-100 line-clamp-2 leading-tight pointer-events-none w-full px-1">${p.nomDisplay}</div>
             <div class="text-xs lg:text-sm text-blue-600 dark:text-blue-400 font-extrabold mt-0.5 lg:mt-1.5 pointer-events-none">${formatPrice(p.prixVente)}</div>
         </div>`;
     }).join('');
@@ -383,7 +383,7 @@ export function renderCart() {
     
     tb.innerHTML = state.saleCart.map((i, x) => {
         return `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-            <td class="p-2 border-b dark:border-slate-700"><div class="font-extrabold text-sm text-gray-800 dark:text-gray-200 leading-tight">${i.nomDisplay}</div><div class="text-[10px] text-blue-500 font-bold cursor-pointer inline-flex items-center gap-1 hover:text-blue-700 uppercase tracking-wide mt-0.5" onclick="promptEditPrice(${x})" title="Modifier le prix de cet article">${formatPrice(i.prixVente)}/u <i data-lucide="edit-2" class="w-3 h-3"></i></div></td>
+            <td class="p-2 border-b dark:border-slate-700"><div class="font-extrabold text-sm text-gray-900 dark:text-gray-100 leading-tight">${i.nomDisplay}</div><div class="text-[10px] text-blue-600 font-bold cursor-pointer inline-flex items-center gap-1 hover:text-blue-800 uppercase tracking-wide mt-0.5" onclick="promptEditPrice(${x})" title="Modifier le prix de cet article">${formatPrice(i.prixVente)}/u <i data-lucide="edit-2" class="w-3 h-3"></i></div></td>
             <td class="p-2 border-b dark:border-slate-700 text-center"><div class="flex justify-center items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded p-1"><button onclick="updateQty(${x}, -1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">-</button><span class="w-6 font-extrabold text-sm text-center dark:text-white">${i.qty}</span><button onclick="updateQty(${x}, 1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">+</button></div></td>
             <td class="p-2 border-b dark:border-slate-700 text-right font-extrabold text-blue-600 dark:text-blue-400 text-sm">${formatPrice(i.prixVente * i.qty)}</td>
             <td class="p-2 border-b dark:border-slate-700 text-right"><button onclick="removeItemFromCart(${x})" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-4 h-4"></i></button></td>

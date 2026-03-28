@@ -36,31 +36,31 @@ function renderReportsTable() {
     filtered.forEach(t => {
         const row = document.createElement('tr');
         let classMontant = ''; 
-        let classType = 'text-gray-500';
-        if (t.type === 'RETOUR' || t.type === 'RETOUR_CR') { classMontant = 'text-red-600 font-bold'; classType = 'text-red-500'; } 
+        let classType = 'text-gray-600';
+        if (t.type === 'RETOUR' || t.type === 'RETOUR_CR') { classMontant = 'text-red-600 font-bold'; classType = 'text-red-600'; } 
         else if (t.isExpense) { classMontant = 'text-red-600 font-bold'; classType = 'text-red-400'; } 
-        else if (t.type === 'ACHAT') { classMontant = 'text-red-600 font-bold'; classType = 'text-blue-500'; }
-        else if (t.isCreditSale) { classMontant = 'text-orange-400 italic'; classType = 'text-orange-400'; } 
+        else if (t.type === 'ACHAT') { classMontant = 'text-red-600 font-bold'; classType = 'text-blue-600'; }
+        else if (t.isCreditSale) { classMontant = 'text-orange-500 font-bold italic'; classType = 'text-orange-600'; } 
         else if (t.type === 'MOMO') { classMontant = 'text-teal-600 font-bold'; classType = 'text-teal-600'; }
         else { classMontant = 'text-green-600 font-bold'; classType = 'text-green-600'; } 
 
         let returnBtn = "";
         if (state.userRole === 'admin' && (t.type === 'CASH' || t.type === 'MOMO' || t.type === 'CRÉDIT') && !t.isReturned) {
-            returnBtn = `<button onclick="openPartialReturnModal('${t.id}')" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 ml-2 border border-red-200" title="Retourner des articles">Retour</button>`;
+            returnBtn = `<button onclick="openPartialReturnModal('${t.id}')" class="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 ml-2 border border-red-200" title="Retourner des articles">Retour</button>`;
         } else if (t.isReturned) {
-            returnBtn = `<span class="text-xs text-gray-400 ml-2">(Annulé)</span>`;
-            row.classList.add('opacity-50'); 
+            returnBtn = `<span class="text-xs font-bold text-gray-500 ml-2">(Annulé)</span>`;
+            row.classList.add('bg-gray-50'); 
         }
 
         let printBtn = "";
         let waBtn = "";
         if (t.id && ['CASH', 'MOMO', 'CRÉDIT', 'REMB.', 'RETOUR', 'RETOUR_CR'].includes(t.type)) {
-            printBtn = `<button onclick="printTransactionReceipt('${t.id}')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 ml-2 border border-blue-200" title="Imprimer le reçu">🖨️ Imprimer</button>`;
-            waBtn = `<button onclick="shareTransactionWhatsApp('${t.id}')" class="text-xs bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100 ml-1 border border-green-200" title="Envoyer par WhatsApp">💬 WhatsApp</button>`;
+            printBtn = `<button onclick="printTransactionReceipt('${t.id}')" class="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 ml-2 border border-blue-200" title="Imprimer le reçu">🖨️ Imprimer</button>`;
+            waBtn = `<button onclick="shareTransactionWhatsApp('${t.id}')" class="text-xs font-bold bg-green-50 text-green-700 px-2 py-1 rounded hover:bg-green-100 ml-1 border border-green-200" title="Envoyer par WhatsApp">💬 WhatsApp</button>`;
         }
 
         row.className = "border-b hover:bg-gray-50 transition";
-        row.innerHTML = `<td class="p-3 text-xs">${t.date.toLocaleString()}</td><td class="p-3 text-sm text-gray-700">${t.desc} ${returnBtn} ${printBtn} ${waBtn}</td><td class="p-3 text-center text-xs font-bold ${classType}">${t.type}</td><td class="p-3 text-right ${!t.isExpense && !t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${!t.isExpense && !t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td><td class="p-3 text-right ${t.isExpense || t.type.includes('RETOUR')?classMontant:'text-gray-300'}">${t.isExpense || t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td>`;
+        row.innerHTML = `<td class="p-3 text-xs text-gray-600 font-medium">${t.date.toLocaleString()}</td><td class="p-3 text-sm font-bold text-gray-900">${t.desc} ${returnBtn} ${printBtn} ${waBtn}</td><td class="p-3 text-center text-xs font-bold ${classType}">${t.type}</td><td class="p-3 text-right font-medium ${!t.isExpense && !t.type.includes('RETOUR')?classMontant:'text-gray-400'}">${!t.isExpense && !t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td><td class="p-3 text-right font-medium ${t.isExpense || t.type.includes('RETOUR')?classMontant:'text-gray-400'}">${t.isExpense || t.type.includes('RETOUR')?formatPrice(t.amount):'-'}</td>`;
         tbody.appendChild(row);
     });
 
@@ -287,13 +287,14 @@ window.openPartialReturnModal = (saleId) => {
         if (returnable > 0) {
             hasReturnableItems = true;
             html += `
-                <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-slate-700
-                        <div class="font-bold text-sm text-gray-800 dark:text-gray-200">${item.nomDisplay || item.nom}</div>
-                        <div class="text-xs text-gray-500 mt-1">Acheté: <span class="font-bold">${item.qty}</span> | P.U: <span class="font-bold">${formatPrice(item.prixVente)}</span></div>
-                        ${returned > 0 ? `<div class="text-[10px] text-orange-500 font-bold mt-0.5">⚠️ Déjà retourné: ${returned}</div>` : ''}
+                <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <div>
+                        <div class="font-bold text-sm text-gray-900 dark:text-gray-100">${item.nomDisplay || item.nom}</div>
+                        <div class="text-xs text-gray-600 mt-1">Acheté: <span class="font-bold">${item.qty}</span> | P.U: <span class="font-bold">${formatPrice(item.prixVente)}</span></div>
+                        ${returned > 0 ? `<div class="text-[10px] text-orange-600 font-bold mt-0.5">⚠️ Déjà retourné: ${returned}</div>` : ''}
                     </div>
                     <div class="w-24 text-right">
-                        <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Rendre (Qté)</label>
+                        <label class="text-[10px] text-gray-600 font-bold uppercase block mb-1">Rendre (Qté)</label>
                         <input type="number" id="return-qty-${index}" min="0" max="${returnable}" value="0" class="w-16 border-2 p-2 rounded-lg text-center font-bold focus:border-red-500 outline-none bg-white dark:bg-slate-900 dark:text-white">
                     </div>
                 </div>

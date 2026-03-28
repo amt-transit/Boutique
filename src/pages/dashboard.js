@@ -265,7 +265,7 @@ function setupClickableModals(sales, productStats) {
         return `
             <table class="w-full text-left">
                 <thead class="bg-gray-50 dark:bg-slate-700 text-[10px] uppercase tracking-wider"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Produit</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Stock Restant</th></tr></thead>
-                <tbody>${low.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200 text-sm font-bold">${p.nomDisplay}</td><td class="p-3 text-right font-extrabold text-red-600 text-sm">${p.stock}</td></tr>`).join('')}</tbody>
+                <tbody>${low.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200 text-sm font-bold text-gray-900">${p.nomDisplay}</td><td class="p-3 text-right font-extrabold text-red-600 text-sm">${p.stock}</td></tr>`).join('')}</tbody>
             </table>`;
     });
 
@@ -281,7 +281,7 @@ function setupClickableModals(sales, productStats) {
                     if (s.type === 'retour' || s.type === 'retour_credit') desc = `↩️ Retour: ${desc}`;
                     const d = s.date?.toDate ? s.date.toDate() : new Date();
                     const isReturn = s.type === 'retour' || s.type === 'retour_credit';
-                    return `<tr class="border-b dark:border-slate-700"><td class="p-3 text-[10px] uppercase tracking-widest dark:text-slate-300">${d.toLocaleString('fr-FR')}</td><td class="p-3 dark:text-slate-200 text-sm font-bold">${desc}</td><td class="p-3 text-right font-extrabold text-sm ${isReturn ? 'text-red-500' : ''}">${isReturn ? '-' : ''}${formatPrice(s.total)}</td></tr>`;
+                    return `<tr class="border-b dark:border-slate-700"><td class="p-3 text-[10px] uppercase tracking-widest text-gray-600 dark:text-slate-300">${d.toLocaleString('fr-FR')}</td><td class="p-3 dark:text-slate-200 text-gray-900 text-sm font-bold">${desc}</td><td class="p-3 text-right font-extrabold text-gray-900 text-sm ${isReturn ? 'text-red-600' : ''}">${isReturn ? '-' : ''}${formatPrice(s.total)}</td></tr>`;
                 }).join('')}</tbody>
             </table>`;
     });
@@ -293,7 +293,7 @@ function setupClickableModals(sales, productStats) {
         return `
             <table class="w-full text-left">
                 <thead class="bg-gray-50 dark:bg-slate-700 text-[10px] uppercase tracking-wider"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Produit</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Revenu Généré</th></tr></thead>
-                <tbody>${top.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200 text-sm font-bold">${p.name}</td><td class="p-3 text-right font-extrabold text-green-600 text-sm">${formatPrice(p.revenue)}</td></tr>`).join('')}</tbody>
+                <tbody>${top.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200 text-sm font-bold text-gray-900">${p.name}</td><td class="p-3 text-right font-extrabold text-green-600 text-sm">${formatPrice(p.revenue)}</td></tr>`).join('')}</tbody>
             </table>`;
     });
 
@@ -304,7 +304,7 @@ function setupClickableModals(sales, productStats) {
         return `
             <table class="w-full text-left">
                 <thead class="bg-gray-50 dark:bg-slate-700 text-[10px] uppercase tracking-wider"><tr><th class="p-3 font-semibold text-gray-600 dark:text-gray-300">Produit</th><th class="p-3 font-semibold text-gray-600 dark:text-gray-300 text-right">Quantité Vendue</th></tr></thead>
-                <tbody>${top.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200 text-sm font-bold">${p.name}</td><td class="p-3 text-right font-extrabold text-blue-600 text-sm">${p.qty}</td></tr>`).join('')}</tbody>
+                <tbody>${top.map(p => `<tr class="border-b dark:border-slate-700"><td class="p-3 dark:text-slate-200 text-sm font-bold text-gray-900">${p.name}</td><td class="p-3 text-right font-extrabold text-blue-600 text-sm">${p.qty}</td></tr>`).join('')}</tbody>
             </table>`;
     });
 }

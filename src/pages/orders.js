@@ -63,7 +63,7 @@ export function setupOrdersListener() {
             const card = document.createElement('div');
             card.className = "bg-white p-5 rounded-xl shadow border border-indigo-100 flex flex-col justify-between";
             
-            let itemsHtml = order.items.map(i => `<div class="flex justify-between text-sm text-gray-600"><span>${i.qty}x ${i.nomDisplay}</span><span>${formatPrice(i.prixVente * i.qty)}</span></div>`).join('');
+            let itemsHtml = order.items.map(i => `<div class="flex justify-between text-sm font-bold text-gray-900"><span>${i.qty}x ${i.nomDisplay}</span><span class="text-indigo-600">${formatPrice(i.prixVente * i.qty)}</span></div>`).join('');
 
             // Formatage des contacts (Appel et WhatsApp)
             let contactHtml = '<div class="text-xs text-gray-400">Aucun numéro</div>';
@@ -83,7 +83,7 @@ export function setupOrdersListener() {
             card.innerHTML = `
                 <div class="mb-4">
                     <div class="flex justify-between items-start mb-2">
-                        <h4 class="font-bold text-lg text-indigo-900">${order.client}</h4>
+                        <h4 class="font-extrabold text-lg text-indigo-900">${order.client}</h4>
                         <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded">${dateStr}</span>
                     </div>
                     <div class="mb-3 border-b border-gray-50 pb-3">
