@@ -15,6 +15,10 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Masquer la scrollbar pour le menu des catégories */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         @media print {
             body > *:not(#printable-receipt) { display: none !important; }
@@ -55,6 +59,8 @@
             <span id="cart-badge" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-md transition-transform duration-300 hidden">0</span>
         </button>
     </header>
+    
+    <div id="promo-banner" class="fixed top-[65px] w-full z-30 hidden bg-orange-500 text-white text-center text-[11px] font-bold py-1.5 px-4 tracking-wide shadow-md uppercase"></div>
 
     <!-- Section Accueil -->
     <div class="pt-24 pb-4 px-4 text-center max-w-2xl mx-auto relative z-10">
@@ -71,6 +77,7 @@
                 <input type="text" id="search-input" placeholder="Que recherchez-vous aujourd'hui ?" class="w-full p-4 bg-transparent outline-none text-slate-700 font-semibold placeholder-slate-400 text-sm">
             </div>
         </div>
+        <div id="category-filters" class="flex gap-2 overflow-x-auto py-2 mt-4 no-scrollbar whitespace-nowrap"></div>
     </div>
 
     <!-- Grille des produits -->
@@ -83,6 +90,35 @@
             <p class="text-slate-500 font-bold text-lg">Aucun article trouvé.</p>
         </div>
     </main>
+    
+    <!-- Bouton Panier Flottant (Sticky Mobile) -->
+    <button id="floating-cart-btn" onclick="document.getElementById('cart-modal').classList.remove('hidden')" class="hidden fixed bottom-6 left-4 right-4 md:left-auto md:right-8 md:w-80 bg-slate-900 text-white py-4 px-6 rounded-full shadow-2xl flex justify-between items-center z-40 transition-transform hover:scale-[1.02] active:scale-95">
+        <div class="flex items-center gap-3">
+            <span id="floating-cart-qty" class="font-bold bg-blue-600 text-white px-3 py-1 rounded-full text-sm">0</span>
+            <span class="font-bold">Voir le panier</span>
+        </div>
+        <span id="floating-cart-total" class="font-extrabold text-lg">0 CFA</span>
+    </button>
+
+    <!-- Modale Détails du Produit -->
+    <div id="product-details-modal" class="fixed inset-0 bg-slate-900/60 z-[60] hidden flex flex-col justify-end md:justify-center md:items-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white w-full md:max-w-md md:mx-auto max-h-[90vh] rounded-t-[32px] md:rounded-3xl flex flex-col shadow-2xl overflow-hidden relative">
+            <button onclick="closeProductDetails()" class="absolute top-4 right-4 bg-white/80 p-2 rounded-full text-slate-800 shadow-md backdrop-blur-md z-10"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <div class="w-full h-64 bg-slate-50 flex items-center justify-center p-4">
+                <img id="modal-prod-img" src="" class="max-w-full max-h-full object-contain mix-blend-multiply">
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div id="modal-prod-badge" class="hidden inline-block bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-md mb-3">NOUVEAU</div>
+                <h2 id="modal-prod-name" class="text-2xl font-extrabold text-slate-800 mb-2 leading-tight"></h2>
+                <div id="modal-prod-price" class="text-xl font-black text-blue-600 mb-4"></div>
+                <div id="modal-desc-container" class="border-t border-slate-100 pt-4 mb-6 hidden">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Description</h4>
+                    <p id="modal-prod-desc" class="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+                <div id="modal-btn-container"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modale du Panier -->
     <div id="cart-modal" class="fixed inset-0 bg-slate-900/40 z-50 hidden flex flex-col justify-end backdrop-blur-sm transition-opacity">
@@ -108,6 +144,13 @@
                     <input type="tel" id="client-tel" placeholder="Votre numéro de téléphone" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all" required>
                     <input type="text" id="client-address" placeholder="Adresse de livraison (Facultatif)" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all">
                     
+                    <select id="client-payment" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all text-slate-400" required onchange="this.classList.remove('text-slate-400'); this.classList.add('text-slate-800');">
+                        <option value="" disabled selected>Mode de paiement souhaité</option>
+                        <option value="Espèces (À la livraison)">Espèces (À la livraison)</option>
+                        <option value="Mobile Money">Mobile Money (Wave, Orange, etc.)</option>
+                        <option value="Virement">Virement Bancaire</option>
+                    </select>
+
                     <button type="submit" id="btn-submit-order" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 mt-4 flex justify-center items-center gap-2 hover:bg-blue-700 transition transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none">
                         Valider la commande <i data-lucide="check-circle"></i>
                     </button>
@@ -177,6 +220,8 @@
 
         let allProducts = [];
         let cart = [];
+        let currentCategory = "Tous";
+        let shopPhone = "";
 
         // Format monétaire
         const formatPrice = (p) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(p);
@@ -205,6 +250,7 @@
                 const shopData = shopDoc.data();
                 document.title = shopData.nom + " - Catalogue";
                 document.getElementById('shop-name').textContent = shopData.nom;
+                shopPhone = shopData.telephone || "";
                 
                 if (shopData.logo) {
                     const img = document.getElementById('shop-logo');
@@ -214,17 +260,24 @@
                 } else {
                     document.getElementById('shop-logo-placeholder').textContent = shopData.nom.charAt(0).toUpperCase();
                 }
+                
+                if (shopData.promoMessage) {
+                    const banner = document.getElementById('promo-banner');
+                    banner.textContent = shopData.promoMessage;
+                    banner.classList.remove('hidden');
+                }
 
-                // 2. Charger les produits (stock > 0 et non supprimés)
+                // 2. Charger les produits non supprimés (même en rupture)
                 const productsSnap = await getDocs(collection(db, "boutiques", boutiqueId, "products"));
                 productsSnap.forEach(d => {
                     const p = { id: d.id, ...d.data() };
-                    if (!p.deleted && p.stock > 0) {
+                    if (!p.deleted) {
                         allProducts.push(p);
                     }
                 });
                 
                 allProducts.sort((a, b) => a.nomDisplay.localeCompare(b.nomDisplay));
+                renderCategoryFilters();
                 renderProducts();
                 
                 document.getElementById('loader').classList.add('hidden');
@@ -237,10 +290,45 @@
             }
         }
 
+        window.setCategory = (category) => {
+            currentCategory = category;
+            renderCategoryFilters();
+            renderProducts(document.getElementById('search-input').value);
+        };
+
+        function renderCategoryFilters() {
+            const container = document.getElementById('category-filters');
+            if (!container) return;
+
+            const categories = ["Tous"];
+            allProducts.forEach(p => {
+                const cat = p.categorie ? p.categorie.trim() : "Autre";
+                if (!categories.includes(cat)) {
+                    categories.push(cat);
+                }
+            });
+
+            container.innerHTML = categories.map(cat => {
+                const isActive = cat === currentCategory;
+                const activeClasses = "bg-slate-800 text-white border-slate-800 shadow-md";
+                const inactiveClasses = "bg-white text-slate-600 border-slate-200 hover:bg-slate-50";
+                const safeCat = cat.replace(/'/g, "\\'");
+                
+                return `<button onclick="setCategory('${safeCat}')" class="px-5 py-2 rounded-full font-bold text-sm border transition-all ${isActive ? activeClasses : inactiveClasses}">
+                    ${cat}
+                </button>`;
+            }).join('');
+        }
+
         function renderProducts(searchTerm = "") {
             const grid = document.getElementById('products-grid');
             const term = searchTerm.toLowerCase();
-            const filtered = allProducts.filter(p => p.nomDisplay.toLowerCase().includes(term));
+            const filtered = allProducts.filter(p => {
+                const matchSearch = p.nomDisplay.toLowerCase().includes(term);
+                const pCat = p.categorie ? p.categorie.trim() : "Autre";
+                const matchCategory = currentCategory === "Tous" || pCat === currentCategory;
+                return matchSearch && matchCategory;
+            });
 
             if (filtered.length === 0) {
                 grid.innerHTML = '';
@@ -250,27 +338,79 @@
             document.getElementById('no-products').classList.add('hidden');
 
             grid.innerHTML = filtered.map(p => {
+                const isOos = p.stock <= 0;
+                const createdMs = p.createdAt?.toMillis ? p.createdAt.toMillis() : (p.createdAt?.seconds * 1000) || 0;
+                const isNew = createdMs > 0 && (Date.now() - createdMs) < 14 * 24 * 60 * 60 * 1000;
+                
+                const cardOpacityClass = isOos ? 'opacity-70 grayscale-[0.3]' : '';
+                const outOfStockLabel = isOos ? `<div class="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"><span class="bg-slate-800 text-white font-bold px-4 py-2 rounded-full shadow-lg transform -rotate-12 text-sm uppercase tracking-widest">Épuisé</span></div>` : '';
+                const newLabel = isNew && !isOos ? `<div class="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-black px-2.5 py-1 rounded-md shadow-sm z-20 animate-pulse">NOUVEAU</div>` : '';
+                const stockAlertLabel = p.stock > 0 && p.stock <= 5 ? `<div class="absolute top-2 left-2 bg-orange-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-sm border border-orange-400 z-20">Plus que ${p.stock} !</div>` : '';
+
                 const imgHtml = p.image 
-                    ? `<img src="${p.image}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">`
-                    : `<div class="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-12 h-12 opacity-50"></i></div>`;
+                    ? `<div class="w-full h-full flex items-center justify-center p-3"><img src="${p.image}" class="max-w-full max-h-full object-contain mix-blend-multiply transition-transform duration-700 group-hover:scale-110"></div>`
+                    : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-12 h-12 opacity-50"></i></div>`;
                 
                 return `
-                <div class="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden border border-slate-200/60 flex flex-col h-full relative">
-                    <div class="aspect-[4/3] w-full overflow-hidden relative bg-slate-50">
+                <div class="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden border border-slate-200/60 flex flex-col h-full relative ${cardOpacityClass}">
+                    <div class="aspect-[4/3] w-full overflow-hidden relative bg-slate-50 cursor-pointer" onclick="openProductDetails('${p.id}')">
                         ${imgHtml}
-                        ${p.stock <= 5 ? `<div class="absolute top-2 left-2 bg-red-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-sm border border-red-400">Plus que ${p.stock} !</div>` : ''}
+                        ${outOfStockLabel}
+                        ${newLabel}
+                        ${stockAlertLabel}
                     </div>
                     <div class="p-4 flex flex-col flex-1 bg-white">
-                        <h3 class="text-sm font-bold text-slate-800 line-clamp-2 leading-snug flex-1 mb-2 group-hover:text-blue-600 transition-colors">${p.nomDisplay}</h3>
+                        <h3 class="text-sm font-bold text-slate-800 line-clamp-2 leading-snug flex-1 mb-2 group-hover:text-blue-600 transition-colors cursor-pointer" onclick="openProductDetails('${p.id}')">${p.nomDisplay}</h3>
                         <div class="font-black text-blue-600 text-lg mb-3">${formatPrice(p.prixVente)}</div>
-                        <button onclick="addToCart('${p.id}')" class="mt-auto w-full bg-slate-50 hover:bg-blue-600 text-blue-600 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-300 flex justify-center items-center gap-2 group/btn border border-slate-100 hover:border-blue-600">
-                            <i data-lucide="shopping-bag" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i> Ajouter
-                        </button>
+                        ${isOos 
+                            ? `<button disabled class="mt-auto w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm border border-slate-200 cursor-not-allowed">Épuisé</button>`
+                            : `<button onclick="addToCart('${p.id}')" class="mt-auto w-full bg-slate-50 hover:bg-blue-600 text-blue-600 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-300 flex justify-center items-center gap-2 group/btn border border-slate-100 hover:border-blue-600"><i data-lucide="shopping-bag" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i> Ajouter</button>`
+                        }
                     </div>
                 </div>`;
             }).join('');
             lucide.createIcons();
         }
+
+        window.openProductDetails = (id) => {
+            const p = allProducts.find(x => x.id === id);
+            if(!p) return;
+            
+            document.getElementById('modal-prod-img').src = p.image || '';
+            document.getElementById('modal-prod-img').style.display = p.image ? 'block' : 'none';
+            document.getElementById('modal-prod-name').textContent = p.nomDisplay;
+            document.getElementById('modal-prod-price').textContent = formatPrice(p.prixVente);
+            
+            const createdMs = p.createdAt?.toMillis ? p.createdAt.toMillis() : (p.createdAt?.seconds * 1000) || 0;
+            const isNew = createdMs > 0 && (Date.now() - createdMs) < 14 * 24 * 60 * 60 * 1000;
+            document.getElementById('modal-prod-badge').style.display = isNew ? 'inline-block' : 'none';
+            
+            const descContainer = document.getElementById('modal-desc-container');
+            if (p.description) {
+                document.getElementById('modal-prod-desc').textContent = p.description;
+                descContainer.classList.remove('hidden');
+            } else {
+                descContainer.classList.add('hidden');
+            }
+
+            const btnContainer = document.getElementById('modal-btn-container');
+            if (p.stock <= 0) {
+                btnContainer.innerHTML = `<button disabled class="w-full bg-slate-200 text-slate-500 font-bold py-4 rounded-xl text-lg cursor-not-allowed">Produit Épuisé</button>`;
+            } else {
+                btnContainer.innerHTML = `
+                    <button onclick="addToCart('${p.id}'); closeProductDetails();" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg flex justify-center items-center gap-2 transition-transform active:scale-95">
+                        <i data-lucide="shopping-bag" class="w-5 h-5"></i> Ajouter au panier
+                    </button>
+                `;
+                lucide.createIcons();
+            }
+
+            document.getElementById('product-details-modal').classList.remove('hidden');
+        };
+
+        window.closeProductDetails = () => {
+            document.getElementById('product-details-modal').classList.add('hidden');
+        };
 
         window.addToCart = (id) => {
             const p = allProducts.find(x => x.id === id);
@@ -306,6 +446,17 @@
                 setTimeout(() => badge.classList.remove('scale-125'), 200);
             } else {
                 badge.classList.add('hidden');
+            }
+            
+            const floatBtn = document.getElementById('floating-cart-btn');
+            if (floatBtn) {
+                if (totalQty > 0) {
+                    floatBtn.classList.remove('hidden');
+                    document.getElementById('floating-cart-qty').textContent = totalQty;
+                    document.getElementById('floating-cart-total').textContent = formatPrice(cart.reduce((acc, item) => acc + (item.prixVente * item.qty), 0));
+                } else {
+                    floatBtn.classList.add('hidden');
+                }
             }
 
             const list = document.getElementById('cart-items');
@@ -351,12 +502,34 @@
 
             const total = cart.reduce((acc, item) => acc + (item.prixVente * item.qty), 0);
             const clientAddr = document.getElementById('client-address').value.trim();
-            const commande = { client: document.getElementById('client-name').value, telephone: document.getElementById('client-tel').value, adresse: clientAddr, items: cart, total: total, status: 'en_attente', date: serverTimestamp(), source: 'catalogue_web', stockReserved: false };
+            const paymentMethod = document.getElementById('client-payment').value;
+            const commande = { client: document.getElementById('client-name').value, telephone: document.getElementById('client-tel').value, adresse: clientAddr, paymentMethod: paymentMethod, items: cart, total: total, status: 'en_attente', date: serverTimestamp(), source: 'catalogue_web', stockReserved: false };
 
             try {
                 await addDoc(collection(db, "boutiques", boutiqueId, "commandes"), commande);
                 document.getElementById('cart-modal').classList.add('hidden');
                 
+                if (shopPhone) {
+                    let whatsappText = `🛒 *NOUVELLE COMMANDE*\n`;
+                    whatsappText += `🏪 Boutique : ${document.getElementById('shop-name').textContent}\n`;
+                    whatsappText += `👤 Client : ${commande.client}\n`;
+                    whatsappText += `📞 Tel : ${commande.telephone}\n`;
+                    if(commande.adresse) whatsappText += `📍 Adresse : ${commande.adresse}\n`;
+                    whatsappText += `💳 Paiement : ${commande.paymentMethod}\n`;
+                    whatsappText += `----------------\n`;
+                    cart.forEach(i => {
+                        whatsappText += `${i.qty}x ${i.nomDisplay} : ${formatPrice(i.prixVente * i.qty)}\n`;
+                    });
+                    whatsappText += `----------------\n`;
+                    whatsappText += `💰 *TOTAL : ${formatPrice(total)}*\n`;
+                    whatsappText += `\nMerci de traiter ma commande !`;
+                    
+                    const cleanPhone = shopPhone.replace(/[^\d+]/g, '');
+                    window.open('https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(whatsappText), '_blank');
+                } else {
+                    showToast("Commande validée avec succès !");
+                }
+
                 // Afficher le reçu
                 let detailsHtml = cart.map(i => `<div class="flex justify-between items-start gap-2"><span>${i.qty}x ${i.nomDisplay}</span><span class="text-right text-blue-600 whitespace-nowrap">${formatPrice(i.prixVente * i.qty)}</span></div>`).join('');
                 document.getElementById('success-order-details').innerHTML = detailsHtml;
@@ -382,6 +555,7 @@
                         <p><strong>Client :</strong> ${commande.client}</p>
                         <p><strong>Tel :</strong> ${commande.telephone}</p>
                         ${commande.adresse ? `<p><strong>Adresse :</strong> ${commande.adresse}</p>` : ''}
+                        <p><strong>Paiement :</strong> ${commande.paymentMethod}</p>
                         <hr style="margin: 15px 0;">
                         <div style="margin-bottom: 15px;">${printItemsHtml}</div>
                         <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">

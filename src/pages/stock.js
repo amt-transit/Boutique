@@ -89,6 +89,14 @@ export function setupStockManagement() {
             lowStockBadge.textContent = lowCount;
             lowStockBadge.classList.toggle('hidden', lowCount === 0);
         }
+
+        // --- Autocomplétion intelligente des catégories ---
+        const datalist = document.getElementById('category-suggestions');
+        if (datalist) {
+            const uniqueCategories = [...new Set(products.map(p => p.categorie).filter(c => c && c.trim() !== ''))].sort();
+            datalist.innerHTML = uniqueCategories.map(cat => `<option value="${cat}"></option>`).join('');
+        }
+        
         renderStockTable();
     });
 
@@ -197,6 +205,8 @@ export function setupStockManagement() {
             const nomBaseBrut = document.getElementById('prod-nom').value.trim();
             const pAchat = parseFloat(document.getElementById('prod-achat').value)||0;
             const pVente = parseFloat(document.getElementById('prod-prix').value)||0;
+            const categorie = document.getElementById('prod-categorie') ? document.getElementById('prod-categorie').value.trim() : "Autre";
+            const description = document.getElementById('prod-desc') ? document.getElementById('prod-desc').value.trim() : "";
             const isVariantMode = checkboxVariants.checked;
 
             try {
@@ -243,7 +253,9 @@ export function setupStockManagement() {
                         qte: parseInt(document.getElementById('prod-qte').value) || 0,
                         isVariant: false,
                         parentName: null,
-                        image: finalImageUrl
+                        image: finalImageUrl,
+                        categorie: categorie,
+                        description: description
                     });
                 }
 
@@ -272,9 +284,9 @@ export function setupStockManagement() {
                     } else {
                         const newRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "products"));
                         productId = newRef.id;
-                        batch.set(newRef, { nom: item.nom, nomDisplay: item.nomBrut, codeBarre: item.codeBarre, prixVente: pVente, prixAchat: pAchat, stock: item.qte, quantiteVendue: 0, isVariant: item.isVariant, parentName: item.parentName, image: item.image || null, createdAt: serverTimestamp(), deleted: false });
+                        batch.set(newRef, { nom: item.nom, nomDisplay: item.nomBrut, codeBarre: item.codeBarre, prixVente: pVente, prixAchat: pAchat, stock: item.qte, quantiteVendue: 0, isVariant: item.isVariant, parentName: item.parentName, image: item.image || null, createdAt: serverTimestamp(), deleted: false, categorie: item.categorie, description: item.description });
                     }
-
+                    
                     if (item.qte > 0 && productId) {
                         const histRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
                         batch.set(histRef, { productId: productId, nom: item.nomBrut, type: 'ajout', quantite: item.qte, prixAchat: pAchat, date: serverTimestamp(), user: state.userId });
@@ -321,6 +333,8 @@ export function setupStockManagement() {
             const oldAchat = parseFloat(editForm.dataset.oldAchat) || 0;
             const oldVente = parseFloat(editForm.dataset.oldVente) || 0;
             const oldStock = parseInt(editForm.dataset.oldStock) || 0;
+            const newCategorie = document.getElementById('edit-prod-categorie') ? document.getElementById('edit-prod-categorie').value.trim() : "";
+            const newDesc = document.getElementById('edit-prod-desc') ? document.getElementById('edit-prod-desc').value.trim() : "";
             const discontinued = document.getElementById('edit-prod-discontinued').checked;
 
             try {
@@ -341,11 +355,11 @@ export function setupStockManagement() {
                 const batch = writeBatch(db);
                 const prodRef = doc(db, "boutiques", state.currentBoutiqueId, "products", id);
                 
-                let updateData = { prixAchat: newAchat, prixVente: newVente, stock: newStock, discontinued: discontinued, lastModified: serverTimestamp() };
+                let updateData = { prixAchat: newAchat, prixVente: newVente, stock: newStock, categorie: newCategorie, description: newDesc, discontinued: discontinued, lastModified: serverTimestamp() };
                 if (finalImageUrl) {
                     updateData.image = finalImageUrl;
                 }
-                
+
                 batch.update(prodRef, updateData);
                 
                 let changes = [];
@@ -676,6 +690,8 @@ window.openEditProduct = async (encodedProduct) => {
     document.getElementById('edit-prod-achat').value = p.prixAchat;
     document.getElementById('edit-prod-vente').value = p.prixVente;
     document.getElementById('edit-prod-stock').value = p.stock;
+    if (document.getElementById('edit-prod-categorie')) document.getElementById('edit-prod-categorie').value = p.categorie || "";
+    if (document.getElementById('edit-prod-desc')) document.getElementById('edit-prod-desc').value = p.description || "";
     document.getElementById('edit-prod-discontinued').checked = p.discontinued || false;
     
     const editImagePreview = document.getElementById('edit-prod-image-preview');

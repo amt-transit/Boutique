@@ -308,7 +308,7 @@
                 <button id="hamburger-btn" class="text-gray-500 hover:text-blue-600 md:hidden">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
-                <div class="relative flex-1">
+                <div id="global-search-wrapper" class="relative flex-1 transition-all duration-300">
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6"></i>
                     <input type="text" id="global-search-input" placeholder="Rechercher un produit, un client..." class="w-full pl-14 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-lg outline-none transition duration-300" data-desc="Barre de recherche rapide pour trouver un produit ou un client">
                     <div id="global-search-results" class="hidden absolute w-full mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-96 overflow-y-auto">
@@ -761,6 +761,17 @@
                             <div class="lg:col-span-1">
                                 <label class="text-xs font-bold text-gray-500 uppercase">Prix Vente</label>
                                 <input type="number" id="prod-prix" class="w-full mt-1 border p-2 rounded">
+                            </div>
+
+                            <div class="lg:col-span-6">
+                                <label class="text-xs font-bold text-gray-500 uppercase">Catégorie</label>
+                                <input type="text" id="prod-categorie" class="w-full mt-1 border p-2 rounded outline-none" placeholder="Ex: Vêtements, Électronique, Boissons..." autocomplete="off" list="category-suggestions">
+                                <datalist id="category-suggestions"></datalist>
+                            </div>
+
+                            <div class="lg:col-span-6">
+                                <label class="text-xs font-bold text-gray-500 uppercase">Description (Optionnelle)</label>
+                                <textarea id="prod-desc" class="w-full mt-1 border p-2 rounded outline-none" rows="2" placeholder="Ex: Composition, contenance, conseils d'utilisation..."></textarea>
                             </div>
 
                             <div class="lg:col-span-6 bg-blue-50 border border-blue-100 p-2 rounded-lg mt-1">
@@ -1312,10 +1323,19 @@
                                     <input type="number" id="edit-prod-vente" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
                                 </div>
                             </div>
-                            <div>
-                                <label class="text-xs font-bold text-gray-500">Correction Stock (Inventaire)</label>
-                                <input type="number" id="edit-prod-stock" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
-                                <p class="text-[10px] text-gray-400 mt-1">Utilisez ceci pour corriger une erreur de comptage.</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">Catégorie</label>
+                                    <input type="text" id="edit-prod-categorie" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500" list="category-suggestions">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">Stock (Correction)</label>
+                                    <input type="number" id="edit-prod-stock" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="text-xs font-bold text-gray-500">Description détaillée</label>
+                                <textarea id="edit-prod-desc" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="3" placeholder="Informations complémentaires..."></textarea>
                             </div>
                             <div class="flex items-center gap-2 mt-2 p-3 bg-gray-100 rounded border border-gray-200">
                                 <input type="checkbox" id="edit-prod-discontinued" class="w-5 h-5 text-gray-600 rounded focus:ring-gray-500 cursor-pointer">
@@ -1502,6 +1522,15 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Téléphone (Optionnel)</label>
                     <input type="tel" id="order-client-tel" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-indigo-500" placeholder="07...">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mode de paiement prévu</label>
+                    <select id="order-payment-method" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-bold text-gray-700">
+                        <option value="Non spécifié">Non spécifié</option>
+                        <option value="Espèces">Espèces</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="Virement">Virement Bancaire</option>
+                    </select>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
                     <button onclick="document.getElementById('order-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Annuler</button>
@@ -1732,6 +1761,11 @@
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Message de bas de ticket (Reçu)</label>
                         <input type="text" id="profile-shop-msg" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-600" placeholder="Ex: Merci de votre confiance !">
+                    </div>
+
+                    <div class="mt-3 border-t border-dashed border-gray-200 dark:border-slate-700 pt-3">
+                        <label class="block text-xs font-bold text-orange-500 uppercase mb-1">Bannière Promo (Catalogue Web)</label>
+                        <input type="text" id="profile-shop-promo" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:border-slate-600 dark:text-white" placeholder="Ex: Promo Tabaski: -10% sur tout ! Laissez vide pour masquer.">
                     </div>
                 </div>
 

@@ -79,6 +79,7 @@ export function setupOrdersListener() {
                 </div>`;
             }
             let addressHtml = order.adresse ? `<div class="flex items-start gap-2 text-gray-500 text-xs mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100"><i data-lucide="map-pin" class="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-red-400"></i> <span>${order.adresse}</span></div>` : '';
+            let paymentHtml = order.paymentMethod && order.paymentMethod !== 'Non spécifié' ? `<div class="flex items-start gap-2 text-gray-500 text-xs mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100"><i data-lucide="credit-card" class="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-blue-500"></i> <span>Paiement prévu : <strong class="text-gray-700">${order.paymentMethod}</strong></span></div>` : '';
 
             card.innerHTML = `
                 <div class="mb-4">
@@ -89,6 +90,7 @@ export function setupOrdersListener() {
                     <div class="mb-3 border-b border-gray-50 pb-3">
                         ${contactHtml}
                         ${addressHtml}
+                        ${paymentHtml}
                     </div>
                     <div class="space-y-1 border-t border-b py-2 my-2 border-gray-100 max-h-32 overflow-y-auto">
                         ${itemsHtml}
@@ -210,6 +212,7 @@ window.saveCartAsOrder = () => {
 window.finalizeOrder = async () => {
     const clientName = document.getElementById('order-client-name').value.trim();
     const clientTel = document.getElementById('order-client-tel').value.trim();
+    const paymentMethod = document.getElementById('order-payment-method')?.value || 'Non spécifié';
 
     if (!clientName) {
         return showToast("Le nom du client est requis.", "error");
@@ -237,7 +240,8 @@ window.finalizeOrder = async () => {
             status: 'en_attente',
             date: serverTimestamp(),
             vendeurId: state.userId,
-            stockReserved: true // Marqueur pour dire que la version locale réserve le stock
+            stockReserved: true, // Marqueur pour dire que la version locale réserve le stock
+            paymentMethod: paymentMethod
         });
 
         await batch.commit();
@@ -258,7 +262,7 @@ window.finalizeOrder = async () => {
             const printableArea = document.getElementById('printable-area');
             if (printableArea) {
                 printableArea.innerHTML = `
-                    <div class="receipt-header"><h1>${shopName}</h1><p>${dateStr}</p><p style="font-weight: bold; margin-top: 2mm;">Ticket - COMMANDE</p><p>Client: ${clientName}</p>${clientTel ? `<p>Tel: ${clientTel}</p>` : ''}</div>
+                    <div class="receipt-header"><h1>${shopName}</h1><p>${dateStr}</p><p style="font-weight: bold; margin-top: 2mm;">Ticket - COMMANDE</p><p>Client: ${clientName}</p>${clientTel ? `<p>Tel: ${clientTel}</p>` : ''}${paymentMethod !== 'Non spécifié' ? `<p>Paiement prévu: ${paymentMethod}</p>` : ''}</div>
                     <div class="receipt-items"><table><thead><tr><th class="col-qty">Qté</th><th>Désignation</th><th class="col-price">Total</th></tr></thead><tbody>${itemsHtml}</tbody></table></div>
                     <div class="receipt-total">TOTAL: ${formatPrice(total)}</div>
                     <div class="receipt-footer"><p>Commande non payée</p><p>Merci de votre confiance !</p></div>
@@ -286,7 +290,7 @@ window.printOrderReceipt = async (orderId) => {
         const printableArea = document.getElementById('printable-area');
         if (printableArea) {
             printableArea.innerHTML = `
-                <div class="receipt-header"><h1>${shopName}</h1><p>${dateStr}</p><p style="font-weight: bold; margin-top: 2mm;">Ticket - COMMANDE</p><p>Client: ${order.client}</p>${order.telephone ? `<p>Tel: ${order.telephone}</p>` : ''}</div>
+                <div class="receipt-header"><h1>${shopName}</h1><p>${dateStr}</p><p style="font-weight: bold; margin-top: 2mm;">Ticket - COMMANDE</p><p>Client: ${order.client}</p>${order.telephone ? `<p>Tel: ${order.telephone}</p>` : ''}${order.paymentMethod && order.paymentMethod !== 'Non spécifié' ? `<p>Paiement prévu: ${order.paymentMethod}</p>` : ''}</div>
                 <div class="receipt-items"><table><thead><tr><th class="col-qty">Qté</th><th>Désignation</th><th class="col-price">Total</th></tr></thead><tbody>${itemsHtml}</tbody></table></div>
                 <div class="receipt-total">TOTAL: ${formatPrice(order.total)}</div>
                 <div class="receipt-footer"><p>Commande non payée</p><p>Merci de votre confiance !</p></div>
@@ -311,6 +315,7 @@ window.shareOrderWhatsApp = async (orderId) => {
         let text = `🧾 *REÇU DE COMMANDE*\n🏪 ${shopName}\n📅 ${dateStr}\n`;
         text += `👤 Client: ${order.client}\n`;
         if(order.telephone) text += `📞 Tel: ${order.telephone}\n`;
+        if(order.paymentMethod && order.paymentMethod !== 'Non spécifié') text += `💳 Paiement: ${order.paymentMethod}\n`;
         text += `----------------\n`;
         order.items.forEach(i => {
             text += `${i.qty}x ${i.nomDisplay || i.nom} : ${formatPrice(i.prixVente * i.qty)}\n`;

@@ -143,6 +143,26 @@ export function switchTab(tabId) {
 
     const tabButton = document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`);
     if(tabButton) tabButton.classList.add('active');
+
+    // Gestion de l'affichage de la barre de recherche globale
+    const globalSearchContainer = document.getElementById('global-search-container');
+    const globalSearchWrapper = document.getElementById('global-search-wrapper');
+    
+    if (globalSearchContainer && globalSearchWrapper) {
+        if (tabId === 'dashboard') {
+            globalSearchContainer.classList.remove('hidden');
+            globalSearchWrapper.classList.remove('hidden');
+        } else {
+            if (window.innerWidth < 768) {
+                // Mobile : On garde le conteneur principal (pour le bouton Hamburger), mais on cache le champ de recherche
+                globalSearchContainer.classList.remove('hidden');
+                globalSearchWrapper.classList.add('hidden');
+            } else {
+                // PC : Le menu Hamburger n'étant pas visible, on cache complètement le conteneur
+                globalSearchContainer.classList.add('hidden');
+            }
+        }
+    }
 }
 
 export function showTab(tabId) {

@@ -448,6 +448,7 @@ export function setupProfileManagement() {
                     document.getElementById('profile-shop-phone').value = data.telephone || '';
                     document.getElementById('profile-shop-address').value = data.adresse || '';
                     document.getElementById('profile-shop-msg').value = data.messageTicket || '';
+                    if(document.getElementById('profile-shop-promo')) document.getElementById('profile-shop-promo').value = data.promoMessage || '';
                     
                     const logoPreview = document.getElementById('profile-logo-preview');
                     if (data.logo) {
@@ -535,6 +536,9 @@ export function setupProfileManagement() {
                     adresse: document.getElementById('profile-shop-address').value.trim(),
                     messageTicket: document.getElementById('profile-shop-msg').value.trim()
                 };
+                
+                const promoInput = document.getElementById('profile-shop-promo');
+                if (promoInput) updateData.promoMessage = promoInput.value.trim();
 
                 if (compressedLogo) {
                     showToast("Enregistrement du logo...", "info");
