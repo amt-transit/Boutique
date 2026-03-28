@@ -1,7 +1,7 @@
 // src/pages/suppliers.js
 import { db, collection, onSnapshot, addDoc, serverTimestamp, doc, updateDoc } from '../firebase.js';
 import * as state from '../state.js';
-import { showToast, showConfirmModal } from '../ui.js';
+import { showToast, showConfirmModal, formatWhatsAppNumber } from '../ui.js';
 
 let allSuppliers = [];
 
@@ -15,7 +15,8 @@ function renderSuppliersTable() {
             <td class="p-4 text-gray-500">${supplier.contact || '-'}</td>
             <td class="p-4 text-gray-500">${supplier.email || '-'}</td>
             <td class="p-4 text-gray-500">${supplier.telephone || '-'}</td>
-            <td class="p-4 text-right">
+            <td class="p-4 text-right flex justify-end gap-3 items-center">
+                ${supplier.telephone ? `<a href="https://wa.me/${formatWhatsAppNumber(supplier.telephone)}" target="_blank" class="text-green-500 hover:text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold transition flex items-center gap-1"><i data-lucide="message-circle" class="w-3 h-3"></i> WA</a>` : ''}
                 <button class="text-blue-500 hover:text-blue-700 font-bold text-xs" onclick="openEditSupplier('${supplier.id}')">Détails</button>
             </td>
         </tr>

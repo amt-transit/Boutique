@@ -1,5 +1,5 @@
 import { db, onSnapshot, query, collection, where, doc, getDoc, writeBatch, increment, serverTimestamp } from '../firebase.js';
-import { showToast, formatPrice, showConfirmModal } from '../ui.js';
+import { showToast, formatPrice, showConfirmModal, formatWhatsAppNumber } from '../ui.js';
 import * as state from '../state.js';
 
 export function setupOrdersListener() {
@@ -325,7 +325,9 @@ window.shareOrderWhatsApp = async (orderId) => {
         text += `📌 Statut: En attente (Non payé)\n\n`;
         text += `Merci de votre confiance !`;
 
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        const formattedPhone = formatWhatsAppNumber(order.telephone);
+        const waUrl = formattedPhone ? `https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(waUrl, '_blank');
     } catch (e) {
         console.error(e);
         showToast("Erreur lors du partage", "error");

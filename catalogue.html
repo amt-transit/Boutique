@@ -49,15 +49,20 @@
 
     <!-- En-tête -->
     <header class="glass-header fixed top-0 w-full z-40 border-b border-white/50 shadow-sm px-4 py-3 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <img id="shop-logo" src="" alt="Logo" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm hidden">
-            <div id="shop-logo-placeholder" class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xl shadow-sm"></div>
-            <h1 id="shop-name" class="font-extrabold text-lg text-slate-900 tracking-tight">...</h1>
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+            <img id="shop-logo" src="" alt="Logo" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm flex-shrink-0 hidden">
+            <div id="shop-logo-placeholder" class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xl shadow-sm flex-shrink-0"></div>
+            <h1 id="shop-name" class="font-extrabold text-lg text-slate-900 tracking-tight truncate">...</h1>
         </div>
-        <button id="btn-open-cart" class="relative bg-slate-100 p-2.5 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors shadow-sm border border-slate-200">
-            <i data-lucide="shopping-cart" class="w-5 h-5 text-slate-700 currentColor"></i>
-            <span id="cart-badge" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-md transition-transform duration-300 hidden">0</span>
-        </button>
+        <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+            <a id="btn-contact-wa" href="#" target="_blank" class="hidden items-center justify-center bg-[#25D366]/10 text-[#25D366] p-2.5 rounded-full hover:bg-[#25D366]/20 transition-colors shadow-sm border border-[#25D366]/20" title="Contacter la boutique sur WhatsApp">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+            </a>
+            <button id="btn-open-cart" class="relative bg-slate-100 p-2.5 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors shadow-sm border border-slate-200">
+                <i data-lucide="shopping-cart" class="w-5 h-5 text-slate-700 currentColor"></i>
+                <span id="cart-badge" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-md transition-transform duration-300 hidden">0</span>
+            </button>
+        </div>
     </header>
     
     <div id="promo-banner" class="fixed top-[65px] w-full z-30 hidden bg-orange-500 text-white text-center text-[11px] font-bold py-1.5 px-4 tracking-wide shadow-md uppercase"></div>
@@ -77,7 +82,10 @@
                 <input type="text" id="search-input" placeholder="Que recherchez-vous aujourd'hui ?" class="w-full p-4 bg-transparent outline-none text-slate-700 font-semibold placeholder-slate-400 text-sm">
             </div>
         </div>
-        <div id="category-filters" class="flex gap-2 overflow-x-auto py-2 mt-4 no-scrollbar whitespace-nowrap"></div>
+        <div class="mt-6">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">Parcourir par catégorie</h3>
+            <div id="category-filters" class="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 no-scrollbar whitespace-nowrap"></div>
+        </div>
     </div>
 
     <!-- Grille des produits -->
@@ -234,6 +242,18 @@
             setTimeout(() => toast.style.opacity = '0', 3000);
         };
 
+        function formatWhatsAppNumber(phone) {
+            if (!phone) return "";
+            let cleaned = phone.replace(/\D/g, ''); // Retire tout ce qui n'est pas un chiffre
+            if (cleaned.length === 10 && cleaned.startsWith('0')) {
+                return '225' + cleaned; // Ajoute 225 pour les numéros locaux ivoiriens à 10 chiffres
+            }
+            if (cleaned.startsWith('225')) {
+                return cleaned; // Déjà au bon format
+            }
+            return '225' + cleaned; // Fallback par défaut
+        }
+
         async function init() {
             if (!boutiqueId) {
                 document.getElementById('loader').classList.add('hidden');
@@ -250,8 +270,18 @@
                 const shopData = shopDoc.data();
                 document.title = shopData.nom + " - Catalogue";
                 document.getElementById('shop-name').textContent = shopData.nom;
-                shopPhone = shopData.telephone || "";
+                window.shopPhone = shopData.telephone || "";
                 
+                const formattedShopPhone = formatWhatsAppNumber(window.shopPhone);
+                if (formattedShopPhone) {
+                    const waBtn = document.getElementById('btn-contact-wa');
+                    if (waBtn) {
+                        waBtn.href = `https://wa.me/${formattedShopPhone}`;
+                        waBtn.classList.remove('hidden');
+                        waBtn.classList.add('flex');
+                    }
+                }
+
                 if (shopData.logo) {
                     const img = document.getElementById('shop-logo');
                     img.src = shopData.logo;
@@ -314,7 +344,7 @@
                 const inactiveClasses = "bg-white text-slate-600 border-slate-200 hover:bg-slate-50";
                 const safeCat = cat.replace(/'/g, "\\'");
                 
-                return `<button onclick="setCategory('${safeCat}')" class="px-5 py-2 rounded-full font-bold text-sm border transition-all ${isActive ? activeClasses : inactiveClasses}">
+                return `<button onclick="setCategory('${safeCat}')" class="px-5 py-2.5 rounded-full font-bold text-sm border transition-all shadow-sm ${isActive ? activeClasses : inactiveClasses}">
                     ${cat}
                 </button>`;
             }).join('');
@@ -364,7 +394,7 @@
                         <div class="font-black text-blue-600 text-lg mb-3">${formatPrice(p.prixVente)}</div>
                         ${isOos 
                             ? `<button disabled class="mt-auto w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm border border-slate-200 cursor-not-allowed">Épuisé</button>`
-                            : `<button onclick="addToCart('${p.id}')" class="mt-auto w-full bg-slate-50 hover:bg-blue-600 text-blue-600 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-300 flex justify-center items-center gap-2 group/btn border border-slate-100 hover:border-blue-600"><i data-lucide="shopping-bag" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i> Ajouter</button>`
+                            : `<button onclick="addToCart('${p.id}', this)" class="mt-auto w-full bg-slate-50 hover:bg-blue-600 text-blue-600 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-300 flex justify-center items-center gap-2 group/btn border border-slate-100 hover:border-blue-600"><i data-lucide="shopping-bag" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i> Ajouter</button>`
                         }
                     </div>
                 </div>`;
@@ -398,7 +428,7 @@
                 btnContainer.innerHTML = `<button disabled class="w-full bg-slate-200 text-slate-500 font-bold py-4 rounded-xl text-lg cursor-not-allowed">Produit Épuisé</button>`;
             } else {
                 btnContainer.innerHTML = `
-                    <button onclick="addToCart('${p.id}'); closeProductDetails();" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg flex justify-center items-center gap-2 transition-transform active:scale-95">
+                    <button onclick="addToCart('${p.id}', this); setTimeout(closeProductDetails, 600);" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg flex justify-center items-center gap-2 transition-transform active:scale-95">
                         <i data-lucide="shopping-bag" class="w-5 h-5"></i> Ajouter au panier
                     </button>
                 `;
@@ -412,7 +442,7 @@
             document.getElementById('product-details-modal').classList.add('hidden');
         };
 
-        window.addToCart = (id) => {
+        window.addToCart = (id, btnElement = null) => {
             const p = allProducts.find(x => x.id === id);
             if(!p) return;
             const existing = cart.find(item => item.id === id);
@@ -422,7 +452,22 @@
             } else {
                 cart.push({ ...p, qty: 1 });
             }
-            showToast("Ajouté au panier !");
+            
+            if (btnElement) {
+                const originalHtml = btnElement.innerHTML;
+                const originalClass = btnElement.className;
+                btnElement.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Ajouté !';
+                btnElement.className = "mt-auto w-full bg-green-500 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-300 flex justify-center items-center gap-2 transform scale-105 shadow-md border border-green-500";
+                lucide.createIcons();
+                setTimeout(() => {
+                    btnElement.innerHTML = originalHtml;
+                    btnElement.className = originalClass;
+                    lucide.createIcons();
+                }, 1000);
+            } else {
+                showToast("Ajouté au panier !");
+            }
+
             updateCartUI();
         };
 
@@ -509,7 +554,8 @@
                 await addDoc(collection(db, "boutiques", boutiqueId, "commandes"), commande);
                 document.getElementById('cart-modal').classList.add('hidden');
                 
-                if (shopPhone) {
+                const formattedShopPhone = formatWhatsAppNumber(window.shopPhone);
+                if (formattedShopPhone) {
                     let whatsappText = `🛒 *NOUVELLE COMMANDE*\n`;
                     whatsappText += `🏪 Boutique : ${document.getElementById('shop-name').textContent}\n`;
                     whatsappText += `👤 Client : ${commande.client}\n`;
@@ -524,8 +570,7 @@
                     whatsappText += `💰 *TOTAL : ${formatPrice(total)}*\n`;
                     whatsappText += `\nMerci de traiter ma commande !`;
                     
-                    const cleanPhone = shopPhone.replace(/[^\d+]/g, '');
-                    window.open('https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(whatsappText), '_blank');
+                    window.open(`https://wa.me/${formattedShopPhone}?text=${encodeURIComponent(whatsappText)}`, '_blank');
                 } else {
                     showToast("Commande validée avec succès !");
                 }

@@ -234,3 +234,15 @@ export function setupScrollToTop() {
         });
     });
 }
+
+export function formatWhatsAppNumber(phone) {
+    if (!phone) return "";
+    let cleaned = phone.replace(/\D/g, ''); // Retire tout ce qui n'est pas un chiffre
+    if (cleaned.length === 10 && cleaned.startsWith('0')) {
+        return '225' + cleaned; // Ajoute 225 pour les numéros locaux ivoiriens à 10 chiffres
+    }
+    if (cleaned.startsWith('225')) {
+        return cleaned; // Déjà au bon format
+    }
+    return '225' + cleaned; // Fallback par défaut
+}
