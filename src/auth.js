@@ -475,18 +475,36 @@ export function setupProfileManagement() {
     }
 
     // Gestion de la copie du lien du catalogue
+
     const copyCatalogBtn = document.getElementById('btn-copy-catalog');
     if (copyCatalogBtn) {
-        copyCatalogBtn.addEventListener('click', () => {
+        copyCatalogBtn.addEventListener('click', async () => {
             if (!state.currentBoutiqueId) return;
-            const baseUrl = window.location.origin + window.location.pathname.replace(/app\.html|index\.html$/, '');
-            const catalogUrl = `${baseUrl}catalogue.html?id=${state.currentBoutiqueId}`;
-            
-            navigator.clipboard.writeText(catalogUrl).then(() => {
-                showToast("Lien du catalogue copié !", "success");
-            }).catch(err => {
-                showToast("Impossible de copier le lien.", "error");
-            });
+
+            try {
+                // Récupérer le nom de la boutique depuis Firestore
+                const shopDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId));
+                const shopName = shopDoc.exists() ? shopDoc.data().nom : "boutique";
+                
+                // Transformer le nom en slug (minuscules, sans accents, espaces remplacés par des tirets)
+                const slug = shopName.toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/(^-|-$)+/g, '');
+
+                const baseUrl = window.location.origin + window.location.pathname.replace(/app\.html|index\.html$/, '');
+                const catalogUrl = `${baseUrl}catalogue.html?id=${state.currentBoutiqueId}&boutique=${slug}`;
+                
+                navigator.clipboard.writeText(catalogUrl).then(() => {
+                    showToast("Lien du catalogue copié !", "success");
+                }).catch(err => {
+                    showToast("Impossible de copier le lien.", "error");
+                });
+            } catch (error) {
+                console.error("Erreur lors de la génération du lien:", error);
+                showToast("Erreur lors de la génération du lien", "error");
+            }
         });
     }
 

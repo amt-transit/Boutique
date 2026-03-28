@@ -2367,6 +2367,59 @@ body.perf-mode.dark .bg-white.rounded-xl {
 }
 
 /* ─────────────────────────────────────────────────────────
+   10. CORRECTION ULTIME LAYOUT CATALOGUE DESKTOP
+   Contourne la non-compilation des classes Tailwind
+   pour garantir l'affichage côte à côte sur ordinateur.
+───────────────────────────────────────────────────────── */
+@media (min-width: 1024px) {
+    .desktop-layout-fix { flex-direction: row !important; flex-wrap: nowrap !important; }
+    .desktop-main-fix { flex: 1 1 0% !important; width: auto !important; }
+    .desktop-floating-btn-fix { display: none !important; }
+    .desktop-hide-top-categories { display: none !important; }
+    
+    .desktop-sidebar-fix {
+        display: flex !important; 
+        flex-direction: column !important;
+        position: sticky !important;
+        top: 6rem !important;
+        flex: 0 0 260px !important;
+        width: 260px !important;
+        height: calc(100vh - 120px) !important;
+        background: #ffffff !important;
+        border-radius: 1.5rem !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 20px rgba(37, 99, 235, 0.07) !important;
+        overflow: hidden !important;
+        z-index: 10 !important;
+    }
+    
+    .desktop-cart-fix {
+        display: flex !important; 
+        position: sticky !important;
+        top: 6rem !important;
+        inset: auto !important;
+        background: transparent !important;
+        flex: 0 0 350px !important;
+        width: 350px !important;
+        height: calc(100vh - 120px) !important;
+        padding: 0 !important;
+        z-index: 10 !important;
+    }
+    .desktop-cart-fix > div {
+        height: 100% !important;
+        max-height: none !important;
+        border-radius: 1.5rem !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 20px rgba(37, 99, 235, 0.07) !important;
+        transform: none !important;
+    }
+}
+@media (min-width: 1280px) {
+    .desktop-sidebar-fix { flex: 0 0 280px !important; width: 280px !important; }
+    .desktop-cart-fix { flex: 0 0 400px !important; width: 400px !important; }
+}
+
+/* ─────────────────────────────────────────────────────────
    9. Script de détection automatique (à coller dans main.js)
    
    Copie ce code dans ton src/main.js, dans la fonction main() :

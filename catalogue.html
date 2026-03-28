@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boutique en ligne</title>
     <link rel="stylesheet" href="dist/output.css">
+    <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="icon" href="data:,">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -61,8 +62,8 @@
             <a id="btn-contact-wa" href="#" target="_blank" class="hidden items-center justify-center bg-[#25D366]/10 text-[#25D366] p-2.5 rounded-full hover:bg-[#25D366]/20 transition-colors shadow-sm border border-[#25D366]/20" title="Contacter la boutique sur WhatsApp">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
             </a>
-            <button id="btn-open-cart" class="relative bg-slate-100 p-2.5 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors shadow-sm border border-slate-200">
-                <i data-lucide="shopping-cart" class="w-5 h-5 text-slate-700 currentColor"></i>
+            <button id="btn-open-cart" class="relative bg-slate-100 p-2.5 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors shadow-sm border border-slate-200 lg:hidden">
+                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
                 <span id="cart-badge" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-md transition-transform duration-300 hidden">0</span>
             </button>
         </div>
@@ -76,52 +77,113 @@
         <p class="text-slate-500 text-sm font-medium">Découvrez nos articles et passez commande en quelques clics.</p>
     </div>
 
-    <!-- Barre de recherche -->
-    <div class="px-4 mb-8 max-w-xl mx-auto relative z-10">
-        <div class="relative group">
-            <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
-            <div class="relative bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center">
-                <i data-lucide="search" class="text-slate-400 w-5 h-5 ml-4"></i>
-                <input type="text" id="search-input" placeholder="Que recherchez-vous aujourd'hui ?" class="w-full p-4 bg-transparent outline-none text-slate-700 font-semibold placeholder-slate-400 text-sm">
+    <!-- Layout Principal (Grille + Panier) -->
+    <div class="max-w-[1400px] w-full mx-auto px-4 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start relative z-10 desktop-layout-fix">
+        
+        <!-- Colonne Gauche : Catégories (Desktop Sidebar) -->
+        <aside class="hidden lg:flex flex-col w-[260px] xl:w-[280px] flex-shrink-0 sticky top-24 h-[calc(100vh-120px)] bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden desktop-sidebar-fix">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                <h2 class="font-bold text-lg flex items-center gap-2"><i data-lucide="layout-grid" class="text-blue-600 w-5 h-5"></i> Catégories</h2>
             </div>
-        </div>
-        <div class="mt-6">
-            <div class="flex justify-between items-center mb-3 px-1">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Parcourir par catégorie</h3>
-                <button onclick="openCategoryDrawer()" class="flex items-center gap-1.5 text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"><i data-lucide="menu" class="w-3.5 h-3.5"></i> Toutes</button>
+            <div class="p-4 border-b border-slate-100">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="desktop-category-search" placeholder="Chercher une catégorie..." class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition">
+                </div>
             </div>
-            <div id="category-filters" class="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 no-scrollbar whitespace-nowrap"></div>
-        </div>
-    </div>
+            <div class="flex-1 overflow-y-auto p-3 space-y-1" id="desktop-category-list">
+                <!-- Injecté par JS -->
+            </div>
+        </aside>
 
-    <!-- Grille des produits -->
-    <main class="px-4 max-w-6xl mx-auto relative z-10">
-        <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            <!-- Produits injectés ici -->
+        <!-- Colonne gauche : Grille des produits -->
+        <main class="w-full lg:w-auto lg:flex-1 min-w-0 desktop-main-fix">
+            
+            <!-- Barre de recherche et Catégories -->
+            <div class="mb-8 w-full relative z-10">
+                <div class="relative group">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+                    <div class="relative bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center">
+                        <i data-lucide="search" class="text-slate-400 w-5 h-5 ml-4"></i>
+                        <input type="text" id="search-input" placeholder="Que recherchez-vous aujourd'hui ?" class="w-full p-4 bg-transparent outline-none text-slate-700 font-semibold placeholder-slate-400 text-sm">
+                    </div>
+                </div>
+                <!-- Catégories (Masquées sur PC, gérées par la Sidebar gauche) -->
+                <div class="mt-6 lg:hidden desktop-hide-top-categories">
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Parcourir par catégorie</h3>
+                        <button onclick="openCategoryDrawer()" class="lg:hidden desktop-hide-hamburger flex items-center gap-1.5 text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"><i data-lucide="menu" class="w-3.5 h-3.5"></i> Toutes</button>
+                    </div>
+                    <div id="category-filters" class="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 no-scrollbar whitespace-nowrap"></div>
+                </div>
+            </div>
+
+            <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                <!-- Produits injectés ici -->
+            </div>
+            <div id="no-products" class="hidden text-center py-16 bg-white rounded-3xl shadow-sm border border-slate-100 mt-4">
+                <i data-lucide="package-search" class="w-16 h-16 text-slate-200 mx-auto mb-4"></i>
+                <p class="text-slate-500 font-bold text-lg">Aucun article trouvé.</p>
+            </div>
+        </main>
+
+        <!-- Bouton panier flottant mobile -->
+        <button id="floating-cart-btn" onclick="document.getElementById('cart-modal').classList.remove('hidden')" class="hidden fixed bottom-6 left-4 right-4 bg-slate-900 text-white py-4 px-6 rounded-full shadow-2xl flex justify-between items-center z-40 transition-transform hover:scale-[1.02] active:scale-95 lg:hidden desktop-floating-btn-fix">
+            <div class="flex items-center gap-3">
+                <span id="floating-cart-qty" class="font-bold bg-blue-600 text-white px-3 py-1 rounded-full text-sm">0</span>
+                <span class="font-bold">Voir le panier</span>
+            </div>
+            <span id="floating-cart-total" class="font-extrabold text-lg">0 CFA</span>
+        </button>
+
+        <!-- Colonne droite : Panier (sidebar desktop / modale mobile) -->
+        <div id="cart-modal" onclick="if(event.target === this && window.innerWidth < 1024) this.classList.add('hidden')" class="fixed inset-0 bg-slate-900/40 z-50 hidden flex-col justify-end backdrop-blur-sm transition-opacity lg:relative lg:inset-auto lg:bg-transparent lg:z-10 lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:p-0 lg:max-h-none desktop-cart-fix">
+            <div class="bg-white w-full max-h-[85vh] rounded-t-[32px] flex flex-col shadow-2xl transform transition-transform translate-y-0 lg:h-full lg:max-h-none lg:rounded-3xl lg:border lg:border-slate-200 lg:shadow-xl lg:transform-none lg:translate-y-0">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[32px]">
+                    <h2 class="font-bold text-lg flex items-center gap-2"><i data-lucide="shopping-bag" class="text-blue-600"></i> Mon Panier</h2>
+                    <button id="btn-close-cart" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-600 transition-colors lg:hidden"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-5 space-y-3" id="cart-items">
+                    <!-- Articles du panier -->
+                </div>
+
+                <div class="p-5 border-t border-slate-100 bg-slate-50/50">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="font-bold text-slate-500 uppercase tracking-wide text-xs">Total de la commande</span>
+                        <span id="cart-total" class="font-extrabold text-2xl text-blue-600">0 CFA</span>
+                    </div>
+
+                    <form id="order-form" class="space-y-3 mb-4">
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Informations de livraison</p>
+                        <input type="text" id="client-name" placeholder="Votre nom et prénom" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all" required>
+                        <input type="tel" id="client-tel" placeholder="Votre numéro de téléphone" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all" required>
+                        <input type="text" id="client-address" placeholder="Adresse de livraison (Facultatif)" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all">
+                        
+                        <select id="client-payment" class="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm transition-all text-slate-400" required onchange="this.classList.remove('text-slate-400'); this.classList.add('text-slate-800');">
+                            <option value="" disabled selected>Mode de paiement souhaité</option>
+                            <option value="Espèces (À la livraison)">Espèces (À la livraison)</option>
+                            <option value="Mobile Money">Mobile Money (Wave, Orange, etc.)</option>
+                            <option value="Virement">Virement Bancaire</option>
+                        </select>
+
+                        <button type="submit" id="btn-submit-order" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 mt-4 flex justify-center items-center gap-2 hover:bg-blue-700 transition transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none">
+                            Valider la commande <i data-lucide="check-circle"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div id="no-products" class="hidden text-center py-16 bg-white rounded-3xl shadow-sm border border-slate-100 mt-4">
-            <i data-lucide="package-search" class="w-16 h-16 text-slate-200 mx-auto mb-4"></i>
-            <p class="text-slate-500 font-bold text-lg">Aucun article trouvé.</p>
-        </div>
-    </main>
-    
-    <!-- Bouton Panier Flottant (Sticky Mobile) -->
-    <button id="floating-cart-btn" onclick="document.getElementById('cart-modal').classList.remove('hidden')" class="hidden fixed bottom-6 left-4 right-4 md:left-auto md:right-8 md:w-80 bg-slate-900 text-white py-4 px-6 rounded-full shadow-2xl flex justify-between items-center z-40 transition-transform hover:scale-[1.02] active:scale-95">
-        <div class="flex items-center gap-3">
-            <span id="floating-cart-qty" class="font-bold bg-blue-600 text-white px-3 py-1 rounded-full text-sm">0</span>
-            <span class="font-bold">Voir le panier</span>
-        </div>
-        <span id="floating-cart-total" class="font-extrabold text-lg">0 CFA</span>
-    </button>
+    </div><!-- /layout principal -->
 
     <!-- Bouton WhatsApp Flottant -->
-    <a id="floating-wa-btn" href="#" target="_blank" class="hidden fixed bottom-24 right-4 bg-[#25D366] text-white p-3.5 rounded-full shadow-2xl z-[45] transition-transform transform hover:scale-110 border-2 border-white">
+    <a id="floating-wa-btn" href="#" target="_blank" class="hidden fixed bottom-24 right-4 bg-[#25D366] text-white p-3.5 rounded-full shadow-2xl z-[45] transition-transform transform hover:scale-110 border-2 border-white lg:hidden">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
     </a>
 
     <!-- Tiroir des catégories (Mobile Hamburger) -->
-    <div id="category-drawer-overlay" class="fixed inset-0 bg-slate-900/50 z-[100] hidden backdrop-blur-sm transition-opacity" onclick="closeCategoryDrawer()"></div>
-    <div id="category-drawer" class="fixed top-0 left-0 w-80 max-w-[85vw] h-full bg-white z-[110] transform -translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
+    <div id="category-drawer-overlay" class="fixed inset-0 bg-slate-900/50 z-[100] hidden backdrop-blur-sm transition-opacity lg:hidden desktop-hide-hamburger" onclick="closeCategoryDrawer()"></div>
+    <div id="category-drawer" class="fixed top-0 left-0 w-80 max-w-[85vw] h-full bg-white z-[110] transform -translate-x-full transition-transform duration-300 flex flex-col shadow-2xl lg:hidden desktop-hide-hamburger">
         <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h2 class="font-bold text-lg flex items-center gap-2"><i data-lucide="layout-grid" class="text-blue-600 w-5 h-5"></i> Catégories</h2>
             <button onclick="closeCategoryDrawer()" class="p-2 bg-white rounded-full hover:bg-slate-100 text-slate-600 shadow-sm border border-slate-200 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
@@ -138,10 +200,10 @@
     </div>
 
     <!-- Modale Détails du Produit -->
-    <div id="product-details-modal" class="fixed inset-0 bg-slate-900/60 z-[60] hidden flex flex-col justify-end md:justify-center md:items-center backdrop-blur-sm transition-opacity">
+    <div id="product-details-modal" onclick="if(event.target === this) closeProductDetails()" class="fixed inset-0 bg-slate-900/60 z-[60] hidden flex-col justify-end md:justify-center md:items-center backdrop-blur-sm transition-opacity">
         <div class="bg-white w-full md:max-w-md md:mx-auto max-h-[90vh] rounded-t-[32px] md:rounded-3xl flex flex-col shadow-2xl overflow-hidden relative">
             <button onclick="closeProductDetails()" class="absolute top-4 right-4 bg-white/80 p-2 rounded-full text-slate-800 shadow-md backdrop-blur-md z-10"><i data-lucide="x" class="w-5 h-5"></i></button>
-            <div class="w-full h-64 bg-slate-50 flex items-center justify-center p-4">
+            <div class="w-full h-64 bg-white flex items-center justify-center p-4">
                 <img id="modal-prod-img" src="" class="max-w-full max-h-full object-contain mix-blend-multiply">
             </div>
             <div class="p-6 overflow-y-auto flex-1">
@@ -158,11 +220,11 @@
     </div>
 
     <!-- Modale du Panier -->
-    <div id="cart-modal" class="fixed inset-0 bg-slate-900/40 z-50 hidden flex flex-col justify-end backdrop-blur-sm transition-opacity">
-        <div class="bg-white w-full max-h-[85vh] rounded-t-[32px] flex flex-col shadow-2xl transform transition-transform translate-y-0">
+    <div id="cart-modal" onclick="if(event.target === this) this.classList.add('hidden')" class="fixed inset-0 bg-slate-900/40 z-50 hidden flex-col justify-end backdrop-blur-sm transition-opacity lg:relative lg:inset-auto lg:bg-transparent lg:z-10 lg:flex lg:col-span-4 xl:col-span-3 lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:p-0 lg:max-h-none">
+        <div class="bg-white w-full max-h-[85vh] rounded-t-[32px] flex flex-col shadow-2xl transform transition-transform translate-y-0 lg:h-full lg:max-h-none lg:rounded-3xl lg:border lg:border-slate-200 lg:shadow-xl lg:transform-none lg:translate-y-0">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[32px]">
                 <h2 class="font-bold text-lg flex items-center gap-2"><i data-lucide="shopping-bag" class="text-blue-600"></i> Mon Panier</h2>
-                <button id="btn-close-cart" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-600 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button id="btn-close-cart" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-600 transition-colors lg:hidden"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             
             <div class="flex-1 overflow-y-auto p-5 space-y-3" id="cart-items">
@@ -195,6 +257,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Modale de Succès de Commande -->
     <div id="success-modal" class="fixed inset-0 bg-slate-900/90 z-[100] hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm transition-opacity">
@@ -262,10 +325,6 @@
         let uniqueCategoriesList = [];
         let shopPhone = "";
 
-        function saveCart() {
-            localStorage.setItem(cartStorageKey, JSON.stringify(cart));
-        }
-
         // Format monétaire
         const formatPrice = (p) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(p);
 
@@ -287,6 +346,21 @@
                 return cleaned; // Déjà au bon format
             }
             return '225' + cleaned; // Fallback par défaut
+        }
+        function saveCart() {
+            if(boutiqueId) localStorage.setItem('shop_cart_' + boutiqueId, JSON.stringify(cart));
+        }
+
+        function loadCart() {
+            if(boutiqueId) {
+                const saved = localStorage.getItem('shop_cart_' + boutiqueId);
+                if (saved) {
+                    try {
+                        cart = JSON.parse(saved);
+                        updateCartUI();
+                    } catch(e) { console.error(e); }
+                }
+            }
         }
 
         async function init() {
@@ -410,47 +484,56 @@
         };
 
         function renderDrawerCategories(searchTerm = "") {
-            const container = document.getElementById('drawer-category-list');
-            if(!container) return;
-            const term = searchTerm.toLowerCase();
-            const filtered = uniqueCategoriesList.filter(c => c.toLowerCase().includes(term));
+            const mobileContainer = document.getElementById('drawer-category-list');
+            const desktopContainer = document.getElementById('desktop-category-list');
+            
+            const term = (searchTerm || "").toLowerCase();
+            const filtered = uniqueCategoriesList.filter(c => String(c).toLowerCase().includes(term));
 
+            let html = '';
             if(filtered.length === 0) {
-                container.innerHTML = '<p class="text-center text-slate-400 text-sm py-4">Aucune catégorie trouvée.</p>';
-                return;
+                html = '<p class="text-center text-slate-400 text-sm py-4">Aucune catégorie trouvée.</p>';
+            } else {
+                html = filtered.map(cat => {
+                    const isActive = cat === currentCategory;
+                    const activeClass = isActive ? "bg-blue-50 text-blue-700 font-bold border-blue-200 shadow-sm" : "text-slate-600 hover:bg-slate-50 border-transparent font-medium";
+                    const safeCat = String(cat).replace(/'/g, "\\'");
+                    return `<button onclick="setCategory('${safeCat}'); closeCategoryDrawer();" class="w-full text-left px-4 py-3 rounded-xl border transition-all flex justify-between items-center ${activeClass}">
+                        <span>${cat}</span>
+                        ${isActive ? '<i data-lucide="check" class="w-4 h-4 text-blue-600"></i>' : ''}
+                    </button>`;
+                }).join('');
             }
-            container.innerHTML = filtered.map(cat => {
-                const isActive = cat === currentCategory;
-                const activeClass = isActive ? "bg-blue-50 text-blue-700 font-bold border-blue-200 shadow-sm" : "text-slate-600 hover:bg-slate-50 border-transparent font-medium";
-                const safeCat = cat.replace(/'/g, "\\'");
-                return `<button onclick="setCategory('${safeCat}'); closeCategoryDrawer();" class="w-full text-left px-4 py-3 rounded-xl border transition-all flex justify-between items-center ${activeClass}">
-                    <span>${cat}</span>
-                    ${isActive ? '<i data-lucide="check" class="w-4 h-4 text-blue-600"></i>' : ''}
-                </button>`;
-            }).join('');
-            lucide.createIcons();
+            
+            if(mobileContainer) mobileContainer.innerHTML = html;
+            if(desktopContainer) desktopContainer.innerHTML = html;
+            
+            if(window.lucide) window.lucide.createIcons();
         }
 
         function renderCategoryFilters() {
-            const container = document.getElementById('category-filters');
-            if (!container) return;
-
             const categoriesSet = new Set(["Tous"]);
             allProducts.forEach(p => { categoriesSet.add(p.categorie ? p.categorie.trim() : "Autre"); });
             
             const otherCats = Array.from(categoriesSet).filter(c => c !== "Tous").sort();
             uniqueCategoriesList = ["Tous", ...otherCats];
 
-            container.innerHTML = uniqueCategoriesList.map(cat => {
-                const isActive = cat === currentCategory;
-                const activeClasses = "bg-slate-800 text-white border-slate-800 shadow-md";
-                const inactiveClasses = "bg-white text-slate-600 border-slate-200 hover:bg-slate-50";
-                const safeCat = cat.replace(/'/g, "\\'");
-                
-                return `<button onclick="setCategory('${safeCat}')" class="px-5 py-2.5 rounded-full font-bold text-sm border transition-all shadow-sm ${isActive ? activeClasses : inactiveClasses}">
-                    ${cat}
-                </button>`;
-            }).join('');
+            const container = document.getElementById('category-filters');
+            if (container) {
+                container.innerHTML = uniqueCategoriesList.map(cat => {
+                    const isActive = cat === currentCategory;
+                    const activeClasses = "bg-slate-800 text-white border-slate-800 shadow-md";
+                    const inactiveClasses = "bg-white text-slate-600 border-slate-200 hover:bg-slate-50";
+                    const safeCat = String(cat).replace(/'/g, "\\'");
+                    
+                    return `<button onclick="setCategory('${safeCat}')" class="px-5 py-2.5 rounded-full font-bold text-sm border transition-all shadow-sm ${isActive ? activeClasses : inactiveClasses}">
+                        ${cat}
+                    </button>`;
+                }).join('');
+            }
+            
+            // Toujours mettre à jour les listes latérales (drawer mobile + sidebar PC)
+            renderDrawerCategories(document.getElementById('desktop-category-search')?.value || document.getElementById('category-search-input')?.value || "");
         }
 
         function renderProducts(searchTerm = "") {
@@ -486,7 +569,7 @@
                 
                 return `
                 <div class="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden border border-slate-200/60 flex flex-col h-full relative ${cardOpacityClass}">
-                    <div class="aspect-[4/3] w-full overflow-hidden relative bg-slate-50 cursor-pointer" onclick="openProductDetails('${p.id}')">
+                    <div class="aspect-[4/3] w-full overflow-hidden relative bg-white cursor-pointer" onclick="openProductDetails('${p.id}')">
                         ${imgHtml}
                         ${outOfStockLabel}
                         ${newLabel}
@@ -638,9 +721,25 @@
 
         // Event Listeners
         document.getElementById('search-input').addEventListener('input', (e) => renderProducts(e.target.value));
-        document.getElementById('btn-open-cart').addEventListener('click', () => document.getElementById('cart-modal').classList.remove('hidden'));
-        document.getElementById('btn-close-cart').addEventListener('click', () => document.getElementById('cart-modal').classList.add('hidden'));
+        // Modifier l'écouteur d'événement pour la fermeture de la modale
+        document.getElementById('btn-open-cart').addEventListener('click', () => {
+            document.getElementById('cart-modal').classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-cart').addEventListener('click', () => {
+            document.getElementById('cart-modal').classList.add('hidden');
+        });
+
+        // Ajouter un écouteur pour la fermeture au clic sur l'overlay (uniquement sur mobile)
+        document.getElementById('cart-modal').addEventListener('click', function(e) {
+            if (e.target === this && window.innerWidth < 1024) {
+                this.classList.add('hidden');
+            }
+        });
+        
         document.getElementById('category-search-input').addEventListener('input', (e) => renderDrawerCategories(e.target.value));
+        const desktopCatSearch = document.getElementById('desktop-category-search');
+        if (desktopCatSearch) desktopCatSearch.addEventListener('input', (e) => renderDrawerCategories(e.target.value));
 
         document.getElementById('order-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -727,6 +826,7 @@
         });
 
         // Démarrage
+      
         init();
     </script>
 </body>
