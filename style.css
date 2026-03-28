@@ -775,6 +775,11 @@ body.dark .text-gray-600 { color: #e2e8f0 !important; } /* Plus clair et lisible
 body.dark .text-gray-500 { color: #cbd5e1 !important; } /* Plus clair et lisible */
 body.dark .text-gray-400 { color: #94a3b8 !important; } /* Plus clair et lisible */
 
+body.dark .text-slate-900, body.dark .text-slate-800 { color: #f1f5f9 !important; }
+body.dark .text-slate-700, body.dark .text-slate-600 { color: #e2e8f0 !important; }
+body.dark .text-slate-500 { color: #cbd5e1 !important; }
+body.dark .text-slate-400 { color: #94a3b8 !important; }
+
 /* Dark form elements */
 body.dark input[type="text"],
 body.dark input[type="email"],
@@ -818,6 +823,13 @@ body.dark .border-b { border-color: #1e293b !important; }
 body.dark .border-t { border-color: #1e293b !important; }
 body.dark .border-gray-200 { border-color: #1e293b !important; }
 body.dark .border-gray-100 { border-color: #1e293b !important; }
+
+/* Rendre le texte principal des tableaux Clients et Fournisseurs totalement blanc en mode sombre */
+body.dark #credits-table-body td, body.dark #suppliers-table-body td { color: #f1f5f9 !important; }
+body.dark #credits-table-body td [class*="text-gray-"], body.dark #credits-table-body td [class*="text-slate-"],
+body.dark #suppliers-table-body td [class*="text-gray-"], body.dark #suppliers-table-body td [class*="text-slate-"] {
+    color: #f1f5f9 !important;
+}
 
 /* Dark colored text */
 body.dark .text-blue-600 { color: #60a5fa !important; }
@@ -1396,6 +1408,16 @@ body.dark .drawer-tab.active {
 
 .dash-hero-left { display: flex; align-items: center; gap: 14px; position: relative; z-index: 1; }
 .dash-hero-right { position: relative; z-index: 1; }
+
+/* Force le filtre de date à prendre toute la largeur et se centrer sur mobile */
+@media (max-width: 767px) {
+    .dash-hero-right {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 4px;
+    }
+}
 
 .dash-hero-brand { display: flex; align-items: center; gap: 14px; }
 
