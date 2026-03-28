@@ -757,6 +757,12 @@ body.dark #global-search-input:focus {
 body.dark #global-search-results {
     background: #0f172a !important;
     border-color: #1e293b !important;
+    color: #f1f5f9 !important;
+}
+
+body.dark #global-search-results [class*="text-gray-"],
+body.dark #global-search-results [class*="text-slate-"] {
+    color: #f1f5f9 !important;
 }
 
 body.dark #global-shop-header {
@@ -976,6 +982,10 @@ body.dark #current-date-display {
 .search-result-item {
     border-radius: 0;
     transition: background-color var(--transition-fast);
+}
+
+body.dark .search-result-item:hover {
+    background-color: #1e293b !important;
 }
 
 /* Immersion banner */
