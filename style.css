@@ -2398,8 +2398,8 @@ body.perf-mode.dark .bg-white.rounded-xl {
     .desktop-cart-fix {
         display: flex !important; 
         position: sticky !important;
-        top: 6rem !important;
-        inset: auto !important;
+        inset: auto !important;      /* 1. On annule l'affichage plein écran du mobile d'abord */
+        top: 6rem !important;        /* 2. On fige le haut APRES l'annulation ! */
         background: transparent !important;
         flex: 0 0 350px !important;
         width: 350px !important;
