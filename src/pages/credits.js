@@ -4,11 +4,17 @@ import { showToast, formatPrice, showPromptModal, showConfirmModal, formatWhatsA
 import * as state from '../state.js';
 let currentClientSales = [];
 
-function renderTable() {
+export function renderTable() {
     const tbody = document.getElementById('credits-table-body');
     if(!tbody) return;
     tbody.innerHTML = '';
     let filtered = [...state.allClients]; 
+
+    const searchInput = document.getElementById('credits-search');
+    if(searchInput && searchInput.value) { 
+        const term = searchInput.value.toLowerCase(); 
+        filtered = filtered.filter(c => c.nom.toLowerCase().includes(term) || (c.adresse && c.adresse.toLowerCase().includes(term)) || (c.telephone && c.telephone.includes(term))); 
+    }
 
     const sortSelect = document.getElementById('credits-sort');
     if(sortSelect) { 
@@ -16,63 +22,57 @@ function renderTable() {
         filtered.sort((a, b) => { 
             if(sort === 'name_asc') return a.nom.localeCompare(b.nom); 
             if(sort === 'dette_desc') return (b.dette || 0) - (a.dette || 0); 
-            if(sort === 'rentable') return (b.totalProfit || 0) - (a.totalProfit || 0); // Plus rentable en haut
-            if(sort === 'depense') return (b.totalAchats || 0) - (a.totalAchats || 0); // Plus gros acheteur en haut
+            if(sort === 'rentable') return (b.totalProfit || 0) - (a.totalProfit || 0); // Plus rentable
+            if(sort === 'depense') return (b.totalAchats || 0) - (a.totalAchats || 0); // Plus gros acheteur
+            if(sort === 'recent') return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
             return 0; 
         }); 
     }
     
     filtered.forEach(c => {
-        const rowClass = c.deleted ? "deleted-row" : "border-b hover:bg-gray-50 dark:hover:bg-slate-800/50 transition";
+        if(c.deleted) return; 
+        const rowClass = "border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition";
         const safeName = c.nom.replace(/'/g, "\\'");
         
-        // Médaille d'or pour les clients top 3 les plus rentables
-        const isTop = (c.totalProfit > 0 && filtered.indexOf(c) < 3 && sortSelect?.value === 'rentable') ? '👑 ' : '';
+        // Attribution des couronnes de différentes couleurs pour le Top 3
+        let badge = '';
+        const rank = filtered.indexOf(c);
+        const isRankable = (sortSelect?.value === 'rentable' && c.totalProfit > 0) || (sortSelect?.value === 'depense' && c.totalAchats > 0);
         
+        if (isRankable) {
+            if (rank === 0) badge = '<i data-lucide="crown" class="w-5 h-5 text-yellow-500 fill-current" title="1er Place"></i> ';
+            else if (rank === 1) badge = '<i data-lucide="crown" class="w-5 h-5 text-slate-400 fill-current" title="2ème Place"></i> ';
+            else if (rank === 2) badge = '<i data-lucide="crown" class="w-5 h-5 text-amber-600 fill-current" title="3ème Place"></i> ';
+        }
+
+        const formatCFA = (val) => new Intl.NumberFormat('fr-FR', {style:'currency', currency:'XOF', maximumFractionDigits:0}).format(val || 0);
+
         tbody.innerHTML += `
             <tr class="${rowClass}">
-                <td class="p-4">
-                    <div class="font-bold text-gray-800 dark:text-gray-200">${isTop}${c.nom}</div>
-                    <div class="text-[10px] text-gray-400 italic">${c.adresse || 'Sans adresse'}</div>
+                <td class="p-3 md:p-4">
+                    <div class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">${badge}${c.nom}</div>
+                    <div class="text-[11px] text-slate-400 italic mt-0.5 flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i> ${c.adresse || 'Sans adresse'}</div>
+                    <!-- Affichage des montants sur Mobile -->
+                    <div class="mt-1.5 flex flex-wrap gap-2 sm:hidden">
+                        <span class="text-[10px] font-bold text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-900/30 px-1.5 py-0.5 rounded shadow-sm">Achats: ${formatCFA(c.totalAchats)}</span>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded shadow-sm">Profit: ${formatCFA(c.totalProfit)}</span>
+                    </div>
                 </td>
-                <td class="p-4">
-                    <div class="text-[10px] font-bold text-gray-500 uppercase">Acheté : <span class="text-blue-600">${formatPrice(c.totalAchats || 0)}</span></div>
-                    <div class="text-[10px] font-bold text-gray-400 uppercase">Profit : <span class="text-emerald-600">${formatPrice(c.totalProfit || 0)}</span></div>
+                <td class="p-3 md:p-4 hidden sm:table-cell">
+                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Acheté: <span class="text-blue-600">${formatCFA(c.totalAchats)}</span></div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Profit: <span class="text-emerald-600">${formatCFA(c.totalProfit)}</span></div>
                 </td>
-                <td class="p-4 font-black text-orange-600">${formatPrice(c.dette || 0)}</td>
-                <td class="p-4 text-right flex gap-1 justify-end items-center">
-                    <button onclick="viewClientHistory('${c.id}', '${safeName}')" class="text-blue-500 bg-blue-50 p-1.5 rounded-lg transition" title="Historique"><i data-lucide="history" class="w-4 h-4"></i></button>
-                    ${c.dette > 0 ? `<button onclick="rembourserClient('${c.id}', ${c.dette}, '${safeName}')" class="bg-green-600 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">Payer</button>` : ''}
+                <td class="p-3 md:p-4 text-xs font-medium text-slate-500">${c.telephone || '-'}</td>
+                <td class="p-3 md:p-4 font-black text-orange-600">${formatCFA(c.dette)}</td>
+                <td class="p-3 md:p-4 text-right flex gap-1 justify-end items-center">
+                    ${c.telephone ? `<a href="https://wa.me/${formatWhatsAppNumber(c.telephone)}" target="_blank" class="text-green-500 hover:text-green-600 bg-green-50 dark:bg-green-900/30 p-2 rounded-lg transition" title="WhatsApp"><i data-lucide="message-circle" class="w-4 h-4"></i></a>` : ''}
+                    <button onclick="viewClientHistory('${c.id}', '${safeName}')" class="text-blue-500 hover:text-blue-600 bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg transition" title="Historique"><i data-lucide="history" class="w-4 h-4"></i></button>
+                    ${c.dette > 0 ? `<button onclick="rembourserClient('${c.id}', ${c.dette}, '${safeName}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition">Encaisser</button>` : ''}
+                    ${(state.userRole === 'admin') ? `<button onclick="deleteClient('${c.id}')" class="text-red-400 hover:text-red-600 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                 </td>
             </tr>`;
     });
     if (window.lucide) window.lucide.createIcons();
-}
-
-export function setupCredits() {
-    if (!state.currentBoutiqueId) return;
-
-    const searchInput = document.getElementById('credits-search');
-    const sortSelect = document.getElementById('credits-sort');
-
-    onSnapshot(collection(db, "boutiques", state.currentBoutiqueId, "clients"), (snap) => {
-        const clients = [];
-        let totalDette = 0;
-        snap.forEach(d => {
-            const c = { id: d.id, ...d.data() };
-            if(!c.deleted) totalDette += (c.dette || 0);
-            if(c.deleted && state.userRole === 'seller') return;
-            clients.push(c);
-        });
-        state.setAllClients(clients);
-        renderTable();
-        if(document.getElementById('dash-total-credits')) document.getElementById('dash-total-credits').textContent = formatPrice(totalDette);
-    });
-
-    if(searchInput) searchInput.addEventListener('input', renderTable);
-    if(sortSelect) sortSelect.addEventListener('change', renderTable);
-
-    // Note: The client form submission is handled in sales.js due to isQuickAddMode logic
 }
 
 window.rembourserClient = (id, dette, nomClient) => { 
@@ -230,3 +230,82 @@ window.reprintSale = (saleId) => {
         window.print();
     }
 };
+
+window.recalculateClientStats = async () => {
+    if (!state.currentBoutiqueId) return;
+    
+    showConfirmModal("Synchroniser les statistiques", "Voulez-vous recalculer l'historique de tous vos clients (Achats et Bénéfices) à partir des anciennes ventes ?", async () => {
+        showToast("Calcul en cours, veuillez patienter...", "info");
+        try {
+            const salesSnap = await getDocs(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
+            const clientStats = {}; 
+            
+            salesSnap.forEach(doc => {
+                const s = doc.data();
+                if (s.deleted || !s.clientId) return;
+                
+                if (!clientStats[s.clientId]) {
+                    clientStats[s.clientId] = { achats: 0, profit: 0 };
+                }
+                
+                // Ne compter que les vrais achats
+                if (['cash', 'mobile_money', 'credit'].includes(s.type)) {
+                    let saleProfit = s.profit;
+                    // Réparation pour les très anciennes ventes qui n'avaient pas de profit enregistré
+                    if (saleProfit === undefined || saleProfit === 0) {
+                        let computedProfit = 0;
+                        if (s.items && Array.isArray(s.items)) {
+                            s.items.forEach(i => { computedProfit += ((i.prixVente || 0) - (i.prixAchat || 0)) * (i.qty || 1); });
+                        }
+                        computedProfit -= (s.remise || 0);
+                        saleProfit = computedProfit;
+                    }
+                    
+                    clientStats[s.clientId].achats += (s.total || 0);
+                    clientStats[s.clientId].profit += (saleProfit || 0);
+                }
+            });
+            
+            const batch = writeBatch(db);
+            let count = 0;
+            
+            state.allClients.forEach(c => {
+                const stats = clientStats[c.id] || { achats: 0, profit: 0 };
+                if ((c.totalAchats || 0) !== stats.achats || (c.totalProfit || 0) !== stats.profit) {
+                    batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", c.id), {
+                        totalAchats: stats.achats,
+                        totalProfit: stats.profit
+                    });
+                    count++;
+                }
+            });
+            
+            if (count > 0) {
+                await batch.commit();
+                showToast(`${count} profil(s) mis à jour avec les anciennes ventes !`, "success");
+            } else {
+                showToast("Tous les profils sont déjà à jour.", "success");
+            }
+        } catch (e) { console.error(e); showToast("Erreur lors de la synchronisation.", "error"); }
+    });
+};
+
+export function setupCredits() {
+    if (!state.currentBoutiqueId) return;
+
+    const searchInput = document.getElementById('credits-search');
+    const sortSelect = document.getElementById('credits-sort');
+
+    // Charger les clients en temps réel
+    onSnapshot(collection(db, "boutiques", state.currentBoutiqueId, "clients"), (snap) => {
+        const clients = [];
+        snap.forEach(d => {
+            clients.push({ id: d.id, ...d.data() });
+        });
+        state.setAllClients(clients);
+        renderTable();
+    });
+
+    if (searchInput) searchInput.addEventListener('input', renderTable);
+    if (sortSelect) sortSelect.addEventListener('change', renderTable);
+}

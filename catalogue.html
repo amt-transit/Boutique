@@ -31,6 +31,12 @@
             body > *:not(#printable-receipt) { display: none !important; }
             #printable-receipt { display: block !important; background: white; color: black; }
         }
+        
+        /* Classe manuelle pour forcer l'affichage de l'erreur */
+        .input-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 4px #fee2e2 !important;
+        }
     </style>
 </head>
 <body class="text-slate-800 pb-24 relative selection:bg-blue-200 selection:text-blue-900">
@@ -161,7 +167,7 @@
                         <span id="cart-total" class="font-extrabold text-xl md:text-2xl text-slate-900 tracking-tight">0 CFA</span>
                     </div>
 
-                    <form id="order-form" class="space-y-3 md:space-y-4">
+                    <form id="order-form" class="space-y-3 md:space-y-4" novalidate>
                         <div class="space-y-2 md:space-y-3">
                             <input type="text" id="client-name" placeholder="Nom et prénom" class="w-full p-3.5 md:p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 font-medium text-[14px] transition-all shadow-sm" required>
                             <input type="tel" id="client-tel" placeholder="Numéro de téléphone" class="w-full p-3.5 md:p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 font-medium text-[14px] transition-all shadow-sm" required>
@@ -698,9 +704,51 @@
         const desktopCatSearch = document.getElementById('desktop-category-search');
         if (desktopCatSearch) desktopCatSearch.addEventListener('input', (e) => renderDrawerCategories(e.target.value));
 
+        const nameInput = document.getElementById('client-name');
+        const telInput = document.getElementById('client-tel');
+        const addressInput = document.getElementById('client-address');
+        const paymentInput = document.getElementById('client-payment');
+        
+        // Restaurer les informations sauvegardées pour les clients récurrents
+        if (localStorage.getItem('saved_client_name')) nameInput.value = localStorage.getItem('saved_client_name');
+        if (localStorage.getItem('saved_client_tel')) telInput.value = localStorage.getItem('saved_client_tel');
+        if (localStorage.getItem('saved_client_address')) addressInput.value = localStorage.getItem('saved_client_address');
+        if (localStorage.getItem('saved_client_payment')) {
+            paymentInput.value = localStorage.getItem('saved_client_payment');
+            paymentInput.classList.remove('text-slate-500');
+            paymentInput.classList.add('text-slate-900');
+        }
+
+        // Enlever la bordure rouge dès que le client commence à taper
+        [nameInput, telInput, paymentInput].forEach(input => {
+            if (input) {
+                const removeError = () => {
+                    input.classList.remove('input-error');
+                    input.classList.add('border-slate-200');
+                };
+                input.addEventListener('input', removeError);
+                input.addEventListener('change', removeError);
+            }
+        });
+
         document.getElementById('order-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            let isValid = true;
+            // Validation des champs et affichage des bordures rouges
+            if (!nameInput.value.trim()) { nameInput.classList.remove('border-slate-200'); nameInput.classList.add('input-error'); isValid = false; }
+            if (!telInput.value.trim()) { telInput.classList.remove('border-slate-200'); telInput.classList.add('input-error'); isValid = false; }
+            if (!paymentInput.value) { paymentInput.classList.remove('border-slate-200'); paymentInput.classList.add('input-error'); isValid = false; }
+            
+            if (!isValid) return showToast("Veuillez remplir les champs encadrés en rouge");
+
             if (cart.length === 0) return showToast("Votre panier est vide");
+            
+            // Sauvegarder les informations pour la prochaine fois
+            localStorage.setItem('saved_client_name', nameInput.value.trim());
+            localStorage.setItem('saved_client_tel', telInput.value.trim());
+            localStorage.setItem('saved_client_address', addressInput.value.trim());
+            localStorage.setItem('saved_client_payment', paymentInput.value);
             
             const btn = document.getElementById('btn-submit-order');
             btn.disabled = true;
@@ -774,7 +822,7 @@
                 cart = []; 
                 saveCart();
                 updateCartUI();
-                e.target.reset(); btn.disabled = false; btn.innerHTML = 'Commander <i data-lucide="arrow-right" class="w-4 h-4"></i>'; lucide.createIcons();
+                btn.disabled = false; btn.innerHTML = 'Commander <i data-lucide="arrow-right" class="w-4 h-4"></i>'; lucide.createIcons();
             } catch (err) { btn.disabled = false; showToast("Erreur d'envoi"); }
         });
 

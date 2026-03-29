@@ -124,16 +124,19 @@ async function processSale(type, clientId, clientName) {
         profit -= discount; // La remise diminue directement le bénéfice final
 
         if (type === 'credit' && clientId) {
-            batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", clientId), { dette: increment(finalTotal) });
-        }
-        // --- NOUVEAUTÉ : Mise à jour de la rentabilité ---
-        if (clientId) {
             batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", clientId), { 
-                totalAchats: increment(finalTotal), // Montant total dépensé
-                totalProfit: increment(profit)      // Bénéfice réel apporté à la boutique
+                dette: increment(finalTotal) 
             });
         }
-        
+
+        // --- MISE À JOUR DE LA RENTABILITÉ DU CLIENT ---
+         if (clientId) {
+            batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", clientId), { 
+                totalAchats: increment(finalTotal), // Montant total dépensé
+                totalProfit: increment(profit)      // Bénéfice réel apporté
+            });
+        }    
+
         batch.set(saleRef, { items: state.saleCart, total: finalTotal, remise: discount, profit, date: serverTimestamp(), vendeurId: state.userId, type, clientId: clientId || null, clientName: clientName || null, deleted: false, isReturned: false });
         
         await batch.commit();
@@ -280,7 +283,10 @@ export function setupSalesPage() {
                     nom: document.getElementById('client-nom').value, 
                     telephone: document.getElementById('client-tel').value, 
                     adresse: document.getElementById('client-adresse') ? document.getElementById('client-adresse').value : "",
-                    dette: 0, createdAt: serverTimestamp(), deleted: false 
+                    dette: 0,
+                    totalAchats: 0, // Nouveau
+                    totalProfit: 0, // Nouveau
+                    createdAt: serverTimestamp(), deleted: false 
                 });
                 clientForm.reset();
                 document.getElementById('add-client-modal').classList.add('hidden');

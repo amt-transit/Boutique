@@ -911,10 +911,15 @@
                 <div class="flex-none space-y-4 mb-4">
                     <div class="flex justify-between items-center">
                         <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Clients & Crédits</h1>
-                        <button onclick="document.getElementById('add-client-modal').classList.remove('hidden')" 
-                                class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center shadow-sm font-medium transition">
-                            <i data-lucide="user-plus" class="w-5 h-5"></i> Nouveau Client
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="window.recalculateClientStats()" class="bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 border border-blue-200 dark:border-slate-600 px-3 py-2 rounded-lg flex items-center gap-2 shadow-sm font-bold transition text-xs sm:text-sm" title="Mettre à jour l'historique (Anciennes Ventes)">
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span class="hidden sm:inline">Sync Historique</span>
+                            </button>
+                            <button onclick="document.getElementById('add-client-modal').classList.remove('hidden')" 
+                                    class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center shadow-sm font-medium transition">
+                                <i data-lucide="user-plus" class="w-5 h-5"></i> Nouveau Client
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="flex flex-col md:flex-row gap-4">
@@ -923,11 +928,12 @@
                             <input type="text" id="credits-search" placeholder="Chercher un client..." class="w-full pl-10 p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-200">
                         </div>
                         <div class="w-full md:w-64">
-                            <select id="credits-sort" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none">
-                                <option value="name_asc">Nom (A-Z)</option>
-                                <option value="dette_desc">Dettes (Haute en haut)</option>
-                                <option value="depense">Meilleurs Acheteurs (Volume)</option>
-                                <option value="rentable">Plus Rentables (Bénéfice)</option>
+                            <select id="credits-sort" class="px-3 md:px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm">
+                                <option value="name_asc">Trier par Nom (A-Z)</option>
+                                <option value="dette_desc">Plus grandes dettes</option>
+                                <option value="depense">Meilleurs acheteurs (Total dépensé)</option>
+                                <option value="rentable">Plus rentables (Bénéfice apporté)</option>
+                                <option value="recent">Derniers ajoutés</option>
                             </select>
                         </div>
                     </div>
@@ -1479,12 +1485,21 @@
         <div class="bg-white p-6 rounded-xl w-full max-w-sm shadow-2xl">
             <h3 class="text-lg font-bold mb-4">Nouveau Client</h3>
             <form id="form-client" class="space-y-4">
-                <input type="text" id="client-nom" placeholder="Nom complet" class="w-full border p-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="tel" id="client-tel" placeholder="Téléphone (Ex: 0707...)" class="w-full border p-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
-                <input type="text" id="client-adresse" placeholder="Adresse ou Quartier" class="w-full border p-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="document.getElementById('add-client-modal').classList.add('hidden')" class="px-4 py-2 text-gray-500 font-bold">Annuler</button>
-                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg">Enregistrer</button>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nom complet *</label>
+                    <input type="text" id="client-nom" class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm font-medium" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Téléphone</label>
+                    <input type="tel" id="client-tel" class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Adresse ou Quartier</label>
+                    <input type="text" id="client-adresse" class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm font-medium">
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="document.getElementById('add-client-modal').classList.add('hidden')" class="px-5 py-3.5 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-sm">Annuler</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center gap-2 text-sm"><i data-lucide="save" class="w-4 h-4"></i> Enregistrer</button>
                 </div>
             </form>
         </div>

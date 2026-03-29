@@ -129,80 +129,74 @@ window.confirmValidateOrder = async () => {
     const orderId = document.getElementById('validate-order-id').value;
     const paymentMethod = document.getElementById('validate-order-payment').value;
     
-    try {
-        const orderDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
-        if(!orderDoc.exists()) return;
-        const order = orderDoc.data();
+    const order = state.allOrders.find(o => o.id === orderId);
+    if (!order) return;
 
+    try {
         const batch = writeBatch(db);
         
-        // --- LOGIQUE CRM AUTOMATIQUE ---
         let finalClientId = order.clientId || null;
-        
-        // Si la commande vient du web (possède un téléphone) et n'a pas encore d'ID client
+        let profitTotal = 0; 
+        order.items.forEach(i => { profitTotal += ((i.prixVente || 0) - (i.prixAchat || 0)) * i.qty; });
+
+        // --- INTELLIGENCE CRM : SYNC CATALOGUE -> CLIENTS ---
         if (order.telephone && !finalClientId) {
             const q = query(collection(db, "boutiques", state.currentBoutiqueId, "clients"), where("telephone", "==", order.telephone));
             const querySnapshot = await getDocs(q);
             
             if (!querySnapshot.empty) {
-                // Le client existe déjà avec ce numéro
                 finalClientId = querySnapshot.docs[0].id;
+                // Le client existe, on met à jour sa rentabilité
+                batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", finalClientId), {
+                    totalAchats: increment(order.total),
+                    totalProfit: increment(profitTotal)
+                });
             } else {
-                // Création d'un nouveau client automatiquement
+                // Création d'un nouveau profil VIP
                 const newClientRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "clients"));
                 batch.set(newClientRef, {
                     nom: order.client,
                     telephone: order.telephone,
                     adresse: order.adresse || "",
                     dette: 0,
+                    totalAchats: order.total,
+                    totalProfit: profitTotal,
                     createdAt: serverTimestamp(),
                     deleted: false,
-                    source: 'auto_catalog'
+                    source: 'catalogue_web'
                 });
                 finalClientId = newClientRef.id;
             }
+        } else if (finalClientId) {
+             batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", finalClientId), {
+                totalAchats: increment(order.total),
+                totalProfit: increment(profitTotal)
+            });
         }
-        // -------------------------------
+        // ----------------------------------------------------
 
+        // Créer la vente
         const saleRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
-        
-        let profit = 0;
-        const isStockAlreadyReserved = order.stockReserved === true || (order.stockReserved === undefined && !!order.vendeurId);
-
-        for(const item of order.items) {
-            profit += (item.prixVente - (item.prixAchat || 0)) * item.qty;
-            
-            const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
-            let updateData = { quantiteVendue: increment(item.qty) };
-            if (!isStockAlreadyReserved) {
-                updateData.stock = increment(-item.qty);
-            }
-            batch.update(pRef, updateData);
-        }
-
         batch.set(saleRef, {
-            items: order.items,
-            total: order.total,
-            profit: profit,
-            date: serverTimestamp(),
-            vendeurId: state.userId,
-            type: paymentMethod, // Mode de paiement dynamique !
-            clientName: order.client,
-            clientId: finalClientId,
-            remise: 0,
-            isReturned: false,
-            deleted: false
+            date: serverTimestamp(), items: order.items, total: order.total, profit: profitTotal, remise: 0, type: paymentMethod, 
+            clientId: finalClientId, clientName: order.client, vendeurId: state.userId, deleted: false, isReturned: false, source: 'catalogue_web'
         });
 
+        // Update stock & Delete Order
+        order.items.forEach(item => {
+            if (!order.stockReserved) {
+                const prodRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
+                batch.update(prodRef, { stock: increment(-item.qty) });
+            }
+        });
         batch.delete(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
 
         await batch.commit();
-        window.closeValidateOrderModal();
-        showToast("Commande encaissée et client synchronisé !", "success");
-
+        closeValidateOrderModal();
+        showToast("Commande validée et statistiques clients mises à jour !", "success");
     } catch (e) {
-        console.error(e);
-        showToast("Erreur validation", "error");
+        console.error("Erreur validation commande", e);
+        showToast("Erreur lors de la validation", "error");
     }
 };
 
