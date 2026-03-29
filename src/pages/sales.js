@@ -126,6 +126,13 @@ async function processSale(type, clientId, clientName) {
         if (type === 'credit' && clientId) {
             batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", clientId), { dette: increment(finalTotal) });
         }
+        // --- NOUVEAUTÉ : Mise à jour de la rentabilité ---
+        if (clientId) {
+            batch.update(doc(db, "boutiques", state.currentBoutiqueId, "clients", clientId), { 
+                totalAchats: increment(finalTotal), // Montant total dépensé
+                totalProfit: increment(profit)      // Bénéfice réel apporté à la boutique
+            });
+        }
         
         batch.set(saleRef, { items: state.saleCart, total: finalTotal, remise: discount, profit, date: serverTimestamp(), vendeurId: state.userId, type, clientId: clientId || null, clientName: clientName || null, deleted: false, isReturned: false });
         
@@ -177,11 +184,41 @@ export function setupSalesPage() {
             const p = { id: d.id, ...d.data() };
             if (!p.deleted && p.stock > 0) products.push(p);
         });
-        // Tri alphabétique
         products.sort((a,b) => (a.nomDisplay||"").localeCompare(b.nomDisplay||""));
         state.setAllProducts(products);
         renderProductGrid();
     });
+
+    // INJECTION DYNAMIQUE DU SÉLECTEUR DE CLIENT DANS LE PANIER
+    const cartControls = document.querySelector('#pos-section-cart .p-4.bg-gray-50');
+    if (cartControls && !document.getElementById('pos-client-select')) {
+        const selectDiv = document.createElement('div');
+        selectDiv.className = 'mb-3 pb-3 border-b border-gray-200 dark:border-slate-700';
+        selectDiv.innerHTML = `
+            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">Associer à un client (Optionnel)</label>
+            <select id="pos-client-select" class="w-full p-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition">
+                <option value="">-- Client de passage --</option>
+            </select>
+        `;
+        cartControls.insertBefore(selectDiv, cartControls.firstChild);
+        
+        // Alimenter le sélecteur en temps réel avec les clients
+        onSnapshot(collection(db, "boutiques", state.currentBoutiqueId, "clients"), (snap) => {
+            const posSelect = document.getElementById('pos-client-select');
+            if (posSelect) {
+                const currentVal = posSelect.value;
+                posSelect.innerHTML = '<option value="">-- Client de passage --</option>';
+                let clients = [];
+                snap.forEach(d => { if (!d.data().deleted) clients.push({id: d.id, nom: d.data().nom}); });
+                clients.sort((a, b) => a.nom.localeCompare(b.nom)).forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id; opt.textContent = c.nom;
+                    posSelect.appendChild(opt);
+                });
+                posSelect.value = currentVal;
+            }
+        });
+    }
 
     const searchInput = document.getElementById('sale-search');
     const btnCash = document.getElementById('btn-validate-cash');
@@ -193,13 +230,20 @@ export function setupSalesPage() {
     if (btnScan) btnScan.addEventListener('click', window.startScanner);
     if(dateDisplay) dateDisplay.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
     
-    searchInput.addEventListener('input', (e) => {
-        renderProductGrid(e.target.value);
-    });
+    searchInput.addEventListener('input', (e) => renderProductGrid(e.target.value));
 
+    // --- MODIFICATION : Prendre en compte le client sélectionné pour le CASH ---
     btnCash.addEventListener('click', () => { 
         if (state.saleCart.length === 0) return showToast("Vide", "error"); 
-        showConfirmModal("Confirmer l'encaissement", `Total à encaisser : ${document.getElementById('cart-total-display').textContent}`, () => processSale('cash', null, null)); 
+        
+        const posSelect = document.getElementById('pos-client-select');
+        const clientId = (posSelect && posSelect.value) ? posSelect.value : null;
+        const clientName = clientId ? posSelect.options[posSelect.selectedIndex].text : null;
+        
+        showConfirmModal("Confirmer l'encaissement", `Total à encaisser : ${document.getElementById('cart-total-display').textContent}`, () => {
+            processSale('cash', clientId, clientName);
+            if(posSelect) posSelect.value = ""; // Réinitialiser après vente
+        }); 
     });
     
     btnCredit.addEventListener('click', async () => { 
@@ -221,10 +265,12 @@ export function setupSalesPage() {
             if (!sel.value) return showToast("Client?", "error"); 
             document.getElementById('credit-sale-modal').classList.add('hidden'); 
             await processSale('credit', sel.value, sel.options[sel.selectedIndex]?.text); 
+            
+            const posSelect = document.getElementById('pos-client-select');
+            if(posSelect) posSelect.value = ""; // Réinitialiser après vente
         });
     }
 
-    // Handle quick add client form
     const clientForm = document.getElementById('form-client');
     if(clientForm) {
         clientForm.addEventListener('submit', async (e) => {
@@ -233,9 +279,8 @@ export function setupSalesPage() {
                 await setDoc(doc(collection(db, "boutiques", state.currentBoutiqueId, "clients")), { 
                     nom: document.getElementById('client-nom').value, 
                     telephone: document.getElementById('client-tel').value, 
-                    dette: 0, 
-                    createdAt: serverTimestamp(), 
-                    deleted: false 
+                    adresse: document.getElementById('client-adresse') ? document.getElementById('client-adresse').value : "",
+                    dette: 0, createdAt: serverTimestamp(), deleted: false 
                 });
                 clientForm.reset();
                 document.getElementById('add-client-modal').classList.add('hidden');
@@ -245,13 +290,10 @@ export function setupSalesPage() {
                     document.getElementById('credit-sale-modal').classList.remove('hidden');
                     isQuickAddMode = false;
                 }
-            } catch(e) {
-                showToast("Erreur", "error");
-            }
+            } catch(e) { showToast("Erreur", "error"); }
         });
     }
 
-    // Mobile Money Modal
     const btnMomo = document.getElementById('btn-open-momo-modal');
     const momoModal = document.getElementById('momo-modal');
     const momoNetBtns = document.querySelectorAll('.momo-net-btn');
@@ -286,7 +328,14 @@ export function setupSalesPage() {
 
             momoModal.classList.add('hidden');
             
-            await processSale('mobile_money', null, `Client ${network} (${phone})`);
+            // --- MODIFICATION : Prendre en compte le client sélectionné pour MOMO ---
+            const posSelect = document.getElementById('pos-client-select');
+            const clientId = (posSelect && posSelect.value) ? posSelect.value : null;
+            const baseClientName = clientId ? posSelect.options[posSelect.selectedIndex].text : "Client";
+            
+            await processSale('mobile_money', clientId, `${baseClientName} - ${network} (${phone})`);
+            
+            if(posSelect) posSelect.value = ""; // Réinitialiser après vente
         });
     }
 }

@@ -1,4 +1,4 @@
-import { db, onSnapshot, query, collection, where, doc, getDoc, writeBatch, increment, serverTimestamp } from '../firebase.js';
+import { db, onSnapshot, query, collection, where, doc, addDoc, getDoc, getDocs, writeBatch, increment, serverTimestamp } from '../firebase.js';
 import { showToast, formatPrice, showConfirmModal, formatWhatsAppNumber } from '../ui.js';
 import * as state from '../state.js';
 
@@ -127,9 +127,7 @@ window.closeValidateOrderModal = () => {
 
 window.confirmValidateOrder = async () => {
     const orderId = document.getElementById('validate-order-id').value;
-    const paymentType = document.getElementById('validate-order-payment').value;
-    
-    window.closeValidateOrderModal();
+    const paymentMethod = document.getElementById('validate-order-payment').value;
     
     try {
         const orderDoc = await getDoc(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
@@ -137,6 +135,35 @@ window.confirmValidateOrder = async () => {
         const order = orderDoc.data();
 
         const batch = writeBatch(db);
+        
+        // --- LOGIQUE CRM AUTOMATIQUE ---
+        let finalClientId = order.clientId || null;
+        
+        // Si la commande vient du web (possède un téléphone) et n'a pas encore d'ID client
+        if (order.telephone && !finalClientId) {
+            const q = query(collection(db, "boutiques", state.currentBoutiqueId, "clients"), where("telephone", "==", order.telephone));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                // Le client existe déjà avec ce numéro
+                finalClientId = querySnapshot.docs[0].id;
+            } else {
+                // Création d'un nouveau client automatiquement
+                const newClientRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "clients"));
+                batch.set(newClientRef, {
+                    nom: order.client,
+                    telephone: order.telephone,
+                    adresse: order.adresse || "",
+                    dette: 0,
+                    createdAt: serverTimestamp(),
+                    deleted: false,
+                    source: 'auto_catalog'
+                });
+                finalClientId = newClientRef.id;
+            }
+        }
+        // -------------------------------
+
         const saleRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "ventes"));
         
         let profit = 0;
@@ -159,9 +186,9 @@ window.confirmValidateOrder = async () => {
             profit: profit,
             date: serverTimestamp(),
             vendeurId: state.userId,
-            type: paymentType, // Mode de paiement dynamique !
+            type: paymentMethod, // Mode de paiement dynamique !
             clientName: order.client,
-            clientId: null,
+            clientId: finalClientId,
             remise: 0,
             isReturned: false,
             deleted: false
@@ -170,7 +197,8 @@ window.confirmValidateOrder = async () => {
         batch.delete(doc(db, "boutiques", state.currentBoutiqueId, "commandes", orderId));
 
         await batch.commit();
-        showToast("Vente encaissée avec succès !", "success");
+        window.closeValidateOrderModal();
+        showToast("Commande encaissée et client synchronisé !", "success");
 
     } catch (e) {
         console.error(e);
