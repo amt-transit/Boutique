@@ -281,6 +281,12 @@
                         <span class="text-[11px] font-bold">Aide (Descriptifs)</span>
                         <input type="checkbox" id="desktop-tooltip-toggle" class="w-4 h-4 rounded text-blue-600 cursor-pointer">
                     </label>
+                    <button onclick="document.getElementById('guide-modal').classList.remove('hidden'); if(window.lucide) lucide.createIcons();" class="w-full flex items-center justify-between text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition focus:outline-none group mt-2 bg-blue-50/50 dark:bg-blue-900/30 p-2 rounded-lg border border-blue-100 dark:border-blue-800" data-desc="Consulter le guide rapide pour démarrer avec l'application">
+                        <span class="text-xs font-bold">Guide d'utilisation</span>
+                        <div class="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-gray-100 dark:border-slate-700 group-hover:shadow transition">
+                            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </button>
                     <button id="btn-install-app" class="hidden w-full items-center justify-between text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition focus:outline-none group mt-2 bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg border border-blue-100 dark:border-blue-800" data-desc="Installer l'application sur cet appareil">
                         <span class="text-xs font-bold">Installer l'App</span>
                         <div class="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-gray-100 dark:border-slate-700 group-hover:shadow transition">
@@ -363,6 +369,10 @@
                         </div>
                         <input type="checkbox" id="mobile-tooltip-toggle" class="w-5 h-5 rounded text-blue-600 cursor-pointer">
                     </label>
+                    <button onclick="document.getElementById('guide-modal').classList.remove('hidden'); if(window.closeHamburgerMenu) closeHamburgerMenu(); if(window.lucide) lucide.createIcons();" class="drawer-tab text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 mb-2">
+                        <i data-lucide="book-open"></i>
+                        <span>Guide d'utilisation</span>
+                    </button>
                     <button id="btn-install-app-mobile" class="hidden drawer-tab text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800" data-desc="Installer l'application sur votre appareil">
                         <i data-lucide="download"></i>
                         <span>Installer l'application</span>
