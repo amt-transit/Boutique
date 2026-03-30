@@ -1,5 +1,5 @@
 // src/admin/main.js
-import { db, collection, getDocs, doc, setDoc, serverTimestamp, updateDoc, addDoc, query, where, getAuth, deleteApp, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, initializeApp } from '../firebase.js';
+import { db, collection, getDocs, doc, setDoc, serverTimestamp, updateDoc, addDoc, query, where, getAuth, deleteApp, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, initializeApp, deleteDoc } from '../firebase.js';
 import { showToast, showTab, hideTab, switchTab, showConfirmModal } from '../ui.js';
 import * as state from '../state.js';
 import { firebaseConfig } from '../firebase.js'; // Need the config for secondary app
@@ -314,6 +314,18 @@ export async function setupAdminAccessPage() {
     let allUsers = [];
     usersSnap.forEach(d => allUsers.push({id: d.id, ...d.data()}));
 
+    const deleteUserAccount = (userId) => {
+        showConfirmModal("Supprimer l'utilisateur", "Voulez-vous vraiment supprimer cet utilisateur ? Son accès à l'application sera révoqué.", async () => {
+            try {
+                await deleteDoc(doc(db, "users", userId));
+                showToast("Utilisateur supprimé !", "success");
+                setupAdminAccessPage(); // Rafraîchit la liste
+            } catch (e) {
+                showToast("Erreur: " + e.message, "error");
+            }
+        });
+    };
+
     const render = (filter = '') => {
         listContainer.innerHTML = ''; 
         const term = filter.toLowerCase();
@@ -348,6 +360,7 @@ export async function setupAdminAccessPage() {
                 </td>
                 <td class="p-3 text-right">
                     <button data-email="${u.email}" class="js-reset-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold border border-gray-300 mr-2" title="Envoyer un email pour changer le mot de passe">📧 Reset Pass</button>
+                    <button data-id="${u.id}" class="js-delete-user-btn bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold border border-red-200" title="Supprimer l'utilisateur"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </td>
             `;
             listContainer.appendChild(tr);
@@ -355,6 +368,10 @@ export async function setupAdminAccessPage() {
         
         listContainer.querySelectorAll('.js-reset-btn').forEach(btn => {
             btn.addEventListener('click', () => sendResetMail(btn.dataset.email));
+        });
+
+        listContainer.querySelectorAll('.js-delete-user-btn').forEach(btn => {
+            btn.addEventListener('click', () => deleteUserAccount(btn.dataset.id));
         });
 
         // Gestionnaire pour afficher/masquer le mot de passe dans le tableau

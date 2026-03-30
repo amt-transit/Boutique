@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boutique en ligne</title>
-    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2563eb">
-    <link rel="stylesheet" href="dist/final.css">
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="dist/final.css?v=5">
+    <link rel="stylesheet" href="style.css?v=5">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <link rel="icon" href="favico.png">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -422,6 +421,39 @@
                     banner.classList.remove('hidden');
                 }
 
+                // --- GÉNÉRATION DYNAMIQUE DE LA PWA (MANIFEST) ---
+                const dynamicManifest = {
+                    name: shopData.nom,
+                    short_name: shopData.nom.substring(0, 12), // Nom court pour l'écran d'accueil
+                    description: `Catalogue en ligne de ${shopData.nom}`,
+                    start_url: `./catalogue.html?id=${boutiqueId}`, // Ouvre directement CETTE boutique
+                    display: "standalone",
+                    background_color: "#e0f2fe",
+                    theme_color: "#2563eb",
+                    icons: [
+                        {
+                            src: shopData.logo || "favico.png",
+                            sizes: "192x192",
+                            type: "image/png",
+                            purpose: "any maskable"
+                        },
+                        {
+                            src: shopData.logo || "favico.png",
+                            sizes: "512x512",
+                            type: "image/png",
+                            purpose: "any maskable"
+                        }
+                    ]
+                };
+
+                const manifestBlob = new Blob([JSON.stringify(dynamicManifest)], { type: 'application/json' });
+                const manifestUrl = URL.createObjectURL(manifestBlob);
+                const manifestLink = document.createElement('link');
+                manifestLink.rel = 'manifest';
+                manifestLink.href = manifestUrl;
+                document.head.appendChild(manifestLink);
+                // -------------------------------------------------
+
                 const productsSnap = await getDocs(collection(db, "boutiques", boutiqueId, "products"));
                 productsSnap.forEach(d => {
                     const p = { id: d.id, ...d.data() };
@@ -571,7 +603,9 @@
                             <span class="font-extrabold text-slate-900 text-base md:text-lg tracking-tight leading-none">${formatPrice(p.prixVente)}</span>
                             ${isOos 
                                 ? `<div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-100 flex items-center justify-center cursor-not-allowed"><i data-lucide="minus" class="w-4 h-4 text-slate-400"></i></div>`
-                                : `<button onclick="event.stopPropagation(); addToCart('${p.id}', this)" class="w-8 h-8 md:w-10 md:h-10 flex-shrink-0 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all duration-300 group/btn border border-slate-100 hover:border-slate-900 shadow-sm"><i data-lucide="plus" class="w-4 h-4 md:w-5 md:h-5 group-hover/btn:scale-110 transition-transform"></i></button>`
+                                : (p.variants && p.variants.length > 0 
+                                    ? `<button onclick="event.stopPropagation(); openProductDetails('${p.id}')" class="w-8 h-8 md:w-10 md:h-10 flex-shrink-0 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 group/btn border border-blue-100 shadow-sm" title="Choisir une option"><i data-lucide="list-plus" class="w-4 h-4 md:w-5 md:h-5 group-hover/btn:scale-110 transition-transform"></i></button>`
+                                    : `<button onclick="event.stopPropagation(); addToCart('${p.id}', this)" class="w-8 h-8 md:w-10 md:h-10 flex-shrink-0 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all duration-300 group/btn border border-slate-100 hover:border-slate-900 shadow-sm"><i data-lucide="plus" class="w-4 h-4 md:w-5 md:h-5 group-hover/btn:scale-110 transition-transform"></i></button>`)
                             }
                         </div>
                     </div>
@@ -604,10 +638,30 @@
             }
 
             const btnContainer = document.getElementById('modal-btn-container');
-            if (p.stock <= 0) {
+            let variantsHtml = '';
+            let hasAvailableStock = p.stock > 0;
+            
+            if (p.variants && p.variants.length > 0) {
+                const availableVariants = p.variants.filter(v => (v.qte || v.stock) > 0);
+                hasAvailableStock = availableVariants.length > 0;
+                
+                if (hasAvailableStock) {
+                    variantsHtml = `
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Options disponibles :</label>
+                            <select id="modal-variant-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 font-medium text-slate-700">
+                                ${availableVariants.map(v => `<option value="${v.nom}">${v.nom} (Reste ${v.qte || v.stock})</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                }
+            }
+
+            if (!hasAvailableStock) {
                 btnContainer.innerHTML = `<button disabled class="w-full bg-slate-100 text-slate-400 font-bold py-4 rounded-2xl text-[14px] md:text-[15px] cursor-not-allowed">Épuisé</button>`;
             } else {
                 btnContainer.innerHTML = `
+                    ${variantsHtml}
                     <button onclick="addToCart('${p.id}', this); setTimeout(closeProductDetails, 400);" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.1)] flex justify-center items-center gap-2 transition-all active:scale-[0.98] text-[14px] md:text-[15px]">
                         <i data-lucide="shopping-bag" class="w-5 h-5"></i> Ajouter au panier
                     </button>
@@ -626,12 +680,32 @@
         window.addToCart = (id, btnElement = null) => {
             const p = allProducts.find(x => x.id === id);
             if(!p) return;
-            const existing = cart.find(item => item.id === id);
+            
+            let selectedVariant = null;
+            if (p.variants && p.variants.length > 0) {
+                const selectEl = document.getElementById('modal-variant-select');
+                if (selectEl) {
+                    selectedVariant = selectEl.value;
+                } else {
+                    openProductDetails(id);
+                    return;
+                }
+            }
+            
+            const cartItemId = selectedVariant ? `${id}_${selectedVariant}` : id;
+            const existing = cart.find(item => item.cartItemId === cartItemId);
+            
+            let maxStock = p.stock;
+            if (selectedVariant) {
+                const v = p.variants.find(v => v.nom === selectedVariant);
+                if (v) maxStock = v.qte || v.stock || 0;
+            }
+
             if (existing) {
-                if (existing.qty < p.stock) existing.qty++;
-                else return showToast("Stock maximum atteint");
+                if (existing.qty < maxStock) existing.qty++;
+                else return showToast("Stock maximum atteint pour cette option");
             } else {
-                cart.push({ ...p, qty: 1 });
+                cart.push({ ...p, qty: 1, variant: selectedVariant, cartItemId: cartItemId });
             }
             
             if (btnElement && btnElement.tagName.toLowerCase() === 'button') {
@@ -656,7 +730,12 @@
         window.updateQty = (index, delta) => {
             const item = cart[index];
             const p = allProducts.find(x => x.id === item.id);
-            if (delta > 0 && item.qty >= p.stock) return showToast("Stock max atteint");
+            let maxStock = p.stock;
+            if (item.variant && p.variants) {
+                const v = p.variants.find(v => v.nom === item.variant);
+                if (v) maxStock = v.qte || v.stock || 0;
+            }
+            if (delta > 0 && item.qty >= maxStock) return showToast("Stock max atteint");
             item.qty += delta;
             if (item.qty <= 0) cart.splice(index, 1);
             saveCart();
@@ -699,7 +778,7 @@
                 return `
                 <div class="flex justify-between items-center p-3 md:p-4 bg-white hover:bg-slate-50 rounded-2xl border border-slate-100 transition-colors mb-2">
                     <div class="flex-1 pr-3">
-                        <div class="font-bold text-[13px] md:text-[14px] text-slate-800 line-clamp-1 mb-1">${i.nomDisplay}</div>
+                        <div class="font-bold text-[13px] md:text-[14px] text-slate-800 line-clamp-1 mb-1">${i.nomDisplay} ${i.variant ? `<span class="text-blue-500 font-normal ml-1">(${i.variant})</span>` : ''}</div>
                         <div class="text-[12px] md:text-[13px] text-slate-500 font-semibold">${formatPrice(i.prixVente)}</div>
                     </div>
                     <div class="flex items-center gap-2 md:gap-3 bg-slate-100/50 p-1 rounded-full border border-slate-200/60">
@@ -809,7 +888,7 @@
                     whatsappText += `💳 Paiement : ${commande.paymentMethod}\n`;
                     whatsappText += `----------------\n`;
                     cart.forEach(i => {
-                        whatsappText += `${i.qty}x ${i.nomDisplay} : ${formatPrice(i.prixVente * i.qty)}\n`;
+                        whatsappText += `${i.qty}x ${i.nomDisplay}${i.variant ? ` (${i.variant})` : ''} : ${formatPrice(i.prixVente * i.qty)}\n`;
                     });
                     whatsappText += `----------------\n`;
                     whatsappText += `💰 *TOTAL : ${formatPrice(total)}*\n`;
@@ -820,7 +899,7 @@
                     showToast("Commande validée !");
                 }
 
-                let detailsHtml = cart.map(i => `<div class="flex justify-between items-start gap-2"><span class="text-slate-600">${i.qty}x ${i.nomDisplay}</span><span class="text-right text-slate-900 font-bold whitespace-nowrap">${formatPrice(i.prixVente * i.qty)}</span></div>`).join('');
+                let detailsHtml = cart.map(i => `<div class="flex justify-between items-start gap-2"><span class="text-slate-600">${i.qty}x ${i.nomDisplay}${i.variant ? ` (${i.variant})` : ''}</span><span class="text-right text-slate-900 font-bold whitespace-nowrap">${formatPrice(i.prixVente * i.qty)}</span></div>`).join('');
                 document.getElementById('success-order-details').innerHTML = detailsHtml;
                 document.getElementById('success-order-total').textContent = formatPrice(total);
                 document.getElementById('success-modal').classList.remove('hidden');
@@ -829,7 +908,7 @@
                 const shopNameTitle = document.getElementById('shop-name').textContent;
                 let printItemsHtml = cart.map(i => `
                     <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
-                        <span>${i.qty}x ${i.nomDisplay}</span>
+                        <span>${i.qty}x ${i.nomDisplay}${i.variant ? ` (${i.variant})` : ''}</span>
                         <span style="font-weight: bold;">${formatPrice(i.prixVente * i.qty)}</span>
                     </div>
                 `);

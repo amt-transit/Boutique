@@ -40,8 +40,8 @@ function showInvoiceModal(items, total, discount, type, clientName) {
     receiptText += `----------------\n`;
     let itemsHtml = "";
     items.forEach(i => { 
-        receiptText += `${i.qty}x ${i.nomDisplay}: ${formatPrice(i.prixVente*i.qty)}\n`; 
-        itemsHtml += `<div class="flex justify-between"><span>${i.qty}x ${i.nomDisplay}</span><span>${formatPrice(i.prixVente*i.qty)}</span></div>`; 
+        receiptText += `${i.qty}x ${i.nomDisplay}${i.variant ? ` (${i.variant})` : ''}: ${formatPrice(i.prixVente*i.qty)}\n`; 
+        itemsHtml += `<div class="flex justify-between"><span>${i.qty}x ${i.nomDisplay}${i.variant ? ` <span class="text-xs text-gray-500">(${i.variant})</span>` : ''}</span><span>${formatPrice(i.prixVente*i.qty)}</span></div>`; 
     });
     if (discount > 0) {
         receiptText += `🎁 Remise: -${formatPrice(discount)}\n`;
@@ -77,7 +77,7 @@ function showInvoiceModal(items, total, discount, type, clientName) {
                             ${items.map(i => `
                                 <tr>
                                     <td class="col-qty">${i.qty}</td>
-                                    <td>${i.nomDisplay}</td>
+                                    <td>${i.nomDisplay}${i.variant ? ` (${i.variant})` : ''}</td>
                                     <td class="col-price">${formatPrice(i.prixVente * i.qty)}</td>
                                 </tr>
                             `).join('')}
@@ -117,7 +117,21 @@ async function processSale(type, clientId, clientName) {
             rawTotal += item.prixVente * item.qty;
             profit += (item.prixVente - (item.prixAchat || 0)) * item.qty;
             const pRef = doc(db, "boutiques", state.currentBoutiqueId, "products", item.id);
-            batch.update(pRef, { stock: increment(-item.qty), quantiteVendue: increment(item.qty) });
+            
+            const prodInState = state.allProducts.find(p => p.id === item.id);
+            if (item.variant && prodInState && prodInState.variants) {
+                let updatedVariants = [...prodInState.variants];
+                let vIndex = updatedVariants.findIndex(v => v.nom === item.variant);
+                if (vIndex !== -1) {
+                    updatedVariants[vIndex].qte = Math.max(0, (updatedVariants[vIndex].qte || updatedVariants[vIndex].stock || 0) - item.qty);
+                    updatedVariants[vIndex].stock = updatedVariants[vIndex].qte;
+                    batch.update(pRef, { stock: increment(-item.qty), quantiteVendue: increment(item.qty), variants: updatedVariants });
+                } else {
+                    batch.update(pRef, { stock: increment(-item.qty), quantiteVendue: increment(item.qty) });
+                }
+            } else {
+                batch.update(pRef, { stock: increment(-item.qty), quantiteVendue: increment(item.qty) });
+            }
         }
         
         const finalTotal = Math.max(0, rawTotal - discount);
@@ -383,24 +397,89 @@ export function renderProductGrid(searchTerm = "") {
     }).join('');
 }
 
-window.addToCartById = (id) => {
+window.addToCartById = (id, variantName = null) => {
     const p = state.allProducts.find(x => x.id === id);
-    if(p) {
-        if (state.addToCart(p)) {
-            renderCart();
-            // Animation du badge mobile et notification
-            const badge = document.getElementById('mobile-cart-count');
-            if (badge) {
-                badge.classList.remove('scale-100');
-                badge.classList.add('scale-125');
-                setTimeout(() => badge.classList.remove('scale-125'), 200);
-            }
-            // Afficher une petite notif native uniquement sur mobile pour rassurer l'utilisateur
-            if (window.innerWidth < 1024) showToast(`${p.nomDisplay} ajouté au panier`, "success");
-        } else {
-            showToast("Stock insuffisant !", "warning");
-        }
+    if(!p) return;
+
+    if (!variantName && p.variants && p.variants.length > 0) {
+        window.promptVariantSelection(id);
+        return;
     }
+
+    let maxStock = p.stock;
+    if (variantName) {
+        const v = p.variants.find(v => v.nom === variantName);
+        if (v) maxStock = v.qte || v.stock || 0;
+    }
+
+    if (maxStock <= 0) {
+        return showToast("Stock épuisé pour cette option", "warning");
+    }
+
+    const cartItemId = variantName ? `${id}_${variantName}` : id;
+    const existingItem = state.saleCart.find(item => (item.cartItemId || item.id) === cartItemId);
+    
+    if (existingItem) {
+        if (existingItem.qty >= maxStock) {
+            return showToast("Stock maximum atteint pour cette option", "warning");
+        }
+        existingItem.qty++;
+    } else {
+        state.saleCart.push({ ...p, qty: 1, variant: variantName, cartItemId: cartItemId, basePrice: p.prixVente, addedAt: new Date() });
+    }
+    
+    renderCart();
+    
+    const badge = document.getElementById('mobile-cart-count');
+    if (badge) {
+        badge.classList.remove('scale-100');
+        badge.classList.add('scale-125');
+        setTimeout(() => badge.classList.remove('scale-125'), 200);
+    }
+    if (window.innerWidth < 1024) showToast(`${p.nomDisplay} ajouté au panier`, "success");
+};
+
+window.promptVariantSelection = (productId) => {
+    const p = state.allProducts.find(x => x.id === productId);
+    if (!p || !p.variants || p.variants.length === 0) return;
+
+    const availableVariants = p.variants.filter(v => (v.qte || v.stock) > 0);
+    if (availableVariants.length === 0) return showToast("Toutes les options sont épuisées", "error");
+
+    let modal = document.getElementById('variant-sale-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'variant-sale-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 hidden flex-col items-center justify-center z-[300] p-4 backdrop-blur-sm';
+        document.body.appendChild(modal);
+    }
+
+    let optionsHtml = availableVariants.map(v => 
+        `<button class="w-full text-left p-4 bg-gray-50 hover:bg-blue-50 border rounded-xl font-bold text-gray-800 transition mb-2" onclick="confirmVariantSale('${p.id}', '${v.nom.replace(/'/g, "\\'")}')">
+            ${v.nom} <span class="text-xs text-gray-500 font-normal float-right">Reste ${v.qte || v.stock}</span>
+        </button>`
+    ).join('');
+
+    modal.innerHTML = `
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in-up">
+            <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-3">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white">Choisir une option</h3>
+                <button onclick="document.getElementById('variant-sale-modal').classList.add('hidden')" class="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="mb-4 text-sm font-bold text-blue-600">${p.nomDisplay}</div>
+            <div class="max-h-60 overflow-y-auto">
+                ${optionsHtml}
+            </div>
+        </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+};
+
+window.confirmVariantSale = (productId, variantName) => {
+    document.getElementById('variant-sale-modal').classList.add('hidden');
+    window.addToCartById(productId, variantName);
 };
 
 export function renderCart() {
@@ -438,7 +517,7 @@ export function renderCart() {
     
     tb.innerHTML = state.saleCart.map((i, x) => {
         return `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-            <td class="p-2 border-b dark:border-slate-700"><div class="font-extrabold text-sm text-gray-900 dark:text-gray-100 leading-tight">${i.nomDisplay}</div><div class="text-[10px] text-blue-600 font-bold cursor-pointer inline-flex items-center gap-1 hover:text-blue-800 uppercase tracking-wide mt-0.5" onclick="promptEditPrice(${x})" title="Modifier le prix de cet article">${formatPrice(i.prixVente)}/u <i data-lucide="edit-2" class="w-3 h-3"></i></div></td>
+            <td class="p-2 border-b dark:border-slate-700"><div class="font-extrabold text-sm text-gray-900 dark:text-gray-100 leading-tight">${i.nomDisplay} ${i.variant ? `<span class="text-blue-500 font-normal ml-1">(${i.variant})</span>` : ''}</div><div class="text-[10px] text-blue-600 font-bold cursor-pointer inline-flex items-center gap-1 hover:text-blue-800 uppercase tracking-wide mt-0.5" onclick="promptEditPrice(${x})" title="Modifier le prix de cet article">${formatPrice(i.prixVente)}/u <i data-lucide="edit-2" class="w-3 h-3"></i></div></td>
             <td class="p-2 border-b dark:border-slate-700 text-center"><div class="flex justify-center items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded p-1"><button onclick="updateQty(${x}, -1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">-</button><span class="w-6 font-extrabold text-sm text-center dark:text-white">${i.qty}</span><button onclick="updateQty(${x}, 1)" class="w-6 h-6 bg-white dark:bg-slate-700 rounded shadow-sm text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center">+</button></div></td>
             <td class="p-2 border-b dark:border-slate-700 text-right font-extrabold text-blue-600 dark:text-blue-400 text-sm">${formatPrice(i.prixVente * i.qty)}</td>
             <td class="p-2 border-b dark:border-slate-700 text-right"><button onclick="removeItemFromCart(${x})" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-4 h-4"></i></button></td>
@@ -477,11 +556,24 @@ window.updateItemPrice = (index, value) => {
 };
 
 window.updateQty = (index, delta) => {
-    if (state.updateCartItemQty(index, delta)) {
-        renderCart();
-    } else {
-        showToast("Stock maximum atteint", "error");
+    const item = state.saleCart[index];
+    if (!item) return;
+
+    const product = state.allProducts.find(p => p.id === item.id);
+    let maxStock = product ? product.stock : 0;
+    
+    if (item.variant && product && product.variants) {
+        const v = product.variants.find(v => v.nom === item.variant);
+        if (v) maxStock = v.qte || v.stock || 0;
     }
+
+    if (delta > 0 && item.qty >= maxStock) {
+        return showToast("Stock maximum atteint pour cette option", "warning");
+    }
+
+    item.qty += delta;
+    if (item.qty <= 0) state.saleCart.splice(index, 1);
+    renderCart();
 };
 
 window.removeItemFromCart = (index) => {

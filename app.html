@@ -14,9 +14,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
     <link rel="stylesheet" href="print.css" media="print">
-    <link rel="stylesheet" href="dist/final.css">
+    <link rel="stylesheet" href="dist/final.css?v=5">
     
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> 
@@ -716,16 +716,17 @@
             <div id="page-commandes" class="page-content hidden h-full flex flex-col p-4 md:p-6">
     
                 <div class="flex-none mb-6">
-                    <h1 class="text-2xl font-extrabold mb-4 text-gray-900 dark:text-white">Commandes en cours</h1>
-                    
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-indigo-500 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div>
-                            <h3 class="font-bold text-gray-700 text-sm">Nouvelle Réservation</h3>
-                            <p class="text-xs text-gray-500">Remplissez le panier dans l'onglet "Vente" puis cliquez ici.</p>
-                        </div>
-                        <button onclick="saveCartAsOrder()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow transition text-sm">
-                            <i data-lucide="save" class="w-4 h-4"></i> Enregistrer le Panier comme Commande
+                    <div class="flex justify-between items-center mb-4">
+                        <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Commandes</h1>
+                        <button onclick="saveCartAsOrder()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 shadow transition text-sm">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Créer
                         </button>
+                    </div>
+                    
+                    <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar" id="orders-filter-tabs">
+                        <button onclick="setOrderFilter('en_attente')" id="tab-en_attente" class="px-4 py-2 rounded-full font-bold bg-slate-900 text-white shadow-md transition whitespace-nowrap flex items-center gap-2">Nouvelles <span id="badge-nouvelles" class="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] hidden">0</span></button>
+                        <button onclick="setOrderFilter('en_preparation')" id="tab-en_preparation" class="px-4 py-2 rounded-full font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition whitespace-nowrap flex items-center gap-2">En préparation <span id="badge-prepa" class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-[10px] hidden">0</span></button>
+                        <button onclick="setOrderFilter('en_route')" id="tab-en_route" class="px-4 py-2 rounded-full font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition whitespace-nowrap flex items-center gap-2">En route <span id="badge-route" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[10px] hidden">0</span></button>
                     </div>
                 </div>
 
@@ -1601,6 +1602,30 @@
                 <div class="flex justify-end gap-3 pt-2">
                     <button onclick="closeValidateOrderModal()" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition">Annuler</button>
                     <button onclick="confirmValidateOrder()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow transition">Valider</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale de Livreur (Expédition) -->
+    <div id="delivery-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[400] p-4 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i data-lucide="truck" class="text-blue-500"></i> Assigner un livreur
+            </h3>
+            <div class="space-y-4">
+                <input type="hidden" id="delivery-order-id">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nom du livreur / Société</label>
+                    <input type="text" id="delivery-person-name" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 text-sm font-bold bg-gray-50" placeholder="Ex: Yango, Momo, Chauffeur Interne...">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Téléphone (Optionnel)</label>
+                    <input type="tel" id="delivery-person-tel" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 text-sm font-bold bg-gray-50" placeholder="Ex: 0707...">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button onclick="document.getElementById('delivery-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition">Annuler</button>
+                    <button onclick="confirmExpedition()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow transition">Expédier</button>
                 </div>
             </div>
         </div>

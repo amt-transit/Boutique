@@ -226,38 +226,37 @@ export function setupStockManagement() {
                 }
 
                 const batch = writeBatch(db);
-                let productsToCreate = [];
+                let variantsArray = [];
+                let totalStock = parseInt(document.getElementById('prod-qte').value) || 0;
 
                 if (isVariantMode) {
+                    totalStock = 0;
                     const rows = document.querySelectorAll('.variant-row');
                     rows.forEach(row => {
                         const vNom = row.querySelector('.var-nom').value.trim();
                         if(vNom) {
-                            const fullName = `${nomBaseBrut} - ${vNom}`;
-                            productsToCreate.push({
-                                nomBrut: fullName,
-                                nom: fullName.toLowerCase(),
+                            const vQte = parseInt(row.querySelector('.var-qte').value) || 0;
+                            totalStock += vQte;
+                            variantsArray.push({
+                                nom: vNom,
                                 codeBarre: row.querySelector('.var-code').value.trim(),
-                                qte: parseInt(row.querySelector('.var-qte').value) || 0,
-                                isVariant: true,
-                                parentName: nomBaseBrut,
-                                image: finalImageUrl
+                                qte: vQte,
+                                stock: vQte // Sauvegarde additionnelle pour la compatibilité
                             });
                         }
                     });
-                } else {
-                    productsToCreate.push({
-                        nomBrut: nomBaseBrut,
-                        nom: nomBaseBrut.toLowerCase(),
-                        codeBarre: document.getElementById('prod-code').value.trim(),
-                        qte: parseInt(document.getElementById('prod-qte').value) || 0,
-                        isVariant: false,
-                        parentName: null,
-                        image: finalImageUrl,
-                        categorie: categorie,
-                        description: description
-                    });
                 }
+
+                let productsToCreate = [{
+                    nomBrut: nomBaseBrut,
+                    nom: nomBaseBrut.toLowerCase(),
+                    codeBarre: document.getElementById('prod-code').value.trim(),
+                    qte: totalStock,
+                    variants: variantsArray,
+                    image: finalImageUrl,
+                    categorie: categorie,
+                    description: description
+                }];
 
                 for (const item of productsToCreate) {
                     let existingByCode = null;
@@ -279,12 +278,28 @@ export function setupStockManagement() {
                             const ref = doc(db, "boutiques", state.currentBoutiqueId, "products", productId);
                             let updateData = { stock: increment(item.qte), prixAchat: pAchat, prixVente: pVente, codeBarre: item.codeBarre || existingData.codeBarre, lastRestock: serverTimestamp() };
                             if (item.image) updateData.image = item.image;
+                            
+                            if (item.variants && item.variants.length > 0) {
+                                let updatedVariants = existingData.variants ? [...existingData.variants] : [];
+                                item.variants.forEach(newVar => {
+                                    let ev = updatedVariants.find(v => v.nom === newVar.nom);
+                                    if (ev) {
+                                        ev.qte = (ev.qte || ev.stock || 0) + newVar.qte;
+                                        ev.stock = ev.qte;
+                                        if (newVar.codeBarre) ev.codeBarre = newVar.codeBarre;
+                                    } else {
+                                        updatedVariants.push(newVar);
+                                    }
+                                });
+                                updateData.variants = updatedVariants;
+                            }
+                            
                             batch.update(ref, updateData);
                         }
                     } else {
                         const newRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "products"));
                         productId = newRef.id;
-                        batch.set(newRef, { nom: item.nom, nomDisplay: item.nomBrut, codeBarre: item.codeBarre, prixVente: pVente, prixAchat: pAchat, stock: item.qte, quantiteVendue: 0, isVariant: item.isVariant, parentName: item.parentName, image: item.image || null, createdAt: serverTimestamp(), deleted: false, categorie: item.categorie, description: item.description });
+                        batch.set(newRef, { nom: item.nom, nomDisplay: item.nomBrut, codeBarre: item.codeBarre, prixVente: pVente, prixAchat: pAchat, stock: item.qte, variants: item.variants, quantiteVendue: 0, image: item.image || null, createdAt: serverTimestamp(), deleted: false, categorie: item.categorie, description: item.description });
                     }
                     
                     if (item.qte > 0 && productId) {
@@ -417,7 +432,7 @@ function renderStockTable() {
         const deleteBtn = (state.userRole === 'admin' && !p.deleted) ? `<button class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900 p-2 rounded-lg transition shadow-sm" onclick="event.stopPropagation(); deleteProduct('${p.id}')" title="Archiver"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
 
         let statusBadge = p.discontinued ? '<span class="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-[9px] font-bold border border-gray-300 ml-1">⛔ Fin</span>' : "";
-        let variantBadge = p.isVariant ? '<span class="bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded text-[9px] font-bold ml-1 uppercase tracking-wide">Var.</span>' : '';
+        let variantBadge = (p.variants && p.variants.length > 0) ? '<span class="bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded text-[9px] font-bold ml-1 uppercase tracking-wide">Variantes</span>' : '';
 
         const colors = ['bg-red-100 text-red-600', 'bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-purple-100 text-purple-600', 'bg-orange-100 text-orange-600', 'bg-teal-100 text-teal-600'];
         let visualElementList = '';
