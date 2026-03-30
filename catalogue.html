@@ -31,11 +31,12 @@
             body > *:not(#printable-receipt) { display: none !important; }
             #printable-receipt { display: block !important; background: white; color: black; }
         }
-        
-        /* Classe manuelle pour forcer l'affichage de l'erreur */
-        .input-error {
-            border-color: #ef4444 !important;
+        /* Classe manuelle pour forcer l'erreur (Contourne le conflit avec style.css) */
+        input.input-error, select.input-error {
+            border: 2px solid #ef4444 !important;
             box-shadow: 0 0 0 4px #fee2e2 !important;
+            background-color: #fef2f2 !important;
+            transition: all 0.2s ease-in-out !important;
         }
     </style>
 </head>
@@ -736,9 +737,21 @@
 
             let isValid = true;
             // Validation des champs et affichage des bordures rouges
-            if (!nameInput.value.trim()) { nameInput.classList.remove('border-slate-200'); nameInput.classList.add('input-error'); isValid = false; }
-            if (!telInput.value.trim()) { telInput.classList.remove('border-slate-200'); telInput.classList.add('input-error'); isValid = false; }
-            if (!paymentInput.value) { paymentInput.classList.remove('border-slate-200'); paymentInput.classList.add('input-error'); isValid = false; }
+            if (!nameInput.value.trim()) { 
+                nameInput.classList.remove('border-slate-200'); 
+                nameInput.classList.add('input-error'); 
+                isValid = false; 
+            }
+            if (!telInput.value.trim()) { 
+                telInput.classList.remove('border-slate-200'); 
+                telInput.classList.add('input-error'); 
+                isValid = false; 
+            }
+            if (!paymentInput.value) { 
+                paymentInput.classList.remove('border-slate-200'); 
+                paymentInput.classList.add('input-error'); 
+                isValid = false; 
+            }
             
             if (!isValid) return showToast("Veuillez remplir les champs encadrés en rouge");
 
