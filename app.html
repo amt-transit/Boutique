@@ -1162,7 +1162,7 @@
                         </button>
                     </div>
 
-                    <div class="bg-yellow-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
+                    <div onclick="window.openAdminLogsModal()" class="bg-yellow-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1 cursor-pointer">
                         <div class="p-5">
                             <h3 class="text-4xl font-extrabold" id="admin-stat-logs">0</h3>
                             <p class="font-semibold text-yellow-100">Actions Administratives</p>
@@ -1170,9 +1170,9 @@
                         <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300">
                             <i data-lucide="activity" class="w-20 h-20"></i>
                         </div>
-                        <span class="block bg-black/10 text-center py-2 text-sm font-medium">
-                            Journal d'audit global
-                        </span>
+                        <a class="block bg-black/10 hover:bg-black/20 text-center py-2 text-sm font-medium transition cursor-pointer">
+                            Voir le journal d'audit <i data-lucide="arrow-right-circle" class="w-4 h-4 inline ml-1"></i>
+                        </a>
                     </div>
 
                     <div class="bg-red-500 rounded-lg text-white relative overflow-hidden shadow-lg group transition-transform hover:-translate-y-1">
@@ -1186,6 +1186,19 @@
                         <span class="block bg-black/10 text-center py-2 text-sm font-medium">
                             Abonnements expirés ou suspendus
                         </span>
+                    </div>
+                </div>
+
+                <!-- Global Financial Dashboard Row -->
+                <div class="bg-blue-800 rounded-2xl text-white shadow-xl p-5 md:p-8 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center relative overflow-hidden group gap-4" style="background: linear-gradient(135deg, #1e3a8a, #1d4ed8);">
+                    <div class="absolute right-0 top-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform duration-700 group-hover:scale-150"></div>
+                    <div class="relative z-10 w-full min-w-0">
+                        <h3 class="text-xs md:text-sm font-bold text-blue-200 uppercase tracking-widest mb-1 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Chiffre d'Affaires Global</h3>
+                        <p class="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mt-1 truncate text-yellow-400 drop-shadow-md" id="admin-stat-revenue">Calcul en cours...</p>
+                        <p class="text-blue-100 text-[10px] md:text-xs mt-2 font-medium opacity-80 leading-relaxed">Flux financier total transitant sur l'ensemble de vos boutiques actives.</p>
+                    </div>
+                    <div class="hidden sm:flex relative z-10 p-3 md:p-4 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20 shadow-inner flex-shrink-0">
+                        <i data-lucide="globe" class="w-8 h-8 md:w-12 md:h-12 text-white drop-shadow-md"></i>
                     </div>
                 </div>
 
@@ -1627,6 +1640,32 @@
                     <button onclick="document.getElementById('delivery-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition">Annuler</button>
                     <button onclick="confirmExpedition()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow transition">Expédier</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Logs Admin -->
+    <div id="admin-logs-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[500] p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col animate-fade-in-up">
+            <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-3">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                    <i data-lucide="activity" class="text-yellow-500"></i> Journal d'Audit Super Admin
+                </h3>
+                <button onclick="document.getElementById('admin-logs-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><i data-lucide="x"></i></button>
+            </div>
+            <div class="overflow-auto flex-1 border dark:border-slate-700 rounded-lg">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-gray-50 dark:bg-slate-900 text-gray-600 dark:text-gray-400 sticky top-0">
+                        <tr>
+                            <th class="p-3">Date</th>
+                            <th class="p-3">Action</th>
+                            <th class="p-3 w-full">Détails</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-logs-body" class="divide-y divide-gray-100 dark:divide-slate-700">
+                        <tr><td colspan="3" class="p-4 text-center text-gray-500">Chargement...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

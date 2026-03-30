@@ -155,20 +155,31 @@ export function setupLoginForm() {
     if(forgotLink) {
         forgotLink.addEventListener('click', (e) => {
             e.preventDefault();
-            let email = document.getElementById('login-email').value;
-            if (!email) {
+                let rawEmail = document.getElementById('login-email').value.trim();
+                
+                const handleReset = async (emailToReset) => {
+                    if (!emailToReset.includes('@')) {
+                        emailToReset = emailToReset.replace(/\s+/g, '').toLowerCase() + "@maboutique.app";
+                    }
+                    if (emailToReset.includes('@maboutique.app')) {
+                        return showToast("Impossible de récupérer le mot de passe d'un compte Pseudo par email. Veuillez contacter votre Gérant ou l'Administrateur.", "warning");
+                    }
+                    try {
+                        await sendPasswordResetEmail(auth, emailToReset);
+                        showToast("Email de récupération envoyé (Vérifiez vos Spams) !", "success");
+                    } catch (err) {
+                        showToast("Erreur: " + err.message, "error");
+                    }
+                };
+
+                if (!rawEmail) {
                 showPromptModal("Mot de passe oublié", "Veuillez entrer l'adresse email associée à votre compte :", "email", async (val) => {
                     if (val) {
-                        try { 
-                            await sendPasswordResetEmail(auth, val); 
-                            showToast("Email envoyé !", "success"); 
-                        } catch (err) { showToast(err.message, "error"); } 
+                            await handleReset(val.trim());
                     }
                 });
             } else {
-                try { 
-                    sendPasswordResetEmail(auth, email).then(() => showToast("Email envoyé !", "success")).catch(err => showToast(err.message, "error")); 
-                } catch (err) { showToast(err.message, "error"); } 
+                    handleReset(rawEmail);
             }
         });
     }

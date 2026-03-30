@@ -1,6 +1,6 @@
 // src/admin/main.js
-import { db, collection, getDocs, doc, setDoc, serverTimestamp, updateDoc, addDoc, query, where, getAuth, deleteApp, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, initializeApp, deleteDoc } from '../firebase.js';
-import { showToast, showTab, hideTab, switchTab, showConfirmModal } from '../ui.js';
+import { db, collection, getDocs, doc, setDoc, serverTimestamp, updateDoc, addDoc, query, where, getAuth, deleteApp, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, initializeApp, deleteDoc, orderBy } from '../firebase.js';
+import { showToast, showTab, hideTab, switchTab, showConfirmModal, formatPrice } from '../ui.js';
 import * as state from '../state.js';
 import { firebaseConfig } from '../firebase.js'; // Need the config for secondary app
 
@@ -99,6 +99,23 @@ export async function loadBoutiquesList() {
             }).join('');
             
             // Gestionnaires d'événements (remplace onclick)
+            d.querySelectorAll('.js-quick-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const shopId = e.target.closest('.shop-item').dataset.id;
+                    const shop = state.allShopsList.find(s => s.id === shopId);
+                    if (shop) {
+                        const newStatus = shop.statut === 'suspendu' ? 'actif' : 'suspendu';
+                        const actionName = newStatus === 'actif' ? 'Réactiver' : 'Suspendre';
+                        showConfirmModal(`${actionName} la boutique`, `Voulez-vous vraiment ${actionName.toLowerCase()} la boutique "${shop.nom}" ?`, async () => {
+                            await updateDoc(doc(db, "boutiques", shop.id), { statut: newStatus });
+                            await logAdminAction("QUICK_TOGGLE", `Boutique ${shop.nom} passée en statut: ${newStatus}`);
+                            showToast(`Boutique ${newStatus} avec succès !`, "success");
+                            loadBoutiquesList(); // Recharger la liste
+                        });
+                    }
+                });
+            });
+
             d.querySelectorAll('.js-immersion-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const shopId = e.target.closest('.shop-item').dataset.id;
@@ -260,6 +277,30 @@ export async function setupSuperAdminDashboard() {
     });
     state.setAllShopsList(latestShops);
 
+    // --- Calcul du Chiffre d'Affaires Global (Asynchrone) ---
+    const revenueEl = document.getElementById('admin-stat-revenue');
+    if (revenueEl) {
+        revenueEl.innerHTML = '<i data-lucide="loader-2" class="w-6 h-6 animate-spin inline-block"></i> Calcul...';
+        if (window.lucide) window.lucide.createIcons();
+        
+        setTimeout(async () => {
+            let globalTotal = 0;
+            for (const b of latestShops) {
+                try {
+                    const ventesSnap = await getDocs(collection(db, "boutiques", b.id, "ventes"));
+                    ventesSnap.forEach(v => {
+                        const s = v.data();
+                        if (!s.deleted) {
+                            if (['cash', 'cash_import', 'remboursement', 'mobile_money', 'credit'].includes(s.type)) globalTotal += (s.total || 0);
+                            if (['retour', 'retour_credit'].includes(s.type)) globalTotal -= (s.total || 0);
+                        }
+                    });
+                } catch (e) { console.error("Erreur CA boutique", b.id, e); }
+            }
+            if (revenueEl) revenueEl.textContent = formatPrice(globalTotal);
+        }, 500); // Léger délai pour laisser l'interface principale s'afficher en premier
+    }
+
     const alertStatBox = document.getElementById('admin-stat-alerts');
     if (alertStatBox) alertStatBox.textContent = blockedCount;
 
@@ -400,6 +441,10 @@ export async function setupAdminAccessPage() {
 }
 
 const sendResetMail = (email) => {
+    if (email && email.includes('@maboutique.app')) {
+        return showToast("Impossible d'envoyer un email à un Pseudo. Cliquez sur l'icône 👁️ pour voir son mot de passe en clair !", "warning");
+    }
+
     showConfirmModal("Réinitialisation Mot de passe", `Envoyer un email de réinitialisation de mot de passe à : ${email} ?`, async () => {
         try {
             const auth = getAuth();
@@ -439,6 +484,40 @@ const openSubscriptionManager = function(id, nom, statut, dateString) {
             console.error(e);
         }
     });
+};
+
+window.openAdminLogsModal = async () => {
+    const modal = document.getElementById('admin-logs-modal');
+    const tbody = document.getElementById('admin-logs-body');
+    if (!modal || !tbody) return;
+    
+    modal.classList.remove('hidden');
+    tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto"></i></td></tr>';
+    if (window.lucide) window.lucide.createIcons();
+
+    try {
+        const q = query(collection(db, "admin_logs"), orderBy("date", "desc"));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500 italic">Aucun log enregistré pour le moment.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = snap.docs.map(d => {
+            const log = d.data();
+            const dateStr = log.date ? new Date(log.date.seconds * 1000).toLocaleString('fr-FR') : '-';
+            return `
+                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition border-b dark:border-slate-700">
+                    <td class="p-3 text-xs text-gray-500 font-mono">${dateStr}</td>
+                    <td class="p-3 font-bold text-xs text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">${log.action}</td>
+                    <td class="p-3 text-sm text-gray-800 dark:text-gray-200 whitespace-normal">${log.details || ''}</td>
+                </tr>`;
+        }).join('');
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-red-500">Erreur de chargement des logs. Note: Vérifiez qu\'un index composite n\'est pas requis.</td></tr>';
+    }
 };
 
 // --- IMMERSION MODE ---
