@@ -281,6 +281,12 @@
                         <span class="text-[11px] font-bold">Aide (Descriptifs)</span>
                         <input type="checkbox" id="desktop-tooltip-toggle" class="w-4 h-4 rounded text-blue-600 cursor-pointer">
                     </label>
+                    <button id="btn-install-app" class="hidden w-full items-center justify-between text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition focus:outline-none group mt-2 bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg border border-blue-100 dark:border-blue-800" data-desc="Installer l'application sur cet appareil">
+                        <span class="text-xs font-bold">Installer l'App</span>
+                        <div class="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-gray-100 dark:border-slate-700 group-hover:shadow transition">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </button>
                 </div>
             </div>
             
@@ -357,6 +363,10 @@
                         </div>
                         <input type="checkbox" id="mobile-tooltip-toggle" class="w-5 h-5 rounded text-blue-600 cursor-pointer">
                     </label>
+                    <button id="btn-install-app-mobile" class="hidden drawer-tab text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800" data-desc="Installer l'application sur votre appareil">
+                        <i data-lucide="download"></i>
+                        <span>Installer l'application</span>
+                    </button>
 
                     <p class="hamburger-section-label mt-4 text-red-400">Compte</p>
                     
@@ -1912,6 +1922,31 @@
                 .catch(err => console.error('Erreur Service Worker', err));
             });
         }
+
+        // --- GESTION DE L'INSTALLATION PWA ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); // Empêche la mini-barre par défaut d'apparaître
+            deferredPrompt = e;
+            const btnDesktop = document.getElementById('btn-install-app');
+            const btnMobile = document.getElementById('btn-install-app-mobile');
+            if (btnDesktop) { btnDesktop.classList.remove('hidden'); btnDesktop.classList.add('flex'); }
+            if (btnMobile) { btnMobile.classList.remove('hidden'); btnMobile.classList.add('flex'); }
+        });
+
+        const handleInstall = async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('btn-install-app')?.classList.add('hidden');
+                    document.getElementById('btn-install-app-mobile')?.classList.add('hidden');
+                }
+                deferredPrompt = null;
+            }
+        };
+        document.getElementById('btn-install-app')?.addEventListener('click', handleInstall);
+        document.getElementById('btn-install-app-mobile')?.addEventListener('click', handleInstall);
     </script>
 </body>
 </html>

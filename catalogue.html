@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boutique en ligne</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
     <link rel="stylesheet" href="dist/final.css">
     <link rel="stylesheet" href="style.css?v=4">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
@@ -62,6 +64,9 @@
 
     <header id="floating-header" class="fixed top-2 right-2 md:top-4 md:right-4 z-40 flex justify-end items-center transition-opacity duration-300">
         <div class="flex items-center gap-1.5 md:gap-2 bg-blue-50/90 backdrop-blur-xl p-1.5 md:p-2 rounded-full shadow-sm border border-blue-100/60">
+            <button id="btn-install-catalogue" class="hidden items-center justify-center bg-blue-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full hover:bg-blue-700 transition-all shadow-sm font-bold text-xs md:text-sm" title="Installer la boutique">
+                <i data-lucide="download" class="w-4 h-4 mr-1 md:mr-1.5"></i> <span class="hidden sm:inline">Installer</span>
+            </button>
             <button id="btn-share-shop" class="hidden items-center justify-center bg-white text-blue-600 p-2 md:p-2.5 rounded-full hover:bg-blue-100 transition-all shadow-sm" title="Partager la boutique">
                 <i data-lucide="share-2" class="w-4 h-4 md:w-[18px] md:h-[18px]"></i>
             </button>
@@ -864,6 +869,32 @@
         const link2 = document.getElementById('viral-link-2');
         if(link1) link1.href = viralUrl;
         if(link2) link2.href = viralUrl;
+
+        // --- GESTION DE L'INSTALLATION PWA (Catalogue) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.error('Erreur SW', err));
+            });
+        }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btnInstall = document.getElementById('btn-install-catalogue');
+            if (btnInstall) { btnInstall.classList.remove('hidden'); btnInstall.classList.add('flex'); }
+        });
+
+        document.getElementById('btn-install-catalogue')?.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('btn-install-catalogue').classList.add('hidden');
+                }
+                deferredPrompt = null;
+            }
+        });
     </script>
 </body>
 </html>
