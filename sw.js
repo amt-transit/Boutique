@@ -1,4 +1,4 @@
-const CACHE_NAME = 'maboutique-cache-v3';
+const CACHE_NAME = 'maboutique-cache-v4';
 
 // Liste des ressources de base à mettre en cache pour un accès hors ligne
 const ASSETS_TO_CACHE = [
@@ -7,7 +7,7 @@ const ASSETS_TO_CACHE = [
     './app.html',
     './catalogue.html',
     './style.css',
-    './dist/output.css',
+    './dist/final.css',
     './manifest.json',
     'https://unpkg.com/lucide@latest/dist/umd/lucide.min.js',
     'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap'
