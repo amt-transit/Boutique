@@ -139,6 +139,18 @@
                 <h3 class="text-xl font-bold text-slate-800 mb-2">Aucun article trouvé</h3>
                 <p class="text-slate-500 font-medium text-sm">Essayez de modifier votre recherche ou la catégorie.</p>
             </div>
+            <div class="mt-16 mb-8 text-center px-4 w-full flex justify-center">
+                <div class="flex flex-col items-center p-6 bg-white/60 backdrop-blur-md rounded-3xl border border-blue-100 shadow-sm max-w-sm w-full transition-transform hover:scale-[1.02]">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                        <i data-lucide="rocket" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-slate-800 font-extrabold text-lg mb-1">Vous vendez des articles ?</h3>
+                    <p class="text-slate-500 text-sm mb-4 font-medium leading-relaxed">Gérez vos ventes, vos stocks, et obtenez un catalogue comme celui-ci en 2 minutes.</p>
+                    <a href="index.html" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/30 transition-all active:scale-95 w-full">
+                        Créer ma boutique gratuite
+                    </a>
+                </div>
+            </div>
         </main>
 
         <button id="floating-cart-btn" onclick="document.getElementById('cart-modal').classList.remove('hidden'); document.getElementById('floating-header').style.display='none';" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-slate-900/95 backdrop-blur-xl text-white py-3.5 md:py-4 px-6 rounded-[24px] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] flex justify-between items-center z-40 transition-all hover:scale-[1.02] active:scale-95 border border-slate-700/50 lg:hidden desktop-floating-btn-fix">
@@ -237,6 +249,12 @@
                     Fermer
                 </button>
             </div>
+            <div class="mt-5 pt-5 border-t border-slate-100">
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-2">Propulsé par Ma Boutique</p>
+                <a href="index.html" class="text-blue-600 hover:text-blue-800 font-bold text-sm flex items-center justify-center gap-1.5 transition-colors">
+                    <i data-lucide="store" class="w-4 h-4"></i> Ouvrir votre propre boutique
+                </a>
+            </div>
         </div>
     </div>
 
@@ -283,7 +301,7 @@
         const boutiqueId = urlParams.get('id');
 
         let allProducts = [];
-        const cartStorageKey = `cart_${boutiqueId}`;
+        const cartStorageKey = `shop_cart_${boutiqueId}`;
         let cart = JSON.parse(localStorage.getItem(cartStorageKey)) || [];
         let currentCategory = "Tous";
         let uniqueCategoriesList = [];
