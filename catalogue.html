@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boutique en ligne</title>
-    <link rel="stylesheet" href="dist/output.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dist/output.css?v=2">
+    <link rel="stylesheet" href="style.css?v=2">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="icon" href="data:,">
+    <link rel="icon" href="favico.png">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #e0f2fe !important; }
@@ -146,7 +146,7 @@
                     </div>
                     <h3 class="text-slate-800 font-extrabold text-lg mb-1">Vous vendez des articles ?</h3>
                     <p class="text-slate-500 text-sm mb-4 font-medium leading-relaxed">Gérez vos ventes, vos stocks, et obtenez un catalogue comme celui-ci en 2 minutes.</p>
-                    <a href="index.html" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/30 transition-all active:scale-95 w-full">
+                    <a href="#" id="viral-link-1" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/30 transition-all active:scale-95 w-full">
                         Créer ma boutique gratuite
                     </a>
                 </div>
@@ -251,7 +251,7 @@
             </div>
             <div class="mt-5 pt-5 border-t border-slate-100">
                 <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-2">Propulsé par Ma Boutique</p>
-                <a href="index.html" class="text-blue-600 hover:text-blue-800 font-bold text-sm flex items-center justify-center gap-1.5 transition-colors">
+                <a href="#" id="viral-link-2" class="text-blue-600 hover:text-blue-800 font-bold text-sm flex items-center justify-center gap-1.5 transition-colors">
                     <i data-lucide="store" class="w-4 h-4"></i> Ouvrir votre propre boutique
                 </a>
             </div>
@@ -858,6 +858,12 @@
         });
 
         init();
+        // Tracking Viral
+        const viralUrl = `index.html?ref=${boutiqueId}`;
+        const link1 = document.getElementById('viral-link-1');
+        const link2 = document.getElementById('viral-link-2');
+        if(link1) link1.href = viralUrl;
+        if(link2) link2.href = viralUrl;
     </script>
 </body>
 </html>

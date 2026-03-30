@@ -89,9 +89,20 @@ export function setupRegisterForm() {
                 const expireDate = new Date();
                 expireDate.setDate(expireDate.getDate() + 90);
 
-                // 3. Créer la boutique
+                // 3. Capture du paramètre 'ref' (Tracking Viral)
+                const urlParams = new URLSearchParams(window.location.search);
+                const refererId = urlParams.get('ref') || null;
+
+                // 4. Créer la boutique
                 const shopRef = doc(collection(db, "boutiques"));
-                await setDoc(shopRef, { nom: name, createdAt: serverTimestamp(), createdBy: uid, statut: 'essai', expireAt: expireDate });
+                await setDoc(shopRef, { 
+                    nom: name, 
+                    createdAt: serverTimestamp(), 
+                    createdBy: uid, 
+                    statut: 'essai', 
+                    expireAt: expireDate,
+                    referredBy: refererId // Ajout de l'information de parrainage
+                });
 
                 // 4. Créer le profil utilisateur lié
                 await setDoc(doc(db, "users", uid), { 
