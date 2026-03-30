@@ -1,5 +1,4 @@
 {
-  "installCommand": "npm install",
-  "buildCommand": "npx tailwindcss -o ./dist/output.css --minify",
+  "buildCommand": "npm run build",
   "outputDirectory": "."
 }
