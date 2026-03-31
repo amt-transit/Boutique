@@ -399,30 +399,56 @@ export async function setupAdminAccessPage() {
 
         if(filtered.length === 0) { listContainer.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Aucun utilisateur trouvé.</td></tr>'; return; }
 
+        // Grouper les accès par nom de boutique
+        const groupedAccesses = {};
         filtered.forEach(access => {
-            const tr = document.createElement('tr');
-            tr.className = "hover:bg-purple-50 dark:hover:bg-gray-700 transition";
-            
-            const roleBadge = access.role === 'admin' ? '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">Propriétaire</span>' : '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">Vendeur</span>';
+            const shopName = access.shopName || 'Inconnu';
+            if (!groupedAccesses[shopName]) groupedAccesses[shopName] = [];
+            groupedAccesses[shopName].push(access);
+        });
 
-            tr.innerHTML = `
-                <td class="p-3 font-medium text-gray-800 dark:text-gray-200">${access.shopName || 'Inconnu'}</td>
-                <td class="p-3 font-mono text-gray-600 dark:text-gray-400 select-all">${access.email}</td>
-                <td class="p-3">${roleBadge}</td>
-                <td class="p-3">
+        // Parcourir les groupes par ordre alphabétique
+        Object.keys(groupedAccesses).sort((a, b) => a.localeCompare(b)).forEach(shopName => {
+            // Ajouter la ligne d'en-tête pour la boutique
+            const headerTr = document.createElement('tr');
+            headerTr.className = "bg-gray-100 dark:bg-gray-800 border-y border-gray-200 dark:border-gray-700";
+            headerTr.innerHTML = `
+                <td colspan="5" class="p-3 font-bold text-gray-800 dark:text-gray-200">
                     <div class="flex items-center gap-2">
-                        <input type="password" value="${access.password || ''}" readonly class="bg-transparent border-none w-24 text-xs font-mono focus:ring-0 text-gray-500" placeholder="Non enregistré">
-                        <button type="button" class="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-2 py-1 rounded text-[10px] font-bold transition js-toggle-table-pass">
-                            <i data-lucide="eye" class="w-3 h-3"></i>
-                        </button>
+                        <i data-lucide="store" class="w-4 h-4 text-purple-600"></i> 
+                        <span class="text-sm uppercase tracking-wide">${shopName}</span>
+                        <span class="bg-purple-200 text-purple-800 text-[10px] px-2 py-0.5 rounded-full ml-2 shadow-sm">${groupedAccesses[shopName].length} accès</span>
                     </div>
                 </td>
-                <td class="p-3 text-right">
-                    <button data-email="${access.email}" class="js-reset-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold border border-gray-300 mr-2" title="Envoyer un email pour changer le mot de passe">📧 Reset Pass</button>
-                    <button data-id="${access.userId}" data-email="${access.email}" class="js-delete-user-btn bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold border border-red-200" title="Supprimer l'utilisateur"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </td>
             `;
-            listContainer.appendChild(tr);
+            listContainer.appendChild(headerTr);
+
+            // Ajouter les lignes des utilisateurs pour cette boutique
+            groupedAccesses[shopName].forEach(access => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-purple-50 dark:hover:bg-gray-700 transition";
+                
+                const roleBadge = access.role === 'admin' ? '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Propriétaire</span>' : '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Vendeur</span>';
+
+                tr.innerHTML = `
+                    <td class="p-3 pl-8 text-gray-400 text-xs">↳</td>
+                    <td class="p-3 font-mono text-gray-600 dark:text-gray-400 select-all">${access.email}</td>
+                    <td class="p-3">${roleBadge}</td>
+                    <td class="p-3">
+                        <div class="flex items-center gap-2">
+                            <input type="password" value="${access.password || ''}" readonly class="bg-transparent border-none w-24 text-xs font-mono focus:ring-0 text-gray-500" placeholder="Non enregistré">
+                            <button type="button" class="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-2 py-1 rounded text-[10px] font-bold transition js-toggle-table-pass">
+                                <i data-lucide="eye" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="p-3 text-right">
+                        <button data-email="${access.email}" class="js-reset-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold border border-gray-300 mr-2" title="Envoyer un email pour changer le mot de passe">📧 Reset Pass</button>
+                        <button data-id="${access.userId}" data-email="${access.email}" class="js-delete-user-btn bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold border border-red-200" title="Supprimer l'utilisateur"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                `;
+                listContainer.appendChild(tr);
+            });
         });
         
         listContainer.querySelectorAll('.js-reset-btn').forEach(btn => {
