@@ -10,7 +10,7 @@
 const {setGlobalOptions} = require("firebase-functions");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
-const functions = require("firebase-functions");
+const {onDocumentDeleted} = require("firebase-functions/v2/firestore");
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -26,21 +26,19 @@ setGlobalOptions({maxInstances: 10});
 
 admin.initializeApp();
 
-exports.onUserDeleted = functions.firestore
-    .document("users/{userId}")
-    .onDelete(async (snap, context) => {
-        const userId = context.params.userId;
-        logger.info(`Déclenchement suppression Firestore: ${userId}`);
+exports.onUserDeleted = onDocumentDeleted("users/{userId}", async (event) => {
+  const userId = event.params.userId;
+  logger.info(`Déclenchement suppression Firestore: ${userId}`);
 
-        try {
-            await admin.auth().deleteUser(userId);
-            logger.info(`✅ Utilisateur ${userId} supprimé de Auth.`);
-            return null;
-        } catch (error) {
-            logger.error(`❌ Erreur suppression Auth ${userId}:`, error);
-            return null;
-        }
-    });
+  try {
+    await admin.auth().deleteUser(userId);
+    logger.info(`✅ Utilisateur ${userId} supprimé de Auth.`);
+    return null;
+  } catch (error) {
+    logger.error(`❌ Erreur suppression Auth ${userId}:`, error);
+    return null;
+  }
+});
 
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started

@@ -352,10 +352,29 @@ export async function setupAdminAccessPage() {
     if(!searchInput || !listContainer) return;
 
     const usersSnap = await getDocs(collection(db, "users"));
-    let allUsers = [];
-    usersSnap.forEach(d => allUsers.push({id: d.id, ...d.data()}));
+    let allAccesses = [];
+    usersSnap.forEach(userDoc => {
+        const user = {id: userDoc.id, ...userDoc.data()};
+        if (user.allowedShops && user.allowedShops.length > 0) {
+            user.allowedShops.forEach(shop => {
+                allAccesses.push({
+                    userId: user.id,
+                    email: user.email,
+                    password: user.password,
+                    shopName: shop.name,
+                    role: shop.role
+                });
+            });
+        } else if (user.boutiqueId) { // Support pour l'ancien format
+             allAccesses.push({
+                userId: user.id, email: user.email, password: user.password,
+                shopName: user.boutiqueName, role: user.role
+            });
+        }
+    });
 
-    const deleteUserAccount = (userId) => {
+
+    const deleteUserAccount = (userId, userEmail) => {
         showConfirmModal("Supprimer l'utilisateur", "Voulez-vous vraiment supprimer cet utilisateur ? Son accès à l'application sera révoqué.", async () => {
             try {
                 await deleteDoc(doc(db, "users", userId));
@@ -371,37 +390,36 @@ export async function setupAdminAccessPage() {
         listContainer.innerHTML = ''; 
         const term = filter.toLowerCase();
         
-        const filtered = allUsers.filter(u => {
-            const emailMatch = u.email && u.email.toLowerCase().includes(term);
-            const roleMatch = u.role && u.role.toLowerCase().includes(term);
-            const shopName = u.boutiqueName || (u.allowedShops && u.allowedShops.length > 0 ? u.allowedShops[0].name : '');
-            const shopMatch = shopName && shopName.toLowerCase().includes(term);
+        const filtered = allAccesses.filter(access => {
+            const emailMatch = access.email && access.email.toLowerCase().includes(term);
+            const roleMatch = access.role && access.role.toLowerCase().includes(term);
+            const shopMatch = access.shopName && access.shopName.toLowerCase().includes(term);
             return emailMatch || roleMatch || shopMatch;
         });
 
         if(filtered.length === 0) { listContainer.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Aucun utilisateur trouvé.</td></tr>'; return; }
 
-        filtered.forEach(u => {
+        filtered.forEach(access => {
             const tr = document.createElement('tr');
             tr.className = "hover:bg-purple-50 dark:hover:bg-gray-700 transition";
             
-            const roleBadge = u.role === 'admin' ? '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">Propriétaire</span>' : '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">Vendeur</span>';
+            const roleBadge = access.role === 'admin' ? '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">Propriétaire</span>' : '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">Vendeur</span>';
 
             tr.innerHTML = `
-                <td class="p-3 font-medium text-gray-800 dark:text-gray-200">${u.boutiqueName || u.allowedShops?.[0]?.name || 'Inconnu'}</td>
-                <td class="p-3 font-mono text-gray-600 dark:text-gray-400 select-all">${u.email}</td>
+                <td class="p-3 font-medium text-gray-800 dark:text-gray-200">${access.shopName || 'Inconnu'}</td>
+                <td class="p-3 font-mono text-gray-600 dark:text-gray-400 select-all">${access.email}</td>
                 <td class="p-3">${roleBadge}</td>
                 <td class="p-3">
                     <div class="flex items-center gap-2">
-                        <input type="password" value="${u.password || ''}" readonly class="bg-transparent border-none w-24 text-xs font-mono focus:ring-0 text-gray-500" placeholder="Non enregistré">
+                        <input type="password" value="${access.password || ''}" readonly class="bg-transparent border-none w-24 text-xs font-mono focus:ring-0 text-gray-500" placeholder="Non enregistré">
                         <button type="button" class="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-2 py-1 rounded text-[10px] font-bold transition js-toggle-table-pass">
                             <i data-lucide="eye" class="w-3 h-3"></i>
                         </button>
                     </div>
                 </td>
                 <td class="p-3 text-right">
-                    <button data-email="${u.email}" class="js-reset-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold border border-gray-300 mr-2" title="Envoyer un email pour changer le mot de passe">📧 Reset Pass</button>
-                    <button data-id="${u.id}" class="js-delete-user-btn bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold border border-red-200" title="Supprimer l'utilisateur"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button data-email="${access.email}" class="js-reset-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold border border-gray-300 mr-2" title="Envoyer un email pour changer le mot de passe">📧 Reset Pass</button>
+                    <button data-id="${access.userId}" data-email="${access.email}" class="js-delete-user-btn bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold border border-red-200" title="Supprimer l'utilisateur"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </td>
             `;
             listContainer.appendChild(tr);
@@ -412,7 +430,7 @@ export async function setupAdminAccessPage() {
         });
 
         listContainer.querySelectorAll('.js-delete-user-btn').forEach(btn => {
-            btn.addEventListener('click', () => deleteUserAccount(btn.dataset.id));
+            btn.addEventListener('click', () => deleteUserAccount(btn.dataset.id, btn.dataset.email));
         });
 
         // Gestionnaire pour afficher/masquer le mot de passe dans le tableau

@@ -141,11 +141,21 @@ export function setupStockManagement() {
     const btnAddVariant = document.getElementById('btn-add-variant');
     const variantsList = document.getElementById('variants-list');
 
+    // --- INITIALISATION : Retirer "required" si les variantes sont masquées au démarrage ---
+    if (checkboxVariants && !checkboxVariants.checked) {
+        document.querySelectorAll('.var-nom, .var-qte').forEach(input => input.required = false);
+    }
+
     if(checkboxVariants) {
         checkboxVariants.addEventListener('change', (e) => {
             zoneStandard.classList.toggle('hidden', e.target.checked);
             zoneVariants.classList.toggle('hidden', !e.target.checked);
             document.getElementById('prod-qte').required = !e.target.checked;
+            
+            // Gérer l'attribut required des champs variantes
+            document.querySelectorAll('.var-nom, .var-qte').forEach(input => {
+                input.required = e.target.checked;
+            });
         });
     }
 
@@ -161,6 +171,10 @@ export function setupStockManagement() {
             `;
             variantsList.appendChild(row);
             if(window.lucide) window.lucide.createIcons();
+            
+            // Appliquer le bon statut 'required' à la nouvelle ligne
+            const isChecked = checkboxVariants ? checkboxVariants.checked : false;
+            row.querySelectorAll('.var-nom, .var-qte').forEach(input => input.required = isChecked);
         });
     }
 
@@ -317,8 +331,12 @@ export function setupStockManagement() {
                 if (checkboxVariants) checkboxVariants.checked = false;
                 zoneStandard.classList.remove('hidden');
                 zoneVariants.classList.add('hidden');
+                if (document.getElementById('prod-qte')) document.getElementById('prod-qte').required = true;
+                
                 const rows = document.querySelectorAll('.variant-row');
                 for (let i = 1; i < rows.length; i++) rows[i].remove();
+                document.querySelectorAll('.var-nom, .var-qte').forEach(input => input.required = false);
+                
                 if(suggestionsDiv) suggestionsDiv.classList.add('hidden');
                 state.setIsScanningForNewProduct(false);
                 
