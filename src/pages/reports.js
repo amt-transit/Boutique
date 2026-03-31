@@ -299,7 +299,7 @@ window.openPartialReturnModal = (saleId) => {
                     </div>
                 </div>
             `;
-        }
+        } 
     });
 
     if (!hasReturnableItems) {
