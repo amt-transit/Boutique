@@ -2417,6 +2417,25 @@ body.perf-mode.dark .bg-white.rounded-xl {
         transform: none !important;
     }
 }
+
+/* ─────────────────────────────────────────────────────────
+   11. FIX ANTI-FORCED DARK MODE (Assistant IA)
+   Empêche les téléphones de rendre le texte de l'IA flou 
+   et fluorescent en mode clair.
+───────────────────────────────────────────────────────── */
+body:not(.dark) #ai-assistant-panel .bg-white { background-color: #ffffff !important; }
+body:not(.dark) #ai-assistant-panel .text-slate-800 { color: #1e293b !important; }
+body:not(.dark) #ai-assistant-panel .text-slate-700 { color: #334155 !important; }
+body:not(.dark) #ai-assistant-panel .text-slate-600 { color: #475569 !important; }
+body:not(.dark) #ai-assistant-panel .text-slate-500 { color: #64748b !important; }
+body:not(.dark) #ai-assistant-panel .text-slate-400 { color: #94a3b8 !important; }
+body:not(.dark) #ai-assistant-panel .text-white { color: #ffffff !important; }
+body:not(.dark) #ai-assistant-panel .text-purple-700 { color: #7e22ce !important; }
+body:not(.dark) #ai-assistant-panel .text-purple-500 { color: #a855f7 !important; }
+body:not(.dark) #ai-assistant-panel .bg-purple-600 { background-color: #9333ea !important; }
+body:not(.dark) #ai-assistant-panel * {
+    text-shadow: none !important; /* Supprime le contour/flou généré par l'OS */
+}
 @media (min-width: 1280px) {
     .desktop-sidebar-fix { flex: 0 0 280px !important; width: 280px !important; }
     .desktop-cart-fix { flex: 0 0 400px !important; width: 400px !important; }

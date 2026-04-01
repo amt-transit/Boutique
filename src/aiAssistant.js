@@ -29,7 +29,14 @@ export function setupAIAssistant() {
         if (opening && !hasShownWelcome) {
             hasShownWelcome = true;
             chatBox.innerHTML = '';
-            addMsg("Bonjour ! 👋 Je suis votre assistant virtuel **Ma Boutique**.\n\nPosez-moi une question ou choisissez une option ci-dessous !", 'ai', 'salutation');
+            
+            // NOUVEAU : Salutation selon l'heure
+            const hour = new Date().getHours();
+            let greeting = "Bonjour";
+            if (hour >= 18) greeting = "Bonsoir";
+            else if (hour < 5) greeting = "Bonne nuit... ou plutôt bon courage pour cette heure tardive";
+            
+            addMsg(`${greeting} ! 👋 Je suis votre assistant virtuel **Ma Boutique**.\n\nPosez-moi une question ou choisissez une option ci-dessous !`, 'ai', 'salutation');
             showSuggestions(["Faire une vente", "Ajouter un produit", "Voir mes bénéfices", "Partager mon catalogue"]);
         }
     });
@@ -48,7 +55,7 @@ export function setupAIAssistant() {
             <input id="ai-text-input" type="text" placeholder="Tapez votre question..."
                    class="flex-1 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600
                           rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-400
-                          dark:text-slate-200 placeholder-slate-400 autocomplete="off"">
+                          dark:text-slate-200 placeholder-slate-400" autocomplete="off">
             <button id="ai-send-btn"
                     class="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-xl transition active:scale-95 flex-shrink-0 shadow-sm"
                     title="Envoyer">
@@ -104,18 +111,36 @@ export function setupAIAssistant() {
         addMsg(text, 'user');
         if (statusText) statusText.textContent = "Je réfléchis...";
         
+        // NOUVEAU : Ajouter l'indicateur de frappe
+        const typingId = 'typing-' + Date.now();
+        const typingDiv = document.createElement('div');
+        typingDiv.id = typingId;
+        typingDiv.className = "flex items-start gap-2 mb-3 animate-fade-in-up";
+        typingDiv.innerHTML = `
+            <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-sm">🤖</div>
+            <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-4 py-3.5 rounded-2xl rounded-tl-sm shadow-sm flex gap-1">
+                <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+            </div>`;
+        chatBox.appendChild(typingDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        
         setTimeout(() => {
-            const { response, topic, suggestions } = getSmartResponse(text, lastTopic);
+            // NOUVEAU : Supprimer l'indicateur de frappe avant d'afficher la réponse
+            document.getElementById(typingId)?.remove();
+
+            const { response, topic, suggestions, action } = getSmartResponse(text, lastTopic);
             lastTopic = topic;
-            addMsg(response, 'ai', topic);
+            addMsg(response, 'ai', topic, action);
             if (suggestions?.length) showSuggestions(suggestions);
             speak(response);
             if (statusText) statusText.textContent = "Micro ou texte ↓";
-        }, 400 + Math.random() * 200); // Délai humain
+        }, 800 + Math.random() * 600); // Délai réaliste de réflexion
     }
 
     // ── Affichage UI ──────────────────────────────────────────────
-    function addMsg(text, sender, topic = null) {
+    function addMsg(text, sender, topic = null, action = null) {
         const d = document.createElement('div');
         const time = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
 
@@ -127,15 +152,25 @@ export function setupAIAssistant() {
                 </div>
                 <span class="text-[9px] text-slate-400 font-medium">${time}</span>`;
         } else {
+            // NOUVEAU : Bouton d'action magique (Pilote automatique)
+            let actionBtnHtml = '';
+            if (action) {
+                actionBtnHtml = `<button onclick="window.switchTab('${action}'); document.getElementById('ai-close-btn').click();" class="mt-3 bg-purple-100 hover:bg-purple-200 text-purple-700 w-full py-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-2 transition active:scale-95"><i data-lucide="external-link" class="w-3 h-3"></i> Y aller maintenant !</button>`;
+            }
+
             d.className = "flex flex-col items-start gap-0.5 mb-3 animate-fade-in-up";
             d.innerHTML = `
                 <div class="flex items-start gap-2">
                     <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-sm">${getTopicIcon(topic)}</div>
                     <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[88%] text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
-                        ${formatText(text)}
+                        <div>${formatText(text)}</div>
+                        ${actionBtnHtml}
                     </div>
                 </div>
                 <span class="text-[9px] text-slate-400 font-medium pl-8">${time}</span>`;
+                
+            // Recharger les icônes si Lucide est présent
+            setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 10);
         }
         chatBox.appendChild(d);
         chatBox.scrollTop = chatBox.scrollHeight;
@@ -175,18 +210,31 @@ export function setupAIAssistant() {
     function speak(text) {
         if (!window.speechSynthesis) return;
         stopSpeaking();
-        const clean = text.replace(/<[^>]*>/g,'').replace(/\*\*/g,'').substring(0, 200);
+        
+        // Nettoyage extrême pour une voix naturelle et professionnelle
+        const clean = text
+            .replace(/<[^>]*>/g, '') // Enlève le HTML
+            .replace(/\*\*/g, '')    // Enlève le gras Markdown
+            .replace(/[→↑↓←]/g, '')  // 🛑 SUPPRIME LES FLÈCHES
+            .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '') // 🛑 SUPPRIME LES ÉMOJIS
+            .replace(/\n/g, '. ')    // Remplace les sauts de ligne par de vraies pauses vocales
+            .substring(0, 250);      // Légèrement allongé pour ne pas couper au milieu d'une phrase
+            
         const u = new SpeechSynthesisUtterance(clean);
-        u.lang = 'fr-FR'; u.rate = 1.05; u.pitch = 1.0;
+        u.lang = 'fr-FR'; 
+        u.rate = 1.05; 
+        u.pitch = 1.0;
+        
         const frVoice = window.speechSynthesis.getVoices().find(v => v.lang.startsWith('fr') && v.localService);
         if (frVoice) u.voice = frVoice;
+        
         window.speechSynthesis.speak(u);
     }
 
     function stopSpeaking() { window.speechSynthesis?.cancel(); }
 
     // ════════════════════════════════════════════════════════════
-    //  MOTEUR DE RÉPONSES AVANCÉ — Score + Mémoire
+    //  MOTEUR DE RÉPONSES AVANCÉ — Score + Mémoire + Actions
     // ════════════════════════════════════════════════════════════
     function getSmartResponse(query, prevTopic) {
         const nQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -241,29 +289,29 @@ export function setupAIAssistant() {
             merci: { r: "Avec grand plaisir ! 😊 N'hésitez pas si vous avez d'autres questions.", s: ["Faire une vente", "Ajouter un produit"] },
             aide: { r: "Voici ce que je gère :\n\n→ **Vente** : Caisse, Mobile Money, Crédits\n→ **Stock** : Produits, Variantes, Pertes, Étiquettes\n→ **Finances** : Bénéfices, Dépenses, Bilans PDF\n→ **Clients & Commandes**\n→ **Catalogue en ligne WhatsApp**", s: ["Encaisser une vente", "Voir mes bénéfices", "Partager mon catalogue"] },
             
-            vente: { r: "📦 **Pour effectuer une vente :**\n\n1️⃣ Allez dans l'onglet **Vente**\n2️⃣ Touchez ou scannez les articles\n3️⃣ Cliquez sur **ENCAISSER** (bouton vert en bas)\n4️⃣ Choisissez le paiement : Espèces ou Mobile Money\n\n💡 *Astuce : Vous pouvez modifier le prix ou la quantité d'un article directement dans le panier.*", s: ["Vente à crédit", "Ajouter une remise", "Mobile Money"] },
-            remise: { r: "🏷️ **Appliquer une remise :**\n\nDans l'onglet **Vente**, sous le panier, cliquez sur le petit bouton **+ Ajouter Remise**. Saisissez le montant à déduire en CFA et le total s'ajustera automatiquement.", s: ["Faire une vente", "Mobile money"] },
-            monnaie: { r: "💰 **Monnaie du matin (Fond de caisse) :**\n\nDans l'onglet **Vente**, regardez la zone bleue en haut à droite. Entrez le montant présent dans votre tiroir, puis cliquez sur la disquette 💾 pour l'enregistrer.", s: ["Voir mes bénéfices", "Enregistrer une dépense"] },
-            mobile_money: { r: "📱 **Paiement Mobile Money :**\n\nDepuis la **Vente**, au moment de payer, cliquez sur **Mobile Money** (bouton turquoise). Choisissez l'opérateur (Wave, Orange, MTN...) et entrez le numéro du client.", s: ["Faire une vente", "Vente à crédit"] },
-            credit: { r: "👥 **Gestion des Crédits :**\n\n→ **Pour faire un crédit :** Dans Vente, cliquez sur le bouton orange **Crédit Client**.\n→ **Pour encaisser un remboursement :** Allez dans l'onglet **Clients & Crédits**, cherchez le client et cliquez sur **Encaisser**.", s: ["Voir mes clients", "Faire une vente"] },
-            commande: { r: "📋 **Les Commandes (Livraisons) :**\n\nL'onglet **Commandes** centralise les achats faits par vos clients sur votre catalogue en ligne. Vous pouvez :\n→ Changer le statut (En préparation, En route)\n→ Assigner un livreur avec son numéro\n→ Partager le suivi par WhatsApp", s: ["Partager mon catalogue", "Assigner un livreur"] },
+            vente: { r: "📦 **Pour effectuer une vente :**\n\n1️⃣ Je vous emmène à la caisse !\n2️⃣ Touchez ou scannez les articles\n3️⃣ Cliquez sur **ENCAISSER** (bouton vert en bas)\n4️⃣ Choisissez le paiement : Espèces ou Mobile Money\n\n💡 *Astuce : Vous pouvez modifier le prix ou la quantité d'un article directement dans le panier.*", s: ["Vente à crédit", "Ajouter une remise", "Mobile Money"], action: "ventes" },
+            remise: { r: "🏷️ **Appliquer une remise :**\n\nDans l'onglet **Vente**, sous le panier, cliquez sur le petit bouton **+ Ajouter Remise**. Saisissez le montant à déduire en CFA et le total s'ajustera automatiquement.", s: ["Faire une vente", "Mobile money"], action: "ventes" },
+            monnaie: { r: "💰 **Monnaie du matin (Fond de caisse) :**\n\nDans l'onglet **Vente**, regardez la zone bleue en haut à droite. Entrez le montant présent dans votre tiroir, puis cliquez sur la disquette 💾 pour l'enregistrer.", s: ["Voir mes bénéfices", "Enregistrer une dépense"], action: "ventes" },
+            mobile_money: { r: "📱 **Paiement Mobile Money :**\n\nDepuis la **Vente**, au moment de payer, cliquez sur **Mobile Money** (bouton turquoise). Choisissez l'opérateur (Wave, Orange, MTN...) et entrez le numéro du client.", s: ["Faire une vente", "Vente à crédit"], action: "ventes" },
+            credit: { r: "👥 **Gestion des Crédits :**\n\n→ **Pour faire un crédit :** Dans Vente, cliquez sur le bouton orange **Crédit Client**.\n→ **Pour encaisser un remboursement :** Allez dans l'onglet **Clients & Crédits**, cherchez le client et cliquez sur **Encaisser**.", s: ["Voir mes clients", "Faire une vente"], action: "credits" },
+            commande: { r: "📋 **Les Commandes (Livraisons) :**\n\nL'onglet **Commandes** centralise les achats faits par vos clients sur votre catalogue en ligne. Vous pouvez :\n→ Changer le statut (En préparation, En route)\n→ Assigner un livreur avec son numéro\n→ Partager le suivi par WhatsApp", s: ["Partager mon catalogue", "Assigner un livreur"], action: "commandes" },
             
-            stock: { r: "📦 **Gérer le Stock :**\n\nToute la marchandise se gère dans l'onglet **Stock** :\n→ Cliquez sur **Nouveau Produit** pour ajouter.\n→ Cliquez sur un produit existant pour modifier son prix, son stock ou sa photo.\n\n*Le stock se déduit automatiquement à chaque encaissement.*", s: ["Signaler une perte", "Imprimer des étiquettes", "Ajouter une variante"] },
-            prix: { r: "✏️ **Changer un prix :**\n\nAllez dans **Stock**, touchez le produit concerné, modifiez la case **Prix de Vente** et enregistrez. Le nouveau tarif sera immédiat à la caisse.", s: ["Gérer mon stock"] },
-            variante: { r: "🎨 **Tailles et Couleurs (Variantes) :**\n\nLors de la création d'un produit (onglet **Stock**), cochez la case bleue *\"Ce produit possède des variantes\"*. Vous pourrez alors ajouter des lignes pour chaque taille ou couleur, avec leur propre stock et photo !", s: ["Ajouter un produit"] },
-            rupture: { r: "⚠️ **Ruptures de stock :**\n\nL'application vous alerte en rouge sur le **Dashboard** (Stock Faible) quand un article descend en dessous de 5. Triez votre onglet Stock par \"Stock Faible\" pour savoir quoi réapprovisionner.", s: ["Gérer mes fournisseurs", "Ajouter du stock"] },
-            perte: { r: "🗑️ **Pertes et Périmés :**\n\nPour sortir un article du stock sans gagner d'argent (Cassé, périmé, volé), allez dans **Stock**, cliquez sur le produit, puis sur le bouton rouge **Signaler une perte** en bas.", s: ["Voir le journal d'audit"] },
-            code_barre: { r: "📷 **Codes-barres et Scanner :**\n\n→ Pour vendre/ajouter, touchez l'icône **caméra**.\n→ Pour imprimer des étiquettes à coller sur vos articles, allez dans **Stock** et cliquez sur le bouton gris **Imprimer Étiquettes**.", s: ["Faire une vente", "Gérer le stock"] },
+            stock: { r: "📦 **Gérer le Stock :**\n\nJe vous ouvre l'inventaire tout de suite !\n→ Cliquez sur **Nouveau Produit** pour ajouter.\n→ Cliquez sur un produit existant pour modifier son prix, son stock ou sa photo.", s: ["Signaler une perte", "Imprimer des étiquettes", "Ajouter une variante"], action: "stock" },
+            prix: { r: "✏️ **Changer un prix :**\n\nAllez dans **Stock**, touchez le produit concerné, modifiez la case **Prix de Vente** et enregistrez. Le nouveau tarif sera immédiat à la caisse.", s: ["Gérer mon stock"], action: "stock" },
+            variante: { r: "🎨 **Tailles et Couleurs (Variantes) :**\n\nLors de la création d'un produit (onglet **Stock**), cochez la case bleue *\"Ce produit possède des variantes\"*. Vous pourrez alors ajouter des lignes pour chaque taille ou couleur, avec leur propre stock et photo !", s: ["Ajouter un produit"], action: "stock" },
+            rupture: { r: "⚠️ **Ruptures de stock :**\n\nL'application vous alerte en rouge sur le **Dashboard** (Stock Faible) quand un article descend en dessous de 5. Triez votre onglet Stock par \"Stock Faible\" pour savoir quoi réapprovisionner.", s: ["Gérer mes fournisseurs", "Ajouter du stock"], action: "stock" },
+            perte: { r: "🗑️ **Pertes et Périmés :**\n\nPour sortir un article du stock sans gagner d'argent (Cassé, périmé, volé), allez dans **Stock**, cliquez sur le produit, puis sur le bouton rouge **Signaler une perte** en bas.", s: ["Voir le journal d'audit"], action: "stock" },
+            code_barre: { r: "📷 **Codes-barres et Scanner :**\n\n→ Pour vendre/ajouter, touchez l'icône **caméra**.\n→ Pour imprimer des étiquettes à coller sur vos articles, allez dans **Stock** et cliquez sur le bouton gris **Imprimer Étiquettes**.", s: ["Faire une vente", "Gérer le stock"], action: "stock" },
             
-            depense: { r: "💸 **Les Dépenses (Charges) :**\n\nPour enregistrer un loyer, un transport ou une facture CIE, allez dans l'onglet **Dépenses**. Saisissez le motif et le montant. Ces charges seront automatiquement déduites de vos bénéfices dans le bilan.", s: ["Voir mon bilan", "Caisse de départ"] },
-            bilan: { r: "📊 **Bénéfices et Bilan :**\n\nL'onglet **Bilan** calcule tout pour vous ! Il prend vos ventes, soustrait vos dépenses, et vous affiche le bénéfice net ainsi que l'argent réel (Trésorerie) qui doit être en votre possession. Filtrez par date pour analyser votre semaine ou votre mois.", s: ["Exporter en PDF", "Enregistrer une dépense", "Capital investi"] },
-            capital: { r: "🏦 **Capital (Fonds de départ investi) :**\n\nAllez dans l'onglet **Bilan**. Dans la grande case bleue en haut, entrez l'argent investi pour démarrer l'activité. Cela permet à l'appli de calculer correctement l'évolution de votre trésorerie globale.", s: ["Voir mon bilan"] },
-            pdf: { r: "📄 **Export PDF :**\n\nDepuis l'onglet **Bilan**, choisissez vos dates puis cliquez sur le bouton rouge **PDF**. Un rapport propre et professionnel se téléchargera, parfait pour votre comptable ou vos archives.", s: ["Voir mon bilan"] },
+            depense: { r: "💸 **Les Dépenses (Charges) :**\n\nPour enregistrer un loyer, un transport ou une facture CIE, allez dans l'onglet **Dépenses**. Saisissez le motif et le montant. Ces charges seront automatiquement déduites de vos bénéfices dans le bilan.", s: ["Voir mon bilan", "Caisse de départ"], action: "charges" },
+            bilan: { r: "📊 **Bénéfices et Bilan :**\n\nVoici vos chiffres ! L'onglet **Bilan** calcule tout pour vous ! Il prend vos ventes, soustrait vos dépenses, et vous affiche le bénéfice net ainsi que l'argent réel (Trésorerie) qui doit être en votre possession.", s: ["Exporter en PDF", "Enregistrer une dépense", "Capital investi"], action: "rapports" },
+            capital: { r: "🏦 **Capital (Fonds de départ investi) :**\n\nAllez dans l'onglet **Bilan**. Dans la grande case bleue en haut, entrez l'argent investi pour démarrer l'activité. Cela permet à l'appli de calculer correctement l'évolution de votre trésorerie globale.", s: ["Voir mon bilan"], action: "rapports" },
+            pdf: { r: "📄 **Export PDF :**\n\nDepuis l'onglet **Bilan**, choisissez vos dates puis cliquez sur le bouton rouge **PDF**. Un rapport propre et professionnel se téléchargera, parfait pour votre comptable ou vos archives.", s: ["Voir mon bilan"], action: "rapports" },
         
-            fournisseur: { r: "🚚 **Fournisseurs :**\n\nLe menu **Fournisseurs** est votre carnet d'adresses professionnel. Enregistrez-y vos grossistes pour les recontacter facilement via WhatsApp en cas de rupture de stock.", s: ["Gérer mon stock"] },
+            fournisseur: { r: "🚚 **Fournisseurs :**\n\nLe menu **Fournisseurs** est votre carnet d'adresses professionnel. Enregistrez-y vos grossistes pour les recontacter facilement via WhatsApp en cas de rupture de stock.", s: ["Gérer mon stock"], action: "fournisseurs" },
             catalogue: { r: "🌐 **Boutique en ligne :**\n\nVotre boutique possède un lien internet unique ! Vos clients peuvent l'ouvrir (sans installer d'appli) pour voir vos produits et commander. Pour obtenir ce lien, cliquez sur **Paramètres / Profil** ⚙️ et appuyez sur **Copier** dans la section Boutique en ligne.", s: ["Gérer mes commandes"] },
             equipe: { r: "👥 **Ajouter des Vendeurs :**\n\nSi vous êtes le Propriétaire, ouvrez le menu et cliquez sur **Gestion Équipe**. Créez un compte pour votre employé (Email + Code PIN). Un 'Vendeur' aura un accès limité (Caisse uniquement), tandis qu'un 'Gérant' aura un accès presque total.", s: ["Voir le journal d'audit"] },
-            audit: { r: "🔍 **Journal d'Audit :**\n\nL'onglet **Journal** est la mémoire de l'application. Chaque vente, chaque modification de prix, chaque dépense et chaque suppression y est tracée avec la date, l'heure et l'auteur. Impossible de tricher !", s: ["Gérer mon équipe", "Voir mes bénéfices"] },
+            audit: { r: "🔍 **Journal d'Audit :**\n\nL'onglet **Journal** est la mémoire de l'application. Chaque vente, chaque modification de prix, chaque dépense et chaque suppression y est tracée avec la date, l'heure et l'auteur. Impossible de tricher !", s: ["Gérer mon équipe", "Voir mes bénéfices"], action: "audit" },
             pwa: { r: "📲 **Installer l'Appli :**\n\n→ Sur **Android** : Ouvrez le menu de Chrome et choisissez \"Installer l'application\".\n→ Sur **iPhone (Safari)** : Cliquez sur le carré avec la flèche ↑ au milieu en bas, puis \"Sur l'écran d'accueil\".", s: ["Mode Sombre"] },
             mode_sombre: { r: "🌙 **Mode Sombre :**\n\nPour reposer vos yeux la nuit, ouvrez le menu latéral (ou regardez en bas à gauche sur PC) et cliquez sur le bouton **Mode Sombre**.", s: ["Installer l'application"] }
         };
@@ -281,7 +329,8 @@ export function setupAIAssistant() {
         return {
             response: result.r,
             topic: bestTopic || 'erreur',
-            suggestions: result.s || []
+            suggestions: result.s || [],
+            action: result.action || null
         };
     }
 }
