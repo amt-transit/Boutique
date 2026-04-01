@@ -231,7 +231,17 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     return;
                 }
                 
-                const userDoc = await getDoc(doc(db, "users", state.userId));
+                let userDoc = await getDoc(doc(db, "users", state.userId));
+                
+                // Mécanisme de retry pour corriger la condition de course (Race Condition)
+                // Firebase Auth peut déclencher la connexion avant que Firestore n'ait eu le temps d'écrire
+                let retries = 4;
+                while (!userDoc.exists() && retries > 0) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    userDoc = await getDoc(doc(db, "users", state.userId));
+                    retries--;
+                }
+
                 if (userDoc.exists()) {
                     const data = userDoc.data();
                     

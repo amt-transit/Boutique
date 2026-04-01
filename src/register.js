@@ -1,4 +1,4 @@
-import { auth, db, createUserWithEmailAndPassword, doc, setDoc, serverTimestamp, collection, deleteUser } from './firebase.js';
+import { auth, db, createUserWithEmailAndPassword, doc, setDoc, serverTimestamp, collection, deleteUser, writeBatch } from './firebase.js';
 import { showToast } from './ui.js';
 
 export function setupRegisterForm() {
@@ -93,9 +93,11 @@ export function setupRegisterForm() {
                 const urlParams = new URLSearchParams(window.location.search);
                 const refererId = urlParams.get('ref') || null;
 
-                // 4. Créer la boutique
+                // 4. Créer la boutique et le profil en un seul lot (Batch) pour plus de rapidité
+                const batch = writeBatch(db);
                 const shopRef = doc(collection(db, "boutiques"));
-                await setDoc(shopRef, { 
+                
+                batch.set(shopRef, { 
                     nom: name, 
                     createdAt: serverTimestamp(), 
                     createdBy: uid, 
@@ -104,14 +106,15 @@ export function setupRegisterForm() {
                     referredBy: refererId // Ajout de l'information de parrainage
                 });
 
-                // 4. Créer le profil utilisateur lié
-                await setDoc(doc(db, "users", uid), { 
+                batch.set(doc(db, "users", uid), { 
                     email: email, 
                     password: pass, // AJOUT : Enregistrement du mot de passe
                     role: 'admin', 
                     allowedShops: [{id: shopRef.id, name: name, role: 'admin'}], 
                     shopIds: [shopRef.id] 
                 });
+
+                await batch.commit();
 
                 showToast("Bienvenue ! Votre essai de 90 jours commence.", "success");
                 

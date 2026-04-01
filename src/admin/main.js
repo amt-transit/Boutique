@@ -233,8 +233,10 @@ export function setupAdminFeatures() {
                     }
                 };
 
-                await assignOrUpdateUser(adminCreds.email, adminCreds.pass, 'admin', ref.id, nom);
-                await assignOrUpdateUser(sellerCreds.email, sellerCreds.pass, 'seller', ref.id, nom);
+                await Promise.all([
+                    assignOrUpdateUser(adminCreds.email, adminCreds.pass, 'admin', ref.id, nom),
+                    assignOrUpdateUser(sellerCreds.email, sellerCreds.pass, 'seller', ref.id, nom)
+                ]);
 
                 showToast("Boutique créée et accès configurés !");
 
