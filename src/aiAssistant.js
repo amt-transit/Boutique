@@ -1,5 +1,10 @@
-// src/aiAssistant.js
+// ════════════════════════════════════════════════════════════════
+//  aiAssistant.js — Assistant intelligent "Ma Boutique" V2
+//  Moteur de score par sujet + mémoire contexte + Interface riche
+// ════════════════════════════════════════════════════════════════
+
 export function setupAIAssistant() {
+    // ── Éléments DOM ─────────────────────────────────────────────
     const aiBtn = document.getElementById('ai-assistant-btn');
     const aiPanel = document.getElementById('ai-assistant-panel');
     const aiCloseBtn = document.getElementById('ai-close-btn');
@@ -7,310 +12,276 @@ export function setupAIAssistant() {
     const micPulse = document.getElementById('ai-mic-pulse');
     const statusText = document.getElementById('ai-status-text');
     const chatBox = document.getElementById('ai-chat-box');
-    const aiInput = document.getElementById('ai-text-input');
-    const aiSendBtn = document.getElementById('ai-send-btn');
 
     if (!aiBtn || !aiPanel) return;
 
-    // Toggle panneau
+    // ── État ─────────────────────────────────────────────────────
+    let lastTopic = null;
+    let isListening = false;
+    let hasShownWelcome = false;
+
+    // ── Ouvrir / Fermer ──────────────────────────────────────────
     aiBtn.addEventListener('click', () => {
-        aiPanel.classList.toggle('hidden');
-        aiPanel.classList.toggle('flex');
-        if (!aiPanel.classList.contains('hidden') && chatBox.children.length === 0) {
-            addWelcomeMessage();
+        const opening = aiPanel.classList.contains('hidden');
+        aiPanel.classList.toggle('hidden', !opening);
+        aiPanel.classList.toggle('flex', opening);
+        
+        if (opening && !hasShownWelcome) {
+            hasShownWelcome = true;
+            chatBox.innerHTML = '';
+            addMsg("Bonjour ! 👋 Je suis votre assistant virtuel **Ma Boutique**.\n\nPosez-moi une question ou choisissez une option ci-dessous !", 'ai', 'salutation');
+            showSuggestions(["Faire une vente", "Ajouter un produit", "Voir mes bénéfices", "Partager mon catalogue"]);
         }
     });
+
     aiCloseBtn.addEventListener('click', () => {
         aiPanel.classList.add('hidden');
         aiPanel.classList.remove('flex');
         stopSpeaking();
     });
 
-    // Envoi texte manuel
-    if (aiSendBtn && aiInput) {
-        aiSendBtn.addEventListener('click', () => {
-            const text = aiInput.value.trim();
-            if (text) {
-                processUserInput(text);
-                aiInput.value = '';
-            }
-        });
-        aiInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                aiSendBtn.click();
-            }
-        });
+    // ── Zone de saisie texte (Injectée dynamiquement) ────────────
+    if (!document.getElementById('ai-text-input')) {
+        const bar = document.createElement('div');
+        bar.className = "flex gap-2 px-3 pb-3 bg-white dark:bg-slate-800";
+        bar.innerHTML = `
+            <input id="ai-text-input" type="text" placeholder="Tapez votre question..."
+                   class="flex-1 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600
+                          rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-400
+                          dark:text-slate-200 placeholder-slate-400 autocomplete="off"">
+            <button id="ai-send-btn"
+                    class="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-xl transition active:scale-95 flex-shrink-0 shadow-sm"
+                    title="Envoyer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
+                </svg>
+            </button>`;
+        aiPanel.appendChild(bar);
     }
 
-    // Vérifier la compatibilité du navigateur pour la voix
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const textInput = document.getElementById('ai-text-input');
+    const sendBtn = document.getElementById('ai-send-btn');
+
+    sendBtn?.addEventListener('click', sendText);
+    textInput?.addEventListener('keydown', e => { if (e.key === 'Enter') sendText(); });
+
+    function sendText() {
+        const v = textInput?.value.trim();
+        if (!v) return;
+        textInput.value = '';
+        handleInput(v);
+    }
+
+    // ── Reconnaissance vocale ─────────────────────────────────────
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        if (statusText) statusText.textContent = "Reconnaissance vocale non supportée";
-        if (micBtn) {
-            micBtn.disabled = true;
-            micBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
+        if (statusText) statusText.textContent = "Utilisez la saisie texte ↓";
+        if (micBtn) { micBtn.disabled = true; micBtn.classList.add('opacity-40', 'cursor-not-allowed'); }
     } else {
-        setupVoiceRecognition();
-    }
+        const rec = new SR();
+        rec.lang = 'fr-FR';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
 
-    function setupVoiceRecognition() {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'fr-FR';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        let isListening = false;
-
-        micBtn.addEventListener('click', () => {
-            if (isListening) {
-                recognition.stop();
-            } else {
-                stopSpeaking();
-                recognition.start();
-            }
+        micBtn?.addEventListener('click', () => {
+            if (isListening) rec.stop();
+            else { stopSpeaking(); try { rec.start(); } catch(e) {} }
         });
 
-        recognition.onstart = () => {
-            isListening = true;
-            if (micPulse) micPulse.classList.remove('hidden');
-            if (statusText) statusText.textContent = "Je vous écoute...";
-        };
-
-        recognition.onspeechend = () => {
-            recognition.stop();
-        };
-
-        recognition.onend = () => {
-            isListening = false;
-            if (micPulse) micPulse.classList.add('hidden');
-            if (statusText) statusText.textContent = "Appuyez sur le micro pour parler...";
-        };
-
-        recognition.onresult = (event) => {
-            const userSpeech = event.results[0][0].transcript;
-            processUserInput(userSpeech);
-        };
-
-        recognition.onerror = (event) => {
-            console.error('Erreur reconnaissance vocale:', event.error);
-            if (statusText) statusText.textContent = "Erreur microphone, réessayez";
-            isListening = false;
-            if (micPulse) micPulse.classList.add('hidden');
-            setTimeout(() => {
-                if (statusText) statusText.textContent = "Appuyez sur le micro pour parler...";
-            }, 2000);
+        rec.onstart = () => { isListening = true; micPulse?.classList.remove('hidden'); if(statusText) statusText.textContent = "Je vous écoute..."; };
+        rec.onspeechend = () => rec.stop();
+        rec.onend = () => { isListening = false; micPulse?.classList.add('hidden'); if(statusText) statusText.textContent = "Micro ou texte ↓"; };
+        rec.onresult = e => handleInput(e.results[0][0].transcript);
+        rec.onerror = e => {
+            isListening = false; micPulse?.classList.add('hidden');
+            if (e.error === 'not-allowed') addMsg("⚠️ Accès au micro refusé. Utilisez le texte.", 'ai');
         };
     }
 
-    function addWelcomeMessage() {
-        const welcomeMsg = document.createElement('div');
-        welcomeMsg.className = "bg-white dark:bg-slate-800 border dark:border-slate-700 p-3 rounded-xl rounded-tl-none shadow-sm mr-auto max-w-[85%] text-slate-700 dark:text-slate-200";
-        welcomeMsg.innerHTML = `👋 Bonjour ! Je suis votre assistant virtuel.<br><br>
-        Je peux vous aider avec :<br>
-        • 📦 Gestion des produits et du stock<br>
-        • 💰 Ventes et encaissements<br>
-        • 👥 Clients et crédits<br>
-        • 📊 Bilans et bénéfices<br>
-        • 🔗 Catalogue en ligne<br>
-        • 👨‍💼 Gestion de l'équipe<br>
-        • 🏪 Fournisseurs<br>
-        • 📜 Journal d'audit<br><br>
-        <span class="text-blue-500">Posez-moi une question !</span>`;
-        chatBox.appendChild(welcomeMsg);
-    }
-
-    async function processUserInput(text) {
-        addMessageToChat(text, 'user');
+    // ── Point d'entrée de traitement ─────────────────────────────
+    function handleInput(text) {
+        chatBox.querySelectorAll('.ai-sugg').forEach(el => el.remove());
+        addMsg(text, 'user');
         if (statusText) statusText.textContent = "Je réfléchis...";
         
         setTimeout(() => {
-            const response = generateSmartResponse(text);
-            addMessageToChat(response, 'ai');
+            const { response, topic, suggestions } = getSmartResponse(text, lastTopic);
+            lastTopic = topic;
+            addMsg(response, 'ai', topic);
+            if (suggestions?.length) showSuggestions(suggestions);
             speak(response);
-            if (statusText) statusText.textContent = "Appuyez sur le micro pour parler...";
-        }, 500);
+            if (statusText) statusText.textContent = "Micro ou texte ↓";
+        }, 400 + Math.random() * 200); // Délai humain
     }
 
-    function addMessageToChat(text, sender) {
-        const msgDiv = document.createElement('div');
+    // ── Affichage UI ──────────────────────────────────────────────
+    function addMsg(text, sender, topic = null) {
+        const d = document.createElement('div');
+        const time = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+
         if (sender === 'user') {
-            msgDiv.className = "bg-blue-100 dark:bg-blue-900/40 p-3 rounded-xl rounded-tr-none shadow-sm ml-auto max-w-[85%] text-slate-800 dark:text-blue-100";
-            msgDiv.textContent = text;
+            d.className = "flex flex-col items-end gap-0.5 mb-3 animate-fade-in-up";
+            d.innerHTML = `
+                <div class="bg-purple-600 text-white px-3 py-2 rounded-2xl rounded-tr-sm shadow-sm max-w-[88%] text-xs font-medium leading-relaxed">
+                    ${escapeHtml(text)}
+                </div>
+                <span class="text-[9px] text-slate-400 font-medium">${time}</span>`;
         } else {
-            msgDiv.className = "bg-white dark:bg-slate-800 border dark:border-slate-700 p-3 rounded-xl rounded-tl-none shadow-sm mr-auto max-w-[85%] text-slate-700 dark:text-slate-200";
-            msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+            d.className = "flex flex-col items-start gap-0.5 mb-3 animate-fade-in-up";
+            d.innerHTML = `
+                <div class="flex items-start gap-2">
+                    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-sm">${getTopicIcon(topic)}</div>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[88%] text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
+                        ${formatText(text)}
+                    </div>
+                </div>
+                <span class="text-[9px] text-slate-400 font-medium pl-8">${time}</span>`;
         }
-        chatBox.appendChild(msgDiv);
+        chatBox.appendChild(d);
         chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function showSuggestions(list) {
+        const w = document.createElement('div');
+        w.className = "ai-sugg flex flex-wrap gap-1.5 pl-8 pb-3 animate-fade-in-up";
+        list.forEach(s => {
+            const b = document.createElement('button');
+            b.className = "text-[10px] bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700 px-3 py-1.5 rounded-full transition font-bold active:scale-95";
+            b.textContent = s;
+            b.addEventListener('click', () => { w.remove(); handleInput(s); });
+            w.appendChild(b);
+        });
+        chatBox.appendChild(w);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // ── Utilitaires ───────────────────────────────────────────────
+    function formatText(t) {
+        return t.replace(/\n\n/g, '</p><p class="mt-1.5">')
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong class="text-slate-800 dark:text-slate-100 font-extrabold">$1</strong>')
+                .replace(/→ /g, '<span class="text-purple-500 font-bold">→</span> ');
+    }
+    
+    function escapeHtml(t) {
+        return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    
+    function getTopicIcon(t) {
+        const icons = { vente:'🛒', stock:'📦', credit:'👥', depense:'💸', commande:'📋', fournisseur:'🚚', bilan:'📊', catalogue:'🌐', equipe:'👤', audit:'🔍', code_barre:'📷', mode_sombre:'🌙', connexion:'🔐', remise:'🏷️', monnaie:'💰', variante:'🎨', pwa:'📲', pdf:'📄', recherche:'🔎', salutation:'👋', merci:'✨', erreur:'🤔', default:'🤖' };
+        return icons[t] || icons.default;
     }
 
     function speak(text) {
         if (!window.speechSynthesis) return;
         stopSpeaking();
-        const utterance = new SpeechSynthesisUtterance(text.replace(/<[^>]*>?/gm, ''));
-        utterance.lang = 'fr-FR';
-        utterance.rate = 0.95;
-        utterance.pitch = 1.0;
-        window.speechSynthesis.speak(utterance);
+        const clean = text.replace(/<[^>]*>/g,'').replace(/\*\*/g,'').substring(0, 200);
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = 'fr-FR'; u.rate = 1.05; u.pitch = 1.0;
+        const frVoice = window.speechSynthesis.getVoices().find(v => v.lang.startsWith('fr') && v.localService);
+        if (frVoice) u.voice = frVoice;
+        window.speechSynthesis.speak(u);
     }
 
-    function stopSpeaking() {
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
-    }
+    function stopSpeaking() { window.speechSynthesis?.cancel(); }
 
-    // ============= MOTEUR DE RÉPONSES AMÉLIORÉ =============
-    function generateSmartResponse(query) {
-        const q = normalizeText(query);
+    // ════════════════════════════════════════════════════════════
+    //  MOTEUR DE RÉPONSES AVANCÉ — Score + Mémoire
+    // ════════════════════════════════════════════════════════════
+    function getSmartResponse(query, prevTopic) {
+        const nQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
         
-        // Détection multi-mots
-        const containsAny = (words) => words.some(w => q.includes(normalizeText(w)));
-        const containsAll = (words) => words.every(w => q.includes(normalizeText(w)));
+        const hasWord = words => words.some(w => nQuery.includes(w));
+        const countWords = words => words.filter(w => nQuery.includes(w)).length;
+        const isNegative = hasWord(['pas', 'bug', 'erreur', 'marche pas', 'probleme', 'impossible']);
+        const isFollowUp = hasWord(['et aussi', 'encore', 'autre', 'et pour', 'et si']);
+
+        // ── Système de Scores par Intention ──
+        const scores = {
+            salutation: countWords(['bonjour', 'salut', 'coucou', 'hello', 'hey', 'bjr', 'i ni ce', 'aw ni ce', 'inice', 'awnice', 'anice']),
+            merci: countWords(['merci', 'super', 'parfait', 'genial', 'top', 'cimer', 'barika', 'a barika', 'djarabi']),
+            aide: countWords(['aide', 'aider', 'apprendre', 'debut', 'fonction', 'comment', 'marche', 'deme']),
+
+            vente: countWords(['vente', 'vendre', 'encaisser', 'caisse', 'panier', 'ticket', 'facture', 'paiement', 'feere', 'fere']),
+            remise: countWords(['remise', 'reduction', 'promo', 'discount', 'moins cher', 'rabais', 'do bo a la', 'a do bo', 'a da dusu']),
+            monnaie: countWords(['monnaie', 'fond caisse', 'fonds de caisse', 'matin', 'demarrer', 'caisse initiale', 'jeton', 'petite monnaie', 'wari misen', 'warimisen']),
+            mobile_money: countWords(['wave', 'orange', 'mtn', 'moov', 'mobile money', 'momo', 'electronique']),
+            credit: countWords(['credit', 'dette', 'doit', 'impaye', 'rembourser', 'remboursement', 'client', 'pret', 'bon', 'juru', 'njuru', 'n\'juru']),
+            commande: countWords(['commande', 'reserver', 'livraison', 'livrer', 'livreur', 'route', 'preparation', 'expedier']),
+
+            stock: countWords(['stock', 'produit', 'article', 'marchandise', 'inventaire', 'quantite', 'ajouter', 'nouveau', 'minen', 'fen', 'jogo']),
+            prix: countWords(['prix', 'tarif', 'modifier prix', 'changer', 'cout', 'songo', 'a songo', 'da', 'a da']),
+            variante: countWords(['variante', 'taille', 'couleur', 'pointure', 'modele', 'declinaison', 'suguya', 'cogo']),
+            rupture: countWords(['rupture', 'epuise', 'bas', 'alerte', 'manque', 'faible', 'banna', 'a banna', 'a te yen']),
+            perte: countWords(['perte', 'perime', 'casse', 'vole', 'manquant', 'signaler', 'tinena', 'a tinena', 'tununa']),
+            code_barre: countWords(['code barre', 'scanner', 'etiquette', 'imprimer', 'barcode', 'qr', 'flash']),
+
+            depense: countWords(['depense', 'charge', 'facture', 'loyer', 'transport', 'cie', 'sodeci', 'sortie', 'frais', 'wari bo', 'wari boli']),
+            bilan: countWords(['benefice', 'bilan', 'rapport', 'chiffre', 'gagne', 'recette', 'point', 'rentable', 'profit', 'tono', 'tono soro', 'wari to']),
+            capital: countWords(['fonds investi', 'capital', 'mise de depart', 'investi', 'fond de commerce', 'fonds de commerce', 'fond de depart', 'fonds de depart', 'budget', 'wari juju', 'wari kun']),
+            pdf: countWords(['pdf', 'exporter', 'telecharger', 'imprimer bilan']),
+
+            fournisseur: countWords(['fournisseur', 'grossiste', 'approvisionnement', 'achat', 'contact', 'feerekela']),
+            catalogue: countWords(['catalogue', 'en ligne', 'internet', 'lien', 'partager', 'whatsapp', 'site', 'vitrine']),
+            equipe: countWords(['equipe', 'vendeur', 'employe', 'gerant', 'acces', 'compte', 'utilisateur', 'ajouter personne', 'baarakela', 'mogo']),
+            audit: countWords(['audit', 'journal', 'historique', 'trace', 'mouvement', 'supprime', 'erreur', 'log']),
+            pwa: countWords(['installer', 'appli', 'ecran accueil', 'pwa', 'telecharger']),
+            mode_sombre: countWords(['sombre', 'nuit', 'theme', 'couleur ecran', 'luminosite'])
+        };
+
+        // Modificateurs de contexte
+        if (prevTopic && scores[prevTopic] > 0) scores[prevTopic] += 1.5;
+        if (isFollowUp && prevTopic) scores[prevTopic] += 2;
+
+        const bestTopic = Object.entries(scores).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1])[0]?.[0];
+
+        // ── Base de Connaissances ──
+        const KB = {
+            salutation: { r: "Bonjour ! 👋 Prêt à gérer votre boutique ?\n\nQue souhaitez-vous faire ?", s: ["Faire une vente", "Gérer mon stock", "Voir mon bilan"] },
+            merci: { r: "Avec grand plaisir ! 😊 N'hésitez pas si vous avez d'autres questions.", s: ["Faire une vente", "Ajouter un produit"] },
+            aide: { r: "Voici ce que je gère :\n\n→ **Vente** : Caisse, Mobile Money, Crédits\n→ **Stock** : Produits, Variantes, Pertes, Étiquettes\n→ **Finances** : Bénéfices, Dépenses, Bilans PDF\n→ **Clients & Commandes**\n→ **Catalogue en ligne WhatsApp**", s: ["Encaisser une vente", "Voir mes bénéfices", "Partager mon catalogue"] },
+            
+            vente: { r: "📦 **Pour effectuer une vente :**\n\n1️⃣ Allez dans l'onglet **Vente**\n2️⃣ Touchez ou scannez les articles\n3️⃣ Cliquez sur **ENCAISSER** (bouton vert en bas)\n4️⃣ Choisissez le paiement : Espèces ou Mobile Money\n\n💡 *Astuce : Vous pouvez modifier le prix ou la quantité d'un article directement dans le panier.*", s: ["Vente à crédit", "Ajouter une remise", "Mobile Money"] },
+            remise: { r: "🏷️ **Appliquer une remise :**\n\nDans l'onglet **Vente**, sous le panier, cliquez sur le petit bouton **+ Ajouter Remise**. Saisissez le montant à déduire en CFA et le total s'ajustera automatiquement.", s: ["Faire une vente", "Mobile money"] },
+            monnaie: { r: "💰 **Monnaie du matin (Fond de caisse) :**\n\nDans l'onglet **Vente**, regardez la zone bleue en haut à droite. Entrez le montant présent dans votre tiroir, puis cliquez sur la disquette 💾 pour l'enregistrer.", s: ["Voir mes bénéfices", "Enregistrer une dépense"] },
+            mobile_money: { r: "📱 **Paiement Mobile Money :**\n\nDepuis la **Vente**, au moment de payer, cliquez sur **Mobile Money** (bouton turquoise). Choisissez l'opérateur (Wave, Orange, MTN...) et entrez le numéro du client.", s: ["Faire une vente", "Vente à crédit"] },
+            credit: { r: "👥 **Gestion des Crédits :**\n\n→ **Pour faire un crédit :** Dans Vente, cliquez sur le bouton orange **Crédit Client**.\n→ **Pour encaisser un remboursement :** Allez dans l'onglet **Clients & Crédits**, cherchez le client et cliquez sur **Encaisser**.", s: ["Voir mes clients", "Faire une vente"] },
+            commande: { r: "📋 **Les Commandes (Livraisons) :**\n\nL'onglet **Commandes** centralise les achats faits par vos clients sur votre catalogue en ligne. Vous pouvez :\n→ Changer le statut (En préparation, En route)\n→ Assigner un livreur avec son numéro\n→ Partager le suivi par WhatsApp", s: ["Partager mon catalogue", "Assigner un livreur"] },
+            
+            stock: { r: "📦 **Gérer le Stock :**\n\nToute la marchandise se gère dans l'onglet **Stock** :\n→ Cliquez sur **Nouveau Produit** pour ajouter.\n→ Cliquez sur un produit existant pour modifier son prix, son stock ou sa photo.\n\n*Le stock se déduit automatiquement à chaque encaissement.*", s: ["Signaler une perte", "Imprimer des étiquettes", "Ajouter une variante"] },
+            prix: { r: "✏️ **Changer un prix :**\n\nAllez dans **Stock**, touchez le produit concerné, modifiez la case **Prix de Vente** et enregistrez. Le nouveau tarif sera immédiat à la caisse.", s: ["Gérer mon stock"] },
+            variante: { r: "🎨 **Tailles et Couleurs (Variantes) :**\n\nLors de la création d'un produit (onglet **Stock**), cochez la case bleue *\"Ce produit possède des variantes\"*. Vous pourrez alors ajouter des lignes pour chaque taille ou couleur, avec leur propre stock et photo !", s: ["Ajouter un produit"] },
+            rupture: { r: "⚠️ **Ruptures de stock :**\n\nL'application vous alerte en rouge sur le **Dashboard** (Stock Faible) quand un article descend en dessous de 5. Triez votre onglet Stock par \"Stock Faible\" pour savoir quoi réapprovisionner.", s: ["Gérer mes fournisseurs", "Ajouter du stock"] },
+            perte: { r: "🗑️ **Pertes et Périmés :**\n\nPour sortir un article du stock sans gagner d'argent (Cassé, périmé, volé), allez dans **Stock**, cliquez sur le produit, puis sur le bouton rouge **Signaler une perte** en bas.", s: ["Voir le journal d'audit"] },
+            code_barre: { r: "📷 **Codes-barres et Scanner :**\n\n→ Pour vendre/ajouter, touchez l'icône **caméra**.\n→ Pour imprimer des étiquettes à coller sur vos articles, allez dans **Stock** et cliquez sur le bouton gris **Imprimer Étiquettes**.", s: ["Faire une vente", "Gérer le stock"] },
+            
+            depense: { r: "💸 **Les Dépenses (Charges) :**\n\nPour enregistrer un loyer, un transport ou une facture CIE, allez dans l'onglet **Dépenses**. Saisissez le motif et le montant. Ces charges seront automatiquement déduites de vos bénéfices dans le bilan.", s: ["Voir mon bilan", "Caisse de départ"] },
+            bilan: { r: "📊 **Bénéfices et Bilan :**\n\nL'onglet **Bilan** calcule tout pour vous ! Il prend vos ventes, soustrait vos dépenses, et vous affiche le bénéfice net ainsi que l'argent réel (Trésorerie) qui doit être en votre possession. Filtrez par date pour analyser votre semaine ou votre mois.", s: ["Exporter en PDF", "Enregistrer une dépense", "Capital investi"] },
+            capital: { r: "🏦 **Capital (Fonds de départ investi) :**\n\nAllez dans l'onglet **Bilan**. Dans la grande case bleue en haut, entrez l'argent investi pour démarrer l'activité. Cela permet à l'appli de calculer correctement l'évolution de votre trésorerie globale.", s: ["Voir mon bilan"] },
+            pdf: { r: "📄 **Export PDF :**\n\nDepuis l'onglet **Bilan**, choisissez vos dates puis cliquez sur le bouton rouge **PDF**. Un rapport propre et professionnel se téléchargera, parfait pour votre comptable ou vos archives.", s: ["Voir mon bilan"] },
         
-        // ========== 1. SALUTATIONS ==========
-        if (containsAny(['bonjour', 'salut', 'coucou', 'hello', 'hey', 'yo', 'bjr'])) {
-            const greetings = [
-                "Bonjour ! 👋 Comment puis-je vous aider aujourd'hui ?",
-                "Salut ! Prêt à gérer votre boutique ?",
-                "Bonjour ! Que puis-je faire pour vous ?",
-                "Coucou ! Besoin d'aide pour quelque chose ?"
-            ];
-            return greetings[Math.floor(Math.random() * greetings.length)];
-        }
-        
-        if (containsAny(['merci', 'thanks', 'merci beaucoup', 'cimer', 'gracias'])) {
-            return "Avec plaisir ! 😊 N'hésitez pas si vous avez d'autres questions.";
-        }
-        
-        // ========== 2. VENTES ET CAISSE ==========
-        if (containsAny(['vente', 'encaisser', 'caisse', 'panier', 'ajouter au panier', 'facture', 'ticket', 'paiement', 'monnaie'])) {
-            if (containsAny(['comment', 'faire', 'procédure', 'etapes', 'procedure'])) {
-                return "📦 **Pour effectuer une vente :**\n\n1️⃣ Allez dans l'onglet **Vente** (Caisse)\n2️⃣ Recherchez ou scannez un produit\n3️⃣ Ajustez la quantité si besoin\n4️⃣ Cliquez sur **ENCAISSER**\n5️⃣ Choisissez le mode de paiement : Espèces, Mobile Money, ou Crédit Client\n\n💡 *Astuce : vous pouvez modifier le prix à la volée en cliquant sur le montant dans le panier.*";
-            }
-            return "Pour vendre, allez dans l'onglet **Vente** (Caisse). Scannez ou cherchez un produit, ajustez la quantité, puis cliquez sur le bouton vert **ENCAISSER**. Vous pourrez choisir entre Espèces, Mobile Money ou Crédit Client. Simple et rapide ! 💰";
-        }
-        
-        // ========== 3. FONDS DE CAISSE (MONNAIE DU MATIN) ==========
-        if (containsAny(['fonds', 'caisse initiale', 'monnaie du matin', 'fonds de caisse', 'argent de depart', 'capital'])) {
-            return "💰 **Fonds de caisse / Monnaie du matin :**\n\nDans l'onglet **Vente**, vous verrez une section bleue en haut à droite du panier avec le libellé 'Monnaie du matin'. Entrez le montant d'argent que vous mettez dans la caisse pour démarrer la journée, puis cliquez sur l'icône de sauvegarde. Ce montant servira de base pour calculer le solde théorique de fin de journée. 📊";
-        }
-        
-        // ========== 4. STOCK ET PRODUITS ==========
-        if (containsAny(['stock', 'produit', 'article', 'marchandise', 'inventaire', 'quantite', 'rupture', 'code barre', 'etiquette'])) {
-            if (containsAny(['ajouter', 'nouveau', 'creer', 'entrer'])) {
-                return "🆕 **Ajouter un produit :**\n\n• Rendez-vous dans l'onglet **Stock**\n• Cliquez sur **Nouveau Produit**\n• Remplissez les informations (nom, prix, catégorie, description, photo)\n• Pour les variantes (tailles, couleurs), cochez la case \"Ce produit possède des variantes\"\n• Validez\n\n💡 *Vous pouvez aussi scanner un code-barres pour l'associer au produit.*";
-            }
-            if (containsAny(['modifier', 'changer', 'mettre à jour', 'corriger'])) {
-                return "✏️ **Modifier un produit :**\n\n• Allez dans l'onglet **Stock**\n• Cliquez sur le produit dans la liste\n• Modifiez le prix, la quantité, la catégorie, la description ou la photo\n• Pour signaler une perte (cassé/périmé), utilisez la zone rouge \"Zone de Perte\"\n• Enregistrez les modifications";
-            }
-            if (containsAny(['bas', 'faible', 'alerte', 'manque', 'epuise'])) {
-                return "⚠️ **Gestion des stocks faibles :**\n\nL'application vous alerte automatiquement quand un produit atteint un seuil critique (moins de 5 unités). Vous pouvez consulter la liste dans le Dashboard en cliquant sur la carte \"Stock Faible\", ou dans l'onglet Stock en triant par \"Stock Faible\".";
-            }
-            return "📦 **Gestion du stock :**\n\nToute votre marchandise se trouve dans l'onglet **Stock**. Vous pouvez :\n• Ajouter des produits avec photo et description\n• Modifier prix et quantités\n• Gérer les variantes (tailles, couleurs)\n• Signaler des pertes (cassés, périmés)\n• Imprimer des étiquettes avec code-barres\n• Importer des produits en masse via CSV\n\nBesoin d'aide sur une action spécifique ?";
-        }
-        
-        // ========== 5. CATALOGUE EN LIGNE ==========
-        if (containsAny(['catalogue', 'en ligne', 'internet', 'site web', 'vitrine', 'lien', 'partager', 'whatsapp', 'facebook', 'instagram', 'client'])) {
-            if (containsAny(['copier', 'obtenir', 'avoir', 'récupérer', 'trouver', 'lien'])) {
-                return "🔗 **Votre lien de catalogue :**\n\n1️⃣ Ouvrez votre profil en cliquant sur votre email (dans le menu de gauche sur PC, ou via le menu hamburger ☰ sur mobile)\n2️⃣ Dans la section **Boutique en ligne**, cliquez sur **Copier**\n3️⃣ Partagez ce lien par WhatsApp, SMS ou réseaux sociaux\n\n✨ *Vos clients peuvent voir vos produits et commander directement sans créer de compte !*";
-            }
-            return "🌐 **Catalogue en ligne :**\n\nChaque boutique a son propre lien de commande ! Vos clients peuvent voir vos produits, choisir leurs articles et passer commande en quelques clics. Retrouvez le lien dans votre profil → **Boutique en ligne** → **Copier**. Partagez-le et recevez des commandes directement !";
-        }
-        
-        // ========== 6. CLIENTS ET CRÉDITS ==========
-        if (containsAny(['client', 'credit', 'dette', 'impaye', 'remboursement', 'paiement', 'doit', 'solde', 'creance'])) {
-            if (containsAny(['ajouter', 'nouveau', 'creer'])) {
-                return "👤 **Ajouter un client :**\n\n• Allez dans l'onglet **Clients & Crédits**\n• Cliquez sur **Nouveau Client**\n• Saisissez son nom (obligatoire), téléphone et adresse\n• Validez\n\nLes clients peuvent ensuite acheter à crédit directement depuis la caisse.";
-            }
-            if (containsAny(['rembourser', 'encaisser', 'payer', 'régler', 'paiement'])) {
-                return "💵 **Encaisser un remboursement :**\n\n• Allez dans l'onglet **Clients & Crédits**\n• Trouvez le client dans la liste\n• Cliquez sur **Payer**\n• Saisissez le montant reçu\n\n*Le solde de la dette se mettra automatiquement à jour et l'argent sera ajouté à votre caisse.*";
-            }
-            return "👥 **Gestion des clients :**\n\nL'onglet **Clients & Crédits** vous permet de :\n• Ajouter/modifier des clients\n• Voir qui vous doit de l'argent\n• Enregistrer les remboursements\n• Contacter les clients par WhatsApp directement depuis l'application\n• Consulter l'historique complet des transactions pour chaque client";
-        }
-        
-        // ========== 7. DÉPENSES ET CHARGES ==========
-        if (containsAny(['depense', 'charge', 'facture', 'sortie', 'cie', 'sodeci', 'loyer', 'transport', 'eau', 'electricite', 'nourriture', 'entree', 'injection'])) {
-            if (containsAny(['ajouter', 'nouvelle', 'enregistrer', 'creer'])) {
-                return "📝 **Enregistrer une dépense :**\n\n1️⃣ Allez dans l'onglet **Dépenses**\n2️⃣ Choisissez le type :\n   • 🔴 Dépense / Sortie (argent qui sort de la caisse)\n   • 🟢 Apport Externe (injection d'argent personnel)\n3️⃣ Remplissez le motif et le montant\n4️⃣ Sélectionnez la source (prise dans la caisse ou paiement externe)\n5️⃣ Cliquez sur **Ajouter**\n\nLa dépense sera automatiquement déduite (ou ajoutée) à vos bénéfices.";
-            }
-            return "💸 **Suivi des dépenses :**\n\nL'onglet **Dépenses** centralise toutes vos charges. Vous pouvez :\n• Ajouter des dépenses ponctuelles\n• Enregistrer des injections d'argent (apports personnels)\n• Rechercher par motif\n• Voir l'historique complet\n• Annuler une erreur (si vous êtes administrateur)\n\n*Les dépenses sont automatiquement déduites du bénéfice final.*";
-        }
-        
-        // ========== 8. BILAN ET BÉNÉFICES ==========
-        if (containsAny(['benefice', 'bilan', 'chiffre', 'argent', 'recette', 'gain', 'profit', 'resultat', 'performance', 'tresorerie'])) {
-            if (containsAny(['caisse initiale', 'fonds', 'capital', 'investi', 'depart'])) {
-                return "💰 **Capital de départ / Fonds investi :**\n\nPour enregistrer l'argent que vous avez investi au départ :\n1️⃣ Allez dans l'onglet **Bilan**\n2️⃣ En haut, dans la zone bleue, entrez le montant investi (fonds de caisse initial)\n3️⃣ Cliquez sur **Sauvegarder**\n\nCe montant sert de base pour calculer vos bénéfices réels et la trésorerie.";
-            }
-            if (containsAny(['total', 'global', 'ensemble', 'tout'])) {
-                return "📊 **Vue d'ensemble de votre activité :**\n\nDans l'onglet **Bilan**, vous retrouvez :\n• **Fonds de départ** : votre investissement initial\n• **Total Entrées** : ventes + remboursements\n• **Total Sorties** : dépenses\n• **Trésorerie Réelle** : argent disponible\n• **Bénéfice Net** = Entrées - Sorties\n\nFiltrez par date pour analyser votre performance !";
-            }
-            return "📈 **Suivi financier :**\n\nL'onglet **Bilan** est votre tableau de bord financier :\n• Fonds de départ (capital investi)\n• Total des entrées (ventes, remboursements, apports)\n• Total des sorties (dépenses)\n• Trésorerie réelle (argent disponible)\n• Bénéfice net\n\nVous pouvez filtrer par période et exporter vos données en PDF ou CSV.";
-        }
-        
-        // ========== 9. COMMANDES ==========
-        if (containsAny(['commande', 'reservation', 'livraison', 'livrer', 'expedier', 'preparer', 'en cours', 'en attente'])) {
-            if (containsAny(['statut', 'changer', 'modifier', 'mettre à jour', 'valider', 'livreur'])) {
-                return "📦 **Gérer les commandes :**\n\n1️⃣ Allez dans l'onglet **Commandes**\n2️⃣ Les commandes sont classées par statut :\n   • **Nouvelles** (à traiter)\n   • **En préparation**\n   • **En route**\n3️⃣ Cliquez sur une commande pour :\n   • Changer son statut\n   • Assigner un livreur\n   • Valider le paiement\n   • Contacter le client";
-            }
-            return "📋 **Gestion des commandes :**\n\nL'onglet **Commandes** affiche toutes les commandes reçues via votre catalogue en ligne. Vous pouvez :\n• Voir les détails de chaque commande\n• Changer le statut (nouvelle → en préparation → en route → livrée)\n• Assigner un livreur avec son contact\n• Valider le paiement (espèces ou Mobile Money)\n• Contacter le client directement\n\n*Les commandes en attente sont réservées, le stock n'est pas encore déduit.*";
-        }
-        
-        // ========== 10. FOURNISSEURS ==========
-        if (containsAny(['fournisseur', 'grossiste', 'approvisionnement', 'achat', 'commander stock', 'reapprovisionner', 'contact'])) {
-            return "🏪 **Gestion des fournisseurs :**\n\nL'onglet **Fournisseurs** vous permet de :\n• Ajouter/modifier vos fournisseurs\n• Enregistrer les coordonnées complètes (nom, contact, email, téléphone)\n• Les contacter directement via WhatsApp depuis l'application\n\nUtile pour organiser vos réapprovisionnements et garder tous vos contacts à portée de main !";
-        }
-        
-        // ========== 11. ÉQUIPE ET UTILISATEURS ==========
-        if (containsAny(['equipe', 'vendeur', 'employe', 'staff', 'collaborateur', 'acces', 'compte', 'utilisateur', 'gerant', 'admin'])) {
-            if (containsAny(['ajouter', 'creer', 'nouveau', 'inviter'])) {
-                return "👥 **Ajouter un employé :**\n\n1️⃣ Ouvrez le menu (en haut à droite sur PC, ou le menu hamburger ☰ sur mobile)\n2️⃣ Cliquez sur **Gestion Équipe**\n3️⃣ Remplissez :\n   • Le rôle (Gérant ou Vendeur)\n   • L'identifiant (pseudo ou email)\n   • Le mot de passe / code PIN\n4️⃣ Cliquez sur **Créer le compte**\n\n*Seul le propriétaire peut ajouter des membres.*";
-            }
-            if (containsAny(['role', 'difference', 'gérant', 'admin', 'vendeur'])) {
-                return "👔 **Différence entre les rôles :**\n\n• **Gérant (Admin)** : accès complet à toutes les fonctionnalités (stock, finances, équipe, paramètres, bilans)\n• **Vendeur** : accès limité à la caisse, clients, et rapport de ses propres ventes uniquement\n\nCela permet de sécuriser vos données tout en laissant vos employés travailler efficacement.";
-            }
-            return "👨‍💼 **Gestion de l'équipe :**\n\nEn tant que propriétaire, vous pouvez ajouter des vendeurs ou gérants via le menu **Gestion Équipe** (accessible depuis le menu hamburger ☰ sur mobile ou en haut à droite sur PC). Chaque membre aura son propre compte avec des accès adaptés à son rôle. Idéal pour organiser votre boutique !";
-        }
-        
-        // ========== 12. AUDIT ET HISTORIQUE ==========
-        if (containsAny(['audit', 'journal', 'historique', 'trace', 'mouvement', 'qui a fait', 'supprime', 'annule', 'erreur', 'log'])) {
-            return "📜 **Journal d'audit :**\n\nL'onglet **Journal** enregistre toutes les actions importantes :\n• Ventes réalisées\n• Dépenses ajoutées\n• Modifications de stock\n• Suppressions\n• Connexions\n• Ajouts de produits\n\nC'est l'outil idéal pour retrouver une opération, vérifier l'activité de votre équipe ou analyser l'historique complet de votre boutique !";
-        }
-        
-        // ========== 13. CODES-BARRES ET ÉTIQUETTES ==========
-        if (containsAny(['code barre', 'scanner', 'etiquette', 'imprimer', 'barcode', 'qr code', 'flash', 'scan'])) {
-            return "📷 **Scanner et étiquettes :**\n\n• **Scanner** : utilisez l'icône 📷 dans les onglets Vente ou Stock pour ajouter des produits rapidement\n• **Étiquettes** : depuis l'onglet Stock, cliquez sur **Imprimer Étiquettes**, sélectionnez les produits et la quantité, puis générez vos étiquettes avec codes-barres\n\n*Idéal pour une gestion fluide et professionnelle !*";
-        }
-        
-        // ========== 14. EXPORTATION ET IMPORTATION ==========
-        if (containsAny(['exporter', 'importer', 'csv', 'excel', 'sauvegarder', 'backup', 'restaurer', 'export', 'import'])) {
-            return "💾 **Import/Export de données :**\n\n• **Exporter** : dans l'onglet **Bilan**, vous trouverez des boutons pour exporter produits et ventes au format CSV\n• **Importer** : en mode Super Admin, vous pouvez importer en masse des produits, clients ou ventes depuis des fichiers CSV\n\n*Pratique pour la sauvegarde, la migration ou la mise à jour massive de votre catalogue !*";
-        }
-        
-        // ========== 15. AIDE GÉNÉRALE ==========
-        if (containsAny(['aide', 'help', 'assistance', 'tuto', 'tutoriel', 'guide', 'support', 'comment ca marche', 'fonctionne', 'commencer'])) {
-            return "🆘 **Aide et assistance :**\n\nL'application est organisée en 11 onglets principaux :\n\n📊 **Accueil (Dashboard)** - Vue d'ensemble et KPIs\n💰 **Vente (Caisse)** - Encaissements et panier\n📋 **Commandes** - Gestion des commandes clients\n📦 **Stock** - Gestion des produits et inventaire\n🏪 **Fournisseurs** - Carnet d'adresses\n👥 **Clients & Crédits** - Dettes et remboursements\n💸 **Dépenses** - Charges et sorties\n📈 **Bilan** - Rapports financiers et bénéfices\n📜 **Journal** - Historique des actions\n\nPour plus d'aide, consultez le guide en cliquant sur \"Guide d'utilisation\" dans le menu.\n\nQue souhaitez-vous explorer ?";
-        }
-        
-        // ========== 16. PROFIL ET PARAMÈTRES ==========
-        if (containsAny(['profil', 'parametre', 'setting', 'configuration', 'boutique', 'modifier boutique', 'changer nom', 'logo'])) {
-            return "⚙️ **Paramètres de la boutique :**\n\nPour modifier les informations de votre boutique :\n1️⃣ Cliquez sur votre email (dans le menu de gauche sur PC, ou dans le menu hamburger ☰ sur mobile)\n2️⃣ Une fenêtre s'ouvre avec :\n   • Les informations de votre compte\n   • Le lien de votre catalogue à copier\n   • Les paramètres de la boutique (nom, téléphone, adresse, logo, message promo)\n3️⃣ Modifiez les champs souhaités\n4️⃣ Cliquez sur **Enregistrer**\n\n*Les modifications sont appliquées immédiatement.*";
-        }
-        
-        // ========== 17. RÉPONSE PAR DÉFAUT AVEC SUGGESTIONS ==========
-        const suggestions = [
-            "Je n'ai pas bien compris. Essayez avec ces mots-clés :\n\n• **vente** pour les encaissements\n• **produit** ou **stock** pour la gestion\n• **catalogue** pour le lien en ligne\n• **bilan** pour voir vos bénéfices\n• **client** pour les crédits\n• **commande** pour les livraisons\n• **fournisseur** pour le carnet d'adresses\n\nOu posez votre question différemment !",
-            "Désolé, je n'ai pas saisi votre demande. Pourriez-vous reformuler ?\n\nQuelques exemples :\n• \"Comment ajouter un produit ?\"\n• \"Où voir mes bénéfices ?\"\n• \"Comment créer un compte vendeur ?\"\n• \"Comment imprimer des étiquettes ?\"\n• \"Comment partager mon catalogue ?\"",
-            "Je ne connais pas encore cette fonctionnalité. Pouvez-vous me poser une question sur :\n• Les ventes et la caisse\n• Le stock et les produits\n• Les clients et crédits\n• Le catalogue en ligne\n• Les bilans financiers\n• Les commandes et livraisons ?"
-        ];
-        return suggestions[Math.floor(Math.random() * suggestions.length)];
-    }
-    
-    // Fonction de normalisation du texte
-    function normalizeText(str) {
-        return str.toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9\s]/g, '');
+            fournisseur: { r: "🚚 **Fournisseurs :**\n\nLe menu **Fournisseurs** est votre carnet d'adresses professionnel. Enregistrez-y vos grossistes pour les recontacter facilement via WhatsApp en cas de rupture de stock.", s: ["Gérer mon stock"] },
+            catalogue: { r: "🌐 **Boutique en ligne :**\n\nVotre boutique possède un lien internet unique ! Vos clients peuvent l'ouvrir (sans installer d'appli) pour voir vos produits et commander. Pour obtenir ce lien, cliquez sur **Paramètres / Profil** ⚙️ et appuyez sur **Copier** dans la section Boutique en ligne.", s: ["Gérer mes commandes"] },
+            equipe: { r: "👥 **Ajouter des Vendeurs :**\n\nSi vous êtes le Propriétaire, ouvrez le menu et cliquez sur **Gestion Équipe**. Créez un compte pour votre employé (Email + Code PIN). Un 'Vendeur' aura un accès limité (Caisse uniquement), tandis qu'un 'Gérant' aura un accès presque total.", s: ["Voir le journal d'audit"] },
+            audit: { r: "🔍 **Journal d'Audit :**\n\nL'onglet **Journal** est la mémoire de l'application. Chaque vente, chaque modification de prix, chaque dépense et chaque suppression y est tracée avec la date, l'heure et l'auteur. Impossible de tricher !", s: ["Gérer mon équipe", "Voir mes bénéfices"] },
+            pwa: { r: "📲 **Installer l'Appli :**\n\n→ Sur **Android** : Ouvrez le menu de Chrome et choisissez \"Installer l'application\".\n→ Sur **iPhone (Safari)** : Cliquez sur le carré avec la flèche ↑ au milieu en bas, puis \"Sur l'écran d'accueil\".", s: ["Mode Sombre"] },
+            mode_sombre: { r: "🌙 **Mode Sombre :**\n\nPour reposer vos yeux la nuit, ouvrez le menu latéral (ou regardez en bas à gauche sur PC) et cliquez sur le bouton **Mode Sombre**.", s: ["Installer l'application"] }
+        };
+
+        // ── Réponse de secours ──
+        const fallback = {
+            r: isNegative 
+                ? "Je vois qu'il y a une difficulté. 🤔 Pouvez-vous m'indiquer sur quel onglet vous êtes et ce que vous essayez de faire ?" 
+                : "Je ne suis pas sûr de comprendre. Pourriez-vous utiliser des mots simples comme :\n\n→ **'Faire une vente'**\n→ **'Ajouter un produit'**\n→ **'Partager mon catalogue'**",
+            s: ["Faire une vente", "Gérer le stock", "Voir le bilan"]
+        };
+
+        const result = bestTopic && KB[bestTopic] ? KB[bestTopic] : fallback;
+
+        return {
+            response: result.r,
+            topic: bestTopic || 'erreur',
+            suggestions: result.s || []
+        };
     }
 }
