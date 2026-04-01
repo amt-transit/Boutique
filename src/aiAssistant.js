@@ -2,9 +2,11 @@
 //  aiAssistant.js — Assistant intelligent "Ma Boutique" V2
 //  Moteur de score par sujet + mémoire contexte + Interface riche
 // ════════════════════════════════════════════════════════════════
+import { db, collection, addDoc, serverTimestamp } from './firebase.js';
 
 export function setupAIAssistant() {
     // ── Éléments DOM ─────────────────────────────────────────────
+    let lastUserQuery = "";
     const aiBtn = document.getElementById('ai-assistant-btn');
     const aiPanel = document.getElementById('ai-assistant-panel');
     const aiCloseBtn = document.getElementById('ai-close-btn');
@@ -81,7 +83,7 @@ export function setupAIAssistant() {
 
     // ── Reconnaissance vocale ─────────────────────────────────────
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    if (!SR) {
         if (statusText) statusText.textContent = "Utilisez la saisie texte ↓";
         if (micBtn) { micBtn.disabled = true; micBtn.classList.add('opacity-40', 'cursor-not-allowed'); }
     } else {
@@ -107,6 +109,7 @@ export function setupAIAssistant() {
 
     // ── Point d'entrée de traitement ─────────────────────────────
     function handleInput(text) {
+        lastUserQuery = text;
         chatBox.querySelectorAll('.ai-sugg').forEach(el => el.remove());
         addMsg(text, 'user');
         if (statusText) statusText.textContent = "Je réfléchis...";
@@ -158,13 +161,27 @@ export function setupAIAssistant() {
                 actionBtnHtml = `<button onclick="window.switchTab('${action}'); document.getElementById('ai-close-btn').click();" class="mt-3 bg-purple-100 hover:bg-purple-200 text-purple-700 w-full py-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-2 transition active:scale-95"><i data-lucide="external-link" class="w-3 h-3"></i> Y aller maintenant !</button>`;
             }
 
+            // NOUVEAU : Boutons d'apprentissage (RLHF)
+            let feedbackHtml = '';
+            // On ne demande pas de vote pour les salutations ou les erreurs
+            if (topic && topic !== 'salutation' && topic !== 'erreur') {
+                const safeQuery = lastUserQuery.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                feedbackHtml = `
+                <div class="flex items-center gap-3 mt-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+                    <span class="text-[9px] text-slate-400 font-medium">Avez-vous compris ?</span>
+                    <button onclick="window.rateAI('${safeQuery}', '${topic}', true, this)" class="text-[11px] bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-500 px-2 py-1 rounded-md transition border border-slate-200">👍 Oui</button>
+                    <button onclick="window.rateAI('${safeQuery}', '${topic}', false, this)" class="text-[11px] bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 px-2 py-1 rounded-md transition border border-slate-200">👎 Non</button>
+                </div>`;
+            }
+
             d.className = "flex flex-col items-start gap-0.5 mb-3 animate-fade-in-up";
             d.innerHTML = `
-                <div class="flex items-start gap-2">
+                <div class="flex items-start gap-2 w-full">
                     <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-sm">${getTopicIcon(topic)}</div>
-                    <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[88%] text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
-                        <div>${formatText(text)}</div>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[88%] min-w-[200px]">
+                        <div class="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">${formatText(text)}</div>
                         ${actionBtnHtml}
+                        ${feedbackHtml}
                     </div>
                 </div>
                 <span class="text-[9px] text-slate-400 font-medium pl-8">${time}</span>`;
@@ -234,47 +251,47 @@ export function setupAIAssistant() {
     function stopSpeaking() { window.speechSynthesis?.cancel(); }
 
     // ════════════════════════════════════════════════════════════
-    //  MOTEUR DE RÉPONSES AVANCÉ — Score + Mémoire + Actions
+    //  MOTEUR DE RÉPONSES BILINGUE (Français / Bambara-Dioula)
     // ════════════════════════════════════════════════════════════
     function getSmartResponse(query, prevTopic) {
         const nQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
         
         const hasWord = words => words.some(w => nQuery.includes(w));
         const countWords = words => words.filter(w => nQuery.includes(w)).length;
-        const isNegative = hasWord(['pas', 'bug', 'erreur', 'marche pas', 'probleme', 'impossible']);
-        const isFollowUp = hasWord(['et aussi', 'encore', 'autre', 'et pour', 'et si']);
+        const isNegative = hasWord(['pas', 'bug', 'erreur', 'marche pas', 'probleme', 'impossible', 'tɛ', 'te', 'bila']);
+        const isFollowUp = hasWord(['et aussi', 'encore', 'autre', 'et pour', 'et si', 'ani', 'tugun']);
 
-        // ── Système de Scores par Intention ──
+        // ── Lexique Enrichi (Français + Bambara/Dioula + Nouchi phonétique) ──
         const scores = {
-            salutation: countWords(['bonjour', 'salut', 'coucou', 'hello', 'hey', 'bjr', 'i ni ce', 'aw ni ce', 'inice', 'awnice', 'anice']),
-            merci: countWords(['merci', 'super', 'parfait', 'genial', 'top', 'cimer', 'barika', 'a barika', 'djarabi']),
-            aide: countWords(['aide', 'aider', 'apprendre', 'debut', 'fonction', 'comment', 'marche', 'deme']),
+            salutation: countWords(['bonjour', 'salut', 'coucou', 'hello', 'hey', 'bjr', 'i ni ce', 'aw ni ce', 'inice', 'awnice', 'anice', 'djam', 'kori djam']),
+            merci: countWords(['merci', 'super', 'parfait', 'genial', 'top', 'cimer', 'barika', 'a barika', 'djarabi', 'i ni baara']),
+            aide: countWords(['aide', 'aider', 'apprendre', 'debut', 'fonction', 'comment', 'marche', 'deme', 'n deme', 'makan']),
 
-            vente: countWords(['vente', 'vendre', 'encaisser', 'caisse', 'panier', 'ticket', 'facture', 'paiement', 'feere', 'fere']),
-            remise: countWords(['remise', 'reduction', 'promo', 'discount', 'moins cher', 'rabais', 'do bo a la', 'a do bo', 'a da dusu']),
-            monnaie: countWords(['monnaie', 'fond caisse', 'fonds de caisse', 'matin', 'demarrer', 'caisse initiale', 'jeton', 'petite monnaie', 'wari misen', 'warimisen']),
-            mobile_money: countWords(['wave', 'orange', 'mtn', 'moov', 'mobile money', 'momo', 'electronique']),
-            credit: countWords(['credit', 'dette', 'doit', 'impaye', 'rembourser', 'remboursement', 'client', 'pret', 'bon', 'juru', 'njuru', 'n\'juru']),
-            commande: countWords(['commande', 'reserver', 'livraison', 'livrer', 'livreur', 'route', 'preparation', 'expedier']),
+            vente: countWords(['vente', 'vendre', 'encaisser', 'caisse', 'panier', 'ticket', 'facture', 'paiement', 'feere', 'fere', 'féré', 'wuli', 'sara']),
+            remise: countWords(['remise', 'reduction', 'promo', 'discount', 'moins cher', 'rabais', 'do bo a la', 'a do bo', 'a da dusu', 'nogo', 'a nogo']),
+            monnaie: countWords(['monnaie', 'fond caisse', 'fonds de caisse', 'matin', 'demarrer', 'jeton', 'petite monnaie', 'wari misen', 'warimisen', 'misen']),
+            mobile_money: countWords(['wave', 'orange', 'mtn', 'moov', 'mobile money', 'momo', 'electronique', 'wari di', 'telefoni wari']),
+            credit: countWords(['credit', 'dette', 'doit', 'impaye', 'rembourser', 'client', 'pret', 'bon', 'juru', 'djourou', 'njuru', 'n\'juru', 'dibi']),
+            commande: countWords(['commande', 'reserver', 'livraison', 'livrer', 'livreur', 'route', 'preparation', 'expedier', 'ci', 'ci wari']),
 
-            stock: countWords(['stock', 'produit', 'article', 'marchandise', 'inventaire', 'quantite', 'ajouter', 'nouveau', 'minen', 'fen', 'jogo']),
-            prix: countWords(['prix', 'tarif', 'modifier prix', 'changer', 'cout', 'songo', 'a songo', 'da', 'a da']),
-            variante: countWords(['variante', 'taille', 'couleur', 'pointure', 'modele', 'declinaison', 'suguya', 'cogo']),
-            rupture: countWords(['rupture', 'epuise', 'bas', 'alerte', 'manque', 'faible', 'banna', 'a banna', 'a te yen']),
-            perte: countWords(['perte', 'perime', 'casse', 'vole', 'manquant', 'signaler', 'tinena', 'a tinena', 'tununa']),
-            code_barre: countWords(['code barre', 'scanner', 'etiquette', 'imprimer', 'barcode', 'qr', 'flash']),
+            stock: countWords(['stock', 'produit', 'article', 'marchandise', 'inventaire', 'quantite', 'ajouter', 'nouveau', 'minen', 'fen', 'jogo', 'bagage']),
+            prix: countWords(['prix', 'tarif', 'modifier prix', 'changer', 'cout', 'songo', 'a songo', 'da', 'a da', 'wari']),
+            variante: countWords(['variante', 'taille', 'couleur', 'pointure', 'modele', 'declinaison', 'suguya', 'cogo', 'nyuman']),
+            rupture: countWords(['rupture', 'epuise', 'bas', 'alerte', 'manque', 'faible', 'banna', 'a banna', 'a te yen', 'desi']),
+            perte: countWords(['perte', 'perime', 'casse', 'vole', 'manquant', 'signaler', 'tinena', 'a tinena', 'tununa', 'fili', 'a filila', 'perdu']),
+            code_barre: countWords(['code barre', 'scanner', 'etiquette', 'imprimer', 'barcode', 'qr', 'flash', 'foto']),
 
-            depense: countWords(['depense', 'charge', 'facture', 'loyer', 'transport', 'cie', 'sodeci', 'sortie', 'frais', 'wari bo', 'wari boli']),
-            bilan: countWords(['benefice', 'bilan', 'rapport', 'chiffre', 'gagne', 'recette', 'point', 'rentable', 'profit', 'tono', 'tono soro', 'wari to']),
-            capital: countWords(['fonds investi', 'capital', 'mise de depart', 'investi', 'fond de commerce', 'fonds de commerce', 'fond de depart', 'fonds de depart', 'budget', 'wari juju', 'wari kun']),
-            pdf: countWords(['pdf', 'exporter', 'telecharger', 'imprimer bilan']),
+            depense: countWords(['depense', 'charge', 'facture', 'loyer', 'transport', 'cie', 'sodeci', 'sortie', 'frais', 'wari bo', 'wari boli', 'mako']),
+            bilan: countWords(['benefice', 'bilan', 'rapport', 'chiffre', 'gagne', 'recette', 'point', 'rentable', 'profit', 'tono', 'tono soro', 'wari to', 'saba']),
+            capital: countWords(['fonds investi', 'capital', 'mise de depart', 'investi', 'fond de depart', 'budget', 'wari juju', 'wari kun']),
+            pdf: countWords(['pdf', 'exporter', 'telecharger', 'imprimer bilan', 'papier']),
 
-            fournisseur: countWords(['fournisseur', 'grossiste', 'approvisionnement', 'achat', 'contact', 'feerekela']),
-            catalogue: countWords(['catalogue', 'en ligne', 'internet', 'lien', 'partager', 'whatsapp', 'site', 'vitrine']),
-            equipe: countWords(['equipe', 'vendeur', 'employe', 'gerant', 'acces', 'compte', 'utilisateur', 'ajouter personne', 'baarakela', 'mogo']),
-            audit: countWords(['audit', 'journal', 'historique', 'trace', 'mouvement', 'supprime', 'erreur', 'log']),
-            pwa: countWords(['installer', 'appli', 'ecran accueil', 'pwa', 'telecharger']),
-            mode_sombre: countWords(['sombre', 'nuit', 'theme', 'couleur ecran', 'luminosite'])
+            fournisseur: countWords(['fournisseur', 'grossiste', 'approvisionnement', 'achat', 'contact', 'feerekela', 'sugu tigi']),
+            catalogue: countWords(['catalogue', 'en ligne', 'internet', 'lien', 'partager', 'whatsapp', 'site', 'vitrine', 'interneti']),
+            equipe: countWords(['equipe', 'vendeur', 'employe', 'gerant', 'acces', 'compte', 'utilisateur', 'ajouter personne', 'baarakela', 'mogo', 'kalan den']),
+            audit: countWords(['audit', 'journal', 'historique', 'trace', 'mouvement', 'supprime', 'erreur', 'log', 'kuma', 'tariku']),
+            pwa: countWords(['installer', 'appli', 'ecran accueil', 'pwa', 'telecharger', 'telephone']),
+            mode_sombre: countWords(['sombre', 'nuit', 'theme', 'couleur ecran', 'luminosite', 'dibi'])
         };
 
         // Modificateurs de contexte
@@ -283,45 +300,45 @@ export function setupAIAssistant() {
 
         const bestTopic = Object.entries(scores).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1])[0]?.[0];
 
-        // ── Base de Connaissances ──
+        // ── Réponses Bilingues & Simples ──
         const KB = {
-            salutation: { r: "Bonjour ! 👋 Prêt à gérer votre boutique ?\n\nQue souhaitez-vous faire ?", s: ["Faire une vente", "Gérer mon stock", "Voir mon bilan"] },
-            merci: { r: "Avec grand plaisir ! 😊 N'hésitez pas si vous avez d'autres questions.", s: ["Faire une vente", "Ajouter un produit"] },
-            aide: { r: "Voici ce que je gère :\n\n→ **Vente** : Caisse, Mobile Money, Crédits\n→ **Stock** : Produits, Variantes, Pertes, Étiquettes\n→ **Finances** : Bénéfices, Dépenses, Bilans PDF\n→ **Clients & Commandes**\n→ **Catalogue en ligne WhatsApp**", s: ["Encaisser une vente", "Voir mes bénéfices", "Partager mon catalogue"] },
+            salutation: { r: "I ni ce ! Bonjour ! 👋 Prêt à gérer la boutique ? (I bɛ di ?)\n\nQue souhaitez-vous faire ? (Mun bɛ i mago la ?)", s: ["Vendre (Feere)", "Voir le stock (Minen)", "Bénéfice (Tono)"] },
+            merci: { r: "I ni baara ! Avec grand plaisir ! 😊 Je suis là pour vous aider (N bɛ se ka i dɛmɛ).", s: ["Vendre (Feere)", "Ajouter marchandise"] },
+            aide: { r: "N bɛ se ka i dɛmɛ ! Je peux vous aider avec :\n\n→ **Vente (Feere)**\n→ **Stock et Marchandises (Minen)**\n→ **Bénéfices (Tono)**\n→ **Crédits (Juru)**", s: ["Encaisser une vente", "Voir mes bénéfices"] },
             
-            vente: { r: "📦 **Pour effectuer une vente :**\n\n1️⃣ Je vous emmène à la caisse !\n2️⃣ Touchez ou scannez les articles\n3️⃣ Cliquez sur **ENCAISSER** (bouton vert en bas)\n4️⃣ Choisissez le paiement : Espèces ou Mobile Money\n\n💡 *Astuce : Vous pouvez modifier le prix ou la quantité d'un article directement dans le panier.*", s: ["Vente à crédit", "Ajouter une remise", "Mobile Money"], action: "ventes" },
-            remise: { r: "🏷️ **Appliquer une remise :**\n\nDans l'onglet **Vente**, sous le panier, cliquez sur le petit bouton **+ Ajouter Remise**. Saisissez le montant à déduire en CFA et le total s'ajustera automatiquement.", s: ["Faire une vente", "Mobile money"], action: "ventes" },
-            monnaie: { r: "💰 **Monnaie du matin (Fond de caisse) :**\n\nDans l'onglet **Vente**, regardez la zone bleue en haut à droite. Entrez le montant présent dans votre tiroir, puis cliquez sur la disquette 💾 pour l'enregistrer.", s: ["Voir mes bénéfices", "Enregistrer une dépense"], action: "ventes" },
-            mobile_money: { r: "📱 **Paiement Mobile Money :**\n\nDepuis la **Vente**, au moment de payer, cliquez sur **Mobile Money** (bouton turquoise). Choisissez l'opérateur (Wave, Orange, MTN...) et entrez le numéro du client.", s: ["Faire une vente", "Vente à crédit"], action: "ventes" },
-            credit: { r: "👥 **Gestion des Crédits :**\n\n→ **Pour faire un crédit :** Dans Vente, cliquez sur le bouton orange **Crédit Client**.\n→ **Pour encaisser un remboursement :** Allez dans l'onglet **Clients & Crédits**, cherchez le client et cliquez sur **Encaisser**.", s: ["Voir mes clients", "Faire une vente"], action: "credits" },
-            commande: { r: "📋 **Les Commandes (Livraisons) :**\n\nL'onglet **Commandes** centralise les achats faits par vos clients sur votre catalogue en ligne. Vous pouvez :\n→ Changer le statut (En préparation, En route)\n→ Assigner un livreur avec son numéro\n→ Partager le suivi par WhatsApp", s: ["Partager mon catalogue", "Assigner un livreur"], action: "commandes" },
+            vente: { r: "📦 **Pour vendre (Ka feere kɛ) :**\n\n1️⃣ Je vous ouvre la caisse !\n2️⃣ Touchez les articles.\n3️⃣ Cliquez sur le gros bouton vert ENCAISSER.", s: ["Crédit (Juru)", "Remise (A dɔ bɔ)", "Mobile Money"], action: "ventes" },
+            remise: { r: "🏷️ **Diminuer le prix (A dɔ bɔ) :**\n\nDans la Vente, sous le panier, cliquez sur '+ Ajouter Remise'. Tapez l'argent à enlever.", s: ["Vendre (Feere)", "Mobile money"], action: "ventes" },
+            monnaie: { r: "💰 **Monnaie du matin (Wari misen) :**\n\nDans la Vente, en haut à droite. Tapez la petite monnaie que vous avez dans le tiroir, puis enregistrez 💾.", s: ["Bénéfice (Tono)", "Dépense (Wari bɔ)"], action: "ventes" },
+            mobile_money: { r: "📱 **Paiement Mobile Money :**\n\nPour payer par Wave ou Orange, cliquez sur 'Mobile Money' (bouton turquoise) au moment de payer.", s: ["Vendre (Feere)", "Crédit (Juru)"], action: "ventes" },
+            credit: { r: "👥 **Crédit (Juru) :**\n\n→ **Pour donner à crédit :** Dans Vente, bouton orange 'Crédit Client'.\n→ **Pour faire payer un crédit :** Je vous emmène voir vos clients.", s: ["Payer un crédit"], action: "credits" },
+            commande: { r: "📋 **Livraisons (Ci) :**\n\nJe vous ouvre la page des commandes. Vous pourrez donner la commande à un livreur ou envoyer un message WhatsApp.", s: ["Catalogue en ligne"], action: "commandes" },
             
-            stock: { r: "📦 **Gérer le Stock :**\n\nJe vous ouvre l'inventaire tout de suite !\n→ Cliquez sur **Nouveau Produit** pour ajouter.\n→ Cliquez sur un produit existant pour modifier son prix, son stock ou sa photo.", s: ["Signaler une perte", "Imprimer des étiquettes", "Ajouter une variante"], action: "stock" },
-            prix: { r: "✏️ **Changer un prix :**\n\nAllez dans **Stock**, touchez le produit concerné, modifiez la case **Prix de Vente** et enregistrez. Le nouveau tarif sera immédiat à la caisse.", s: ["Gérer mon stock"], action: "stock" },
-            variante: { r: "🎨 **Tailles et Couleurs (Variantes) :**\n\nLors de la création d'un produit (onglet **Stock**), cochez la case bleue *\"Ce produit possède des variantes\"*. Vous pourrez alors ajouter des lignes pour chaque taille ou couleur, avec leur propre stock et photo !", s: ["Ajouter un produit"], action: "stock" },
-            rupture: { r: "⚠️ **Ruptures de stock :**\n\nL'application vous alerte en rouge sur le **Dashboard** (Stock Faible) quand un article descend en dessous de 5. Triez votre onglet Stock par \"Stock Faible\" pour savoir quoi réapprovisionner.", s: ["Gérer mes fournisseurs", "Ajouter du stock"], action: "stock" },
-            perte: { r: "🗑️ **Pertes et Périmés :**\n\nPour sortir un article du stock sans gagner d'argent (Cassé, périmé, volé), allez dans **Stock**, cliquez sur le produit, puis sur le bouton rouge **Signaler une perte** en bas.", s: ["Voir le journal d'audit"], action: "stock" },
-            code_barre: { r: "📷 **Codes-barres et Scanner :**\n\n→ Pour vendre/ajouter, touchez l'icône **caméra**.\n→ Pour imprimer des étiquettes à coller sur vos articles, allez dans **Stock** et cliquez sur le bouton gris **Imprimer Étiquettes**.", s: ["Faire une vente", "Gérer le stock"], action: "stock" },
+            stock: { r: "📦 **Stock (Minen) :**\n\nJe vous ouvre le magasin !\n→ Cliquez sur 'Nouveau Produit' pour ajouter des marchandises (Fen).", s: ["Perte (Tiɲɛna)", "Prix (Songo)"], action: "stock" },
+            prix: { r: "✏️ **Changer un prix (A songo) :**\n\nAllez dans le Stock, touchez la marchandise, changez le Prix de Vente et enregistrez.", s: ["Voir le stock (Minen)"], action: "stock" },
+            variante: { r: "🎨 **Tailles et Couleurs (Suguya) :**\n\nQuand vous ajoutez une marchandise, cochez la case bleue 'Variantes'. Vous pourrez ajouter les tailles et les couleurs.", s: ["Ajouter marchandise"], action: "stock" },
+            rupture: { r: "⚠️ **Marchandise finie (A banna) :**\n\nL'application vous prévient en rouge quand il reste moins de 5 articles. Triez le stock par 'Stock Faible' pour voir.", s: ["Fournisseurs", "Ajouter stock"], action: "stock" },
+            perte: { r: "🗑️ **Perte ou Vol (Tiɲɛna) :**\n\nSi un article est cassé ou perdu, allez dans Stock, cliquez sur l'article, puis sur le bouton rouge 'Signaler une perte' en bas.", s: ["Journal (Tariku)"], action: "stock" },
+            code_barre: { r: "📷 **Scanner avec le téléphone :**\n\nTouchez l'icône appareil photo 📷 pour scanner un code barre rapidement.", s: ["Vendre (Feere)", "Voir le stock"], action: "stock" },
             
-            depense: { r: "💸 **Les Dépenses (Charges) :**\n\nPour enregistrer un loyer, un transport ou une facture CIE, allez dans l'onglet **Dépenses**. Saisissez le motif et le montant. Ces charges seront automatiquement déduites de vos bénéfices dans le bilan.", s: ["Voir mon bilan", "Caisse de départ"], action: "charges" },
-            bilan: { r: "📊 **Bénéfices et Bilan :**\n\nVoici vos chiffres ! L'onglet **Bilan** calcule tout pour vous ! Il prend vos ventes, soustrait vos dépenses, et vous affiche le bénéfice net ainsi que l'argent réel (Trésorerie) qui doit être en votre possession.", s: ["Exporter en PDF", "Enregistrer une dépense", "Capital investi"], action: "rapports" },
-            capital: { r: "🏦 **Capital (Fonds de départ investi) :**\n\nAllez dans l'onglet **Bilan**. Dans la grande case bleue en haut, entrez l'argent investi pour démarrer l'activité. Cela permet à l'appli de calculer correctement l'évolution de votre trésorerie globale.", s: ["Voir mon bilan"], action: "rapports" },
-            pdf: { r: "📄 **Export PDF :**\n\nDepuis l'onglet **Bilan**, choisissez vos dates puis cliquez sur le bouton rouge **PDF**. Un rapport propre et professionnel se téléchargera, parfait pour votre comptable ou vos archives.", s: ["Voir mon bilan"], action: "rapports" },
+            depense: { r: "💸 **Dépenses (Wari bɔ) :**\n\nPour les factures, le transport ou la nourriture, je vous ouvre la page Dépenses pour tout noter.", s: ["Bénéfice (Tono)"], action: "charges" },
+            bilan: { r: "📊 **Bénéfices (Tono) :**\n\nVoici vos chiffres ! L'onglet Bilan calcule votre argent et ce que vous avez gagné (Tono sɔrɔ).", s: ["Exporter PDF", "Dépense (Wari bɔ)"], action: "rapports" },
+            capital: { r: "🏦 **Capital (Wari juju) :**\n\nSur la page Bilan, tapez l'argent que vous avez investi au début dans la case bleue.", s: ["Bénéfice (Tono)"], action: "rapports" },
+            pdf: { r: "📄 **Imprimer le Bilan (Papier) :**\n\nSur la page Bilan, cliquez sur le bouton rouge PDF pour télécharger vos chiffres.", s: ["Bénéfice (Tono)"], action: "rapports" },
         
-            fournisseur: { r: "🚚 **Fournisseurs :**\n\nLe menu **Fournisseurs** est votre carnet d'adresses professionnel. Enregistrez-y vos grossistes pour les recontacter facilement via WhatsApp en cas de rupture de stock.", s: ["Gérer mon stock"], action: "fournisseurs" },
-            catalogue: { r: "🌐 **Boutique en ligne :**\n\nVotre boutique possède un lien internet unique ! Vos clients peuvent l'ouvrir (sans installer d'appli) pour voir vos produits et commander. Pour obtenir ce lien, cliquez sur **Paramètres / Profil** ⚙️ et appuyez sur **Copier** dans la section Boutique en ligne.", s: ["Gérer mes commandes"] },
-            equipe: { r: "👥 **Ajouter des Vendeurs :**\n\nSi vous êtes le Propriétaire, ouvrez le menu et cliquez sur **Gestion Équipe**. Créez un compte pour votre employé (Email + Code PIN). Un 'Vendeur' aura un accès limité (Caisse uniquement), tandis qu'un 'Gérant' aura un accès presque total.", s: ["Voir le journal d'audit"] },
-            audit: { r: "🔍 **Journal d'Audit :**\n\nL'onglet **Journal** est la mémoire de l'application. Chaque vente, chaque modification de prix, chaque dépense et chaque suppression y est tracée avec la date, l'heure et l'auteur. Impossible de tricher !", s: ["Gérer mon équipe", "Voir mes bénéfices"], action: "audit" },
-            pwa: { r: "📲 **Installer l'Appli :**\n\n→ Sur **Android** : Ouvrez le menu de Chrome et choisissez \"Installer l'application\".\n→ Sur **iPhone (Safari)** : Cliquez sur le carré avec la flèche ↑ au milieu en bas, puis \"Sur l'écran d'accueil\".", s: ["Mode Sombre"] },
-            mode_sombre: { r: "🌙 **Mode Sombre :**\n\nPour reposer vos yeux la nuit, ouvrez le menu latéral (ou regardez en bas à gauche sur PC) et cliquez sur le bouton **Mode Sombre**.", s: ["Installer l'application"] }
+            fournisseur: { r: "🚚 **Fournisseurs (Feerekela) :**\n\nJe vous ouvre votre carnet d'adresses. Vous pourrez enregistrer vos grossistes.", s: ["Voir le stock"], action: "fournisseurs" },
+            catalogue: { r: "🌐 **Boutique WhatsApp (Interneti) :**\n\nVos clients peuvent voir vos articles sur leur téléphone ! Allez dans 'Profil' ⚙️ et cliquez sur 'Copier' pour partager le lien.", s: ["Voir les commandes"] },
+            equipe: { r: "👥 **Ajouter un vendeur (Baarakɛla) :**\n\nAllez dans le menu et cliquez sur 'Gestion Équipe' pour donner un code d'accès à votre employé.", s: ["Journal (Tariku)"] },
+            audit: { r: "🔍 **Journal (Tariku) :**\n\nC'est la mémoire de la boutique. Tout ce qui est fait ou effacé est écrit ici. Impossible de tricher !", s: ["Bénéfice (Tono)"], action: "audit" },
+            pwa: { r: "📲 **Mettre sur le téléphone :**\n\nPour installer l'application, ouvrez le menu de votre navigateur (Chrome/Safari) et choisissez 'Installer' ou 'Sur l'écran d'accueil'.", s: [] },
+            mode_sombre: { r: "🌙 **Mode Nuit (Dibi) :**\n\nOuvrez le menu sur le côté et cliquez sur 'Mode Sombre' pour protéger vos yeux.", s: [] }
         };
 
         // ── Réponse de secours ──
         const fallback = {
             r: isNegative 
-                ? "Je vois qu'il y a une difficulté. 🤔 Pouvez-vous m'indiquer sur quel onglet vous êtes et ce que vous essayez de faire ?" 
-                : "Je ne suis pas sûr de comprendre. Pourriez-vous utiliser des mots simples comme :\n\n→ **'Faire une vente'**\n→ **'Ajouter un produit'**\n→ **'Partager mon catalogue'**",
-            s: ["Faire une vente", "Gérer le stock", "Voir le bilan"]
+                ? "Un problème ? 🤔 Dites-moi simplement : 'Je veux vendre' ou 'Voir le bénéfice'." 
+                : "Je n'ai pas bien compris. Parlez-moi simplement :\n\n→ **'Feere'** (Vendre)\n→ **'Tono'** (Bénéfice)\n→ **'Juru'** (Crédit)\n→ **'Minen'** (Stock)",
+            s: ["Vendre (Feere)", "Stock (Minen)", "Bénéfice (Tono)"]
         };
 
         const result = bestTopic && KB[bestTopic] ? KB[bestTopic] : fallback;
@@ -332,5 +349,24 @@ export function setupAIAssistant() {
             suggestions: result.s || [],
             action: result.action || null
         };
+    }
+}
+// --- Fonction d'apprentissage IA ---
+window.rateAI = async function(query, topic, isHelpful, btnElement) {
+    try {
+        // Enregistrer dans Firebase
+        await addDoc(collection(db, "ai_learning"), {
+            phrase: query,
+            sujet_devine: topic,
+            correct: isHelpful,
+            date: serverTimestamp()
+        });
+
+        // Modifier l'interface pour dire merci
+        const container = btnElement.parentElement;
+        container.innerHTML = `<span class="text-[10px] text-emerald-500 font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Merci pour votre aide ! L'IA va apprendre.</span>`;
+        if (window.lucide) window.lucide.createIcons();
+    } catch (e) {
+        console.error("Erreur d'apprentissage IA :", e);
     }
 }
