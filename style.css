@@ -7,6 +7,7 @@
    VARIABLES CSS GLOBALES
    ========================================= */
 :root {
+    color-scheme: light dark;
     --color-primary: #2563eb;
     --color-primary-hover: #1d4ed8;
     --color-primary-light: #eff6ff;
