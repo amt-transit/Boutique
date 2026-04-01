@@ -216,6 +216,7 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     // AFFICHER les onglets Admin
                     document.getElementById('admin-tab-btn').classList.remove('hidden');
                     document.getElementById('admin-access-tab-btn').classList.remove('hidden');
+                    if(document.getElementById('admin-ai-tab-btn')) document.getElementById('admin-ai-tab-btn').classList.remove('hidden');
                     
                     const desktopEmail = document.getElementById('desktop-user-email');
                     if(desktopEmail) desktopEmail.textContent = user.email;
@@ -423,6 +424,7 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     // MASQUER explicitement les onglets Admin
                     document.getElementById('admin-tab-btn').classList.add('hidden');
                     document.getElementById('admin-access-tab-btn').classList.add('hidden');
+                    if(document.getElementById('admin-ai-tab-btn')) document.getElementById('admin-ai-tab-btn').classList.add('hidden');
 
                     // Gestion du bouton équipe dans le hamburger (Admin boutique seulement)
                     const teamBtn = document.getElementById('drawer-team-btn');

@@ -139,6 +139,11 @@ export function setupAIAssistant() {
             if (suggestions?.length) showSuggestions(suggestions);
             speak(response);
             if (statusText) statusText.textContent = "Micro ou texte ↓";
+
+            // NOUVEAU : Enregistrement silencieux des phrases non comprises
+            if (topic === 'erreur') {
+                autoLogUnknown(text);
+            }
         }, 800 + Math.random() * 600); // Délai réaliste de réflexion
     }
 
@@ -349,6 +354,19 @@ export function setupAIAssistant() {
             suggestions: result.s || [],
             action: result.action || null
         };
+    }
+}
+
+// --- Fonction d'enregistrement automatique des incompréhensions ---
+async function autoLogUnknown(query) {
+    try {
+        await addDoc(collection(db, "ai_unknowns"), {
+            phrase: query,
+            date: serverTimestamp(),
+            resolved: false // Permettra plus tard de marquer ce qui a été ajouté au code
+        });
+    } catch (e) {
+        console.error("Erreur d'enregistrement auto :", e);
     }
 }
 // --- Fonction d'apprentissage IA ---

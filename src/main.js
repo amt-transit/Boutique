@@ -11,7 +11,7 @@ import { setupReports } from './pages/reports.js';
 import { setupAudit } from './pages/audit.js';
 import { setupOrdersListener } from './pages/orders.js';
 import { setupSuppliersPage } from './pages/suppliers.js';
-import { setupAdminFeatures, setupSuperAdminDashboard, setupAdminAccessPage, loadBoutiquesList } from './admin/main.js'; 
+import { setupAdminFeatures, setupSuperAdminDashboard, setupAdminAccessPage, loadBoutiquesList, setupAdminAIPage } from './admin/main.js'; 
 import { setupImport } from './admin/import.js';
 import { setupGlobalSearch } from './globalSearch.js';
 import { setupHamburgerMenu, closeHamburgerMenu } from './hamburger.js';
@@ -56,6 +56,7 @@ function showSuperAdminInterface() {
 
     showTab('admin');
     showTab('admin-access');
+    showTab('admin-ai');
     switchTab('admin');
     
     // Initialize all admin-related functionalities
@@ -64,6 +65,7 @@ function showSuperAdminInterface() {
     loadBoutiquesList(); 
     setupAdminAccessPage(); 
     setupSuperAdminDashboard();
+    if(setupAdminAIPage) setupAdminAIPage();
     
     if (window.lucide) window.lucide.createIcons();
 }

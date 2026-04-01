@@ -596,6 +596,70 @@ const enterImmersionMode = function(shopId, shopName) {
     });
 };
 
+// --- APPRENTISSAGE IA : LECTURE DES MOTS INCONNUS ---
+export async function setupAdminAIPage() {
+    const listContainer = document.getElementById('admin-ai-list');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-500"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto"></i></td></tr>';
+    if (window.lucide) window.lucide.createIcons();
+
+    try {
+        // Trie les requêtes des plus récentes aux plus anciennes
+        const q = query(collection(db, "ai_unknowns"), orderBy("date", "desc"));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            listContainer.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-500 italic">Aucune phrase inconnue enregistrée.</td></tr>';
+            return;
+        }
+
+        const rows = [];
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const dateStr = data.date ? new Date(data.date.seconds * 1000).toLocaleString('fr-FR', {day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit'}) : '-';
+            const isResolved = data.resolved === true;
+            
+            const statusBadge = isResolved 
+                ? '<span class="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Intégré au code</span>'
+                : '<span class="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">À Traiter</span>';
+            
+            const actionBtn = isResolved
+                ? `<button disabled class="text-gray-300 dark:text-slate-600 cursor-not-allowed p-2"><i data-lucide="check-circle-2" class="w-5 h-5"></i></button>`
+                : `<button onclick="resolveAIUnknown('${docSnap.id}')" class="text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 p-2 rounded-lg transition shadow-sm border border-emerald-200 dark:border-emerald-800" title="Marquer comme ajouté au code"><i data-lucide="check" class="w-5 h-5"></i></button>`;
+
+            rows.push(`
+                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition ${isResolved ? 'opacity-60 bg-gray-50 dark:bg-slate-800/80' : 'bg-white dark:bg-slate-800'}">
+                    <td class="p-4 text-xs text-gray-500 dark:text-gray-400 font-mono whitespace-nowrap">${dateStr}</td>
+                    <td class="p-4 text-sm font-bold text-gray-900 dark:text-gray-100">"${data.phrase || ''}"</td>
+                    <td class="p-4 text-center">${statusBadge}</td>
+                    <td class="p-4 text-right">${actionBtn}</td>
+                </tr>
+            `);
+        });
+
+        listContainer.innerHTML = rows.join('');
+        if (window.lucide) window.lucide.createIcons();
+
+    } catch (e) {
+        console.error("Erreur chargement IA unknowns:", e);
+        listContainer.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-red-500">Erreur de chargement.</td></tr>';
+    }
+}
+
+window.setupAdminAIPage = setupAdminAIPage;
+
+window.resolveAIUnknown = async (id) => {
+    try {
+        await updateDoc(doc(db, "ai_unknowns", id), { resolved: true });
+        showToast("Phrase marquée comme intégrée !", "success");
+        setupAdminAIPage(); 
+    } catch (e) {
+        console.error(e);
+        showToast("Erreur lors de la validation", "error");
+    }
+};
+
 // Gardé sur window car probablement appelé depuis le HTML de la bannière statique
 window.exitImmersionMode = function() {
     state.setCurrentBoutiqueId(null); 
@@ -607,6 +671,7 @@ window.exitImmersionMode = function() {
     // Correction: Appeler directement les fonctions d'initialisation Admin
     document.getElementById('admin-tab-btn').classList.remove('hidden');
     document.getElementById('admin-access-tab-btn').classList.remove('hidden');
+    if(document.getElementById('admin-ai-tab-btn')) document.getElementById('admin-ai-tab-btn').classList.remove('hidden');
     document.getElementById('global-search-container').classList.add('hidden');
     
     // Masquer les onglets de la boutique
@@ -616,6 +681,7 @@ window.exitImmersionMode = function() {
     setupSuperAdminDashboard();
     loadBoutiquesList();
     setupAdminAccessPage();
+    if(window.setupAdminAIPage) window.setupAdminAIPage();
     
     showToast("Retour à l'interface Super Admin");
 };

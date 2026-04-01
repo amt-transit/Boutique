@@ -259,6 +259,9 @@
             <button class="tab hidden" id="admin-access-tab-btn" onclick="switchTab('admin-access')" data-desc="Gestion des accès utilisateurs globale">
                 <i data-lucide="users-2" class="text-purple-600"></i><div class="text-purple-600">Utilisateurs</div>
             </button>
+            <button class="tab hidden" id="admin-ai-tab-btn" onclick="switchTab('admin-ai')" data-desc="Apprentissage IA : Mots non compris">
+                <i data-lucide="brain-circuit" class="text-emerald-500"></i><div class="text-emerald-500">IA Logs</div>
+            </button>
             
             <div class="flex-1"></div>
             
@@ -524,6 +527,36 @@
                         <div class="kpi-bar kpi-bar-red"></div>
                     </div>
 
+            <div id="page-admin-ai" class="page-content hidden p-4 md:p-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="brain-circuit" class="text-emerald-500"></i> Apprentissage IA
+                        </h1>
+                        <p class="text-sm text-gray-500 mt-1">Phrases que l'assistant n'a pas comprises. Intégrez-les au code puis validez.</p>
+                    </div>
+                    <button onclick="if(window.setupAdminAIPage) window.setupAdminAIPage()" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-50 transition shadow-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Actualiser
+                    </button>
+                </div>
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-emerald-100 dark:border-slate-700 flex flex-col h-full min-h-[500px]">
+                    <div class="overflow-auto flex-1">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-300 sticky top-0">
+                                <tr>
+                                    <th class="p-4 font-bold whitespace-nowrap">Date</th>
+                                    <th class="p-4 font-bold">Phrase saisie par l'utilisateur</th>
+                                    <th class="p-4 font-bold text-center">Statut</th>
+                                    <th class="p-4 font-bold text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-ai-list" class="divide-y divide-gray-100 dark:divide-slate-700">
+                                <tr><td colspan="4" class="p-6 text-center text-gray-400">Chargement...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
                 </div>
 
                 <!-- ═══════════════════════════════════════
