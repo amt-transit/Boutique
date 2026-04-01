@@ -16,6 +16,7 @@ import { setupImport } from './admin/import.js';
 import { setupGlobalSearch } from './globalSearch.js';
 import { setupHamburgerMenu, closeHamburgerMenu } from './hamburger.js';
 import { setupTeamManagement } from './pages/team.js';
+import { setupAIAssistant } from './aiAssistant.js';
 
 // Make some functions globally available for onclick attributes
 window.switchTab = switchTab;
@@ -88,6 +89,8 @@ function main() {
        return isAndroidOld || (isSlowGPU && noBackdrop);
    })();
    if (isOldDevice) document.body.classList.add('perf-mode');
+   
+   setupAIAssistant();
 }
 
 

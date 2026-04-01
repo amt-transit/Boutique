@@ -2074,6 +2074,35 @@
         </div>
     </div>
 
+    <!-- ASSISTANT VOCAL AI UI -->
+    <button id="ai-assistant-btn" class="fixed bottom-24 right-5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-full shadow-2xl z-[90] hover:scale-105 transition-transform items-center justify-center group hidden" title="Assistant Vocal">
+        <i data-lucide="bot" class="w-6 h-6 group-hover:animate-pulse"></i>
+    </button>
+
+    <div id="ai-assistant-panel" class="fixed bottom-36 right-5 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl z-50 hidden flex-col overflow-hidden border border-purple-100 dark:border-slate-700 transition-all duration-300">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-3 text-white flex justify-between items-center">
+            <h3 class="font-bold flex items-center gap-2 text-sm"><i data-lucide="sparkles" class="w-4 h-4"></i> Assistant Vocal</h3>
+            <button id="ai-close-btn" class="hover:bg-white/20 p-1 rounded transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        
+        <div id="ai-chat-box" class="p-4 h-64 overflow-y-auto flex flex-col gap-3 bg-slate-50 dark:bg-slate-900 text-sm">
+            <div class="bg-white dark:bg-slate-800 p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                Bonjour ! Je suis votre assistant. Posez-moi une question vocalement, par exemple : <em>"Comment ajouter un produit ?"</em>
+            </div>
+        </div>
+        
+        <div class="p-3 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex items-center gap-3">
+            <button id="ai-mic-btn" class="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 p-3 rounded-full hover:bg-purple-200 dark:hover:bg-purple-900 transition relative">
+                <i data-lucide="mic" class="w-5 h-5 relative z-10"></i>
+                <span id="ai-mic-pulse" class="absolute inset-0 bg-purple-400 rounded-full animate-ping hidden"></span>
+            </button>
+            <div class="flex-1">
+                <p id="ai-status-text" class="text-xs text-slate-500 font-medium">Appuyez sur le micro pour parler...</p>
+            </div>
+        </div>
+    </div>
+    <!-- FIN ASSISTANT VOCAL -->
+
     <!-- Script pour la prévisualisation des images de variantes -->
     <script>
         document.addEventListener('change', function(e) {

@@ -401,6 +401,12 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                         }
                     }
 
+                    const aiBtn = document.getElementById('ai-assistant-btn');
+                    if (aiBtn) {
+                        aiBtn.classList.remove('hidden');
+                        aiBtn.classList.add('flex');
+                    }
+
                     const dashName = document.getElementById('dashboard-user-name');
                     if(dashName) dashName.textContent = activeShop.name;
                     
@@ -447,6 +453,7 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                         if(rapportTabDiv) rapportTabDiv.textContent = "Bilans";
                         switchTab('dashboard'); 
                     }
+
                     initializeApplication();
                     hideSplash();
                 } else {
@@ -462,6 +469,13 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
             document.getElementById('auth-container').classList.remove('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('top-nav-bar').classList.add('hidden');
+            
+            const aiBtn = document.getElementById('ai-assistant-btn');
+            if (aiBtn) {
+                aiBtn.classList.add('hidden');
+                aiBtn.classList.remove('flex');
+            }
+            
             state.setCurrentBoutiqueId(null);
             if (window.lucide) window.lucide.createIcons();
             hideSplash();
