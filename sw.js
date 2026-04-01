@@ -1,4 +1,4 @@
-const CACHE_NAME = 'maboutique-cache-v6';
+const CACHE_NAME = 'maboutique-cache-v7';
 
 // Liste des ressources de base à mettre en cache pour un accès hors ligne
 const ASSETS_TO_CACHE = [

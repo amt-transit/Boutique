@@ -142,6 +142,7 @@ export function setupAIAssistant() {
 
             // NOUVEAU : Enregistrement silencieux des phrases non comprises
             if (topic === 'erreur') {
+                console.log("Tentative d'envoi du mot inconnu à Firebase :", text);
                 autoLogUnknown(text);
             }
         }, 800 + Math.random() * 600); // Délai réaliste de réflexion
@@ -241,8 +242,24 @@ export function setupAIAssistant() {
             .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '') // 🛑 SUPPRIME LES ÉMOJIS
             .replace(/\n/g, '. ')    // Remplace les sauts de ligne par de vraies pauses vocales
             .substring(0, 250);      // Légèrement allongé pour ne pas couper au milieu d'une phrase
-            
-        const u = new SpeechSynthesisUtterance(clean);
+        
+        // --- DICTIONNAIRE PHONÉTIQUE LOCAL ---
+        // Force la voix française (qui lit avec l'accent français) à bien prononcer le Dioula/Nouchi
+        const phonetics = {
+            "Feere": "Féré", "feere": "féré",
+            "Juru": "Djourou", "juru": "djourou",
+            "Minen": "Minène", "minen": "minène",
+            "Tiɲɛna": "Tiniéna", "tiɲɛna": "tiniéna",
+            "bɔ": "bo"
+        };
+        
+        let spokenText = clean;
+        Object.keys(phonetics).forEach(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'gi');
+            spokenText = spokenText.replace(regex, phonetics[word]);
+        });
+
+        const u = new SpeechSynthesisUtterance(spokenText);
         u.lang = 'fr-FR'; 
         u.rate = 1.05; 
         u.pitch = 1.0;
@@ -365,8 +382,9 @@ async function autoLogUnknown(query) {
             date: serverTimestamp(),
             resolved: false // Permettra plus tard de marquer ce qui a été ajouté au code
         });
+        console.log("✔️ Mot inconnu enregistré avec succès dans Firebase !");
     } catch (e) {
-        console.error("Erreur d'enregistrement auto :", e);
+        console.error("❌ Erreur Firebase lors de l'enregistrement :", e);
     }
 }
 // --- Fonction d'apprentissage IA ---
