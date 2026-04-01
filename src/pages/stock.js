@@ -164,6 +164,11 @@ export function setupStockManagement() {
             const row = document.createElement('div');
             row.className = "flex gap-2 items-center variant-row animate-fade-in-up mt-2";
             row.innerHTML = `
+                <label class="relative w-10 h-10 flex-shrink-0 border border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer overflow-hidden group transition" title="Photo Variante (Optionnelle)">
+                    <input type="file" accept="image/*" class="var-image absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <i data-lucide="image" class="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition"></i>
+                    <img src="" class="var-image-preview absolute inset-0 w-full h-full object-cover hidden z-0">
+                </label>
                 <input type="text" placeholder="Ex: 43 Rouge" class="var-nom p-2 border rounded flex-1 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-blue-300" required>
                 <input type="text" placeholder="Code barre (opt.)" class="var-code p-2 border rounded w-1/3 text-sm bg-gray-50 outline-none">
                 <input type="number" placeholder="Qté" class="var-qte p-2 border rounded w-20 text-sm font-bold text-center border-green-300 outline-none" required min="0">
@@ -223,132 +228,195 @@ export function setupStockManagement() {
             const description = document.getElementById('prod-desc') ? document.getElementById('prod-desc').value.trim() : "";
             const isVariantMode = checkboxVariants.checked;
 
-            try {
-                // --- UPLOAD IMAGE (SI EXISTANTE) ---
-                let finalImageUrl = null;
-                if (compressedImageDataUrl) {
-                    showToast("Envoi de l'image en cours...", "info");
-                    const fileName = `products/${state.currentBoutiqueId}_${Date.now()}.jpg`;
-                    const storageRef = ref(storage, fileName);
-                    try {
-                        await uploadString(storageRef, compressedImageDataUrl, 'data_url');
-                        finalImageUrl = await getDownloadURL(storageRef);
-                    } catch(uploadErr) {
-                        console.error("Erreur Upload:", uploadErr);
-                        showToast("L'image n'a pas pu être envoyée.", "warning");
-                    }
-                }
-
-                const batch = writeBatch(db);
-                let variantsArray = [];
-                let totalStock = parseInt(document.getElementById('prod-qte').value) || 0;
-
-                if (isVariantMode) {
-                    totalStock = 0;
-                    const rows = document.querySelectorAll('.variant-row');
-                    rows.forEach(row => {
-                        const vNom = row.querySelector('.var-nom').value.trim();
-                        if(vNom) {
-                            const vQte = parseInt(row.querySelector('.var-qte').value) || 0;
-                            totalStock += vQte;
-                            variantsArray.push({
-                                nom: vNom,
-                                codeBarre: row.querySelector('.var-code').value.trim(),
-                                qte: vQte,
-                                stock: vQte // Sauvegarde additionnelle pour la compatibilité
-                            });
+            const finalizeProductSave = async (existingDoc, actionType) => {
+                try {
+                    // --- UPLOAD IMAGE PRINCIPALE (SI EXISTANTE) ---
+                    let finalImageUrl = null;
+                    if (compressedImageDataUrl) {
+                        showToast("Envoi de l'image principale...", "info");
+                        const fileName = `products/${state.currentBoutiqueId}_${Date.now()}.jpg`;
+                        const storageRef = ref(storage, fileName);
+                        try {
+                            await uploadString(storageRef, compressedImageDataUrl, 'data_url');
+                            finalImageUrl = await getDownloadURL(storageRef);
+                        } catch(uploadErr) {
+                            console.error("Erreur Upload:", uploadErr);
+                            showToast("L'image principale n'a pas pu être envoyée.", "warning");
                         }
-                    });
-                }
-
-                let productsToCreate = [{
-                    nomBrut: nomBaseBrut,
-                    nom: nomBaseBrut.toLowerCase(),
-                    codeBarre: document.getElementById('prod-code').value.trim(),
-                    qte: totalStock,
-                    variants: variantsArray,
-                    image: finalImageUrl,
-                    categorie: categorie,
-                    description: description
-                }];
-
-                for (const item of productsToCreate) {
-                    let existingByCode = null;
-                    if (item.codeBarre) {
-                        existingByCode = state.allProducts.find(p => p.codeBarre === item.codeBarre && !p.deleted);
                     }
-                    
-                    const q = query(collection(db, "boutiques", state.currentBoutiqueId, "products"), where("nom", "==", item.nom), where("deleted", "==", false));
-                    const snap = await getDocs(q);
+
+                    const batch = writeBatch(db);
+                    let variantsArray = [];
+                    let totalStock = parseInt(document.getElementById('prod-qte').value) || 0;
+
+                    if (isVariantMode) {
+                        totalStock = 0;
+                        const rows = document.querySelectorAll('.variant-row');
+                        for (const row of rows) {
+                            const vNom = row.querySelector('.var-nom').value.trim();
+                            if(vNom) {
+                                const vQte = parseInt(row.querySelector('.var-qte').value) || 0;
+                                totalStock += vQte;
+                                
+                                // GESTION IMAGE VARIANTE
+                                let variantImageUrl = null;
+                                const vImageInput = row.querySelector('.var-image');
+                                if (vImageInput && vImageInput.files && vImageInput.files[0]) {
+                                    showToast(`Envoi image variante (${vNom})...`, "info");
+                                    const vCompressed = await compressImage(vImageInput.files[0], 400); // 400px max
+                                    const vFileName = `products/variants/${state.currentBoutiqueId}_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                                    const vStorageRef = ref(storage, vFileName);
+                                    await uploadString(vStorageRef, vCompressed, 'data_url');
+                                    variantImageUrl = await getDownloadURL(vStorageRef);
+                                }
+
+                                variantsArray.push({
+                                    nom: vNom,
+                                    codeBarre: row.querySelector('.var-code').value.trim(),
+                                    qte: vQte,
+                                    stock: vQte, // Sauvegarde additionnelle pour la compatibilité
+                                    image: variantImageUrl
+                                });
+                            }
+                        }
+                    }
+
+                    let item = {
+                        nomBrut: nomBaseBrut,
+                        nom: nomBaseBrut.toLowerCase(),
+                        codeBarre: document.getElementById('prod-code').value.trim(),
+                        qte: totalStock,
+                        variants: variantsArray,
+                        image: finalImageUrl,
+                        categorie: categorie,
+                        description: description
+                    };
 
                     let productId = null;
 
-                    if (!snap.empty || existingByCode) {
-                        const docExist = snap.empty ? null : snap.docs[0];
-                        const existingData = existingByCode || (docExist ? {id: docExist.id, ...docExist.data()} : null);
+                    if (existingDoc) {
+                        productId = existingDoc.id;
+                        const existingData = existingDoc.data();
+                        const productRef = existingDoc.ref;
                         
-                        if (existingData) {
-                            productId = existingData.id;
-                            const ref = doc(db, "boutiques", state.currentBoutiqueId, "products", productId);
-                            let updateData = { stock: increment(item.qte), prixAchat: pAchat, prixVente: pVente, codeBarre: item.codeBarre || existingData.codeBarre, lastRestock: serverTimestamp() };
-                            if (item.image) updateData.image = item.image;
-                            
-                            if (item.variants && item.variants.length > 0) {
-                                let updatedVariants = existingData.variants ? [...existingData.variants] : [];
-                                item.variants.forEach(newVar => {
-                                    let ev = updatedVariants.find(v => v.nom === newVar.nom);
-                                    if (ev) {
-                                        ev.qte = (ev.qte || ev.stock || 0) + newVar.qte;
-                                        ev.stock = ev.qte;
-                                        if (newVar.codeBarre) ev.codeBarre = newVar.codeBarre;
-                                    } else {
-                                        updatedVariants.push(newVar);
-                                    }
-                                });
-                                updateData.variants = updatedVariants;
-                            }
-                            
-                            batch.update(ref, updateData);
+                        let updateData = { lastRestock: serverTimestamp() };
+                        updateData.stock = increment(item.qte);
+                        
+                        // Fusion des variantes existantes
+                        if (item.variants && item.variants.length > 0) {
+                            let updatedVariants = existingData.variants ? [...existingData.variants] : [];
+                            item.variants.forEach(newVar => {
+                                let ev = updatedVariants.find(v => v.nom === newVar.nom);
+                                if (ev) {
+                                    ev.qte = (ev.qte || ev.stock || 0) + newVar.qte;
+                                    ev.stock = ev.qte;
+                                    if(newVar.codeBarre) ev.codeBarre = newVar.codeBarre;
+                                    if(newVar.image) ev.image = newVar.image;
+                                } else {
+                                    updatedVariants.push(newVar);
+                                }
+                            });
+                            updateData.variants = updatedVariants;
                         }
+
+                        if (item.image && (!existingData.image || actionType === 'add_variant')) {
+                            updateData.image = item.image;
+                        }
+                        if (pAchat > 0) updateData.prixAchat = pAchat;
+                        if (pVente > 0) updateData.prixVente = pVente;
+                        if (item.codeBarre) updateData.codeBarre = item.codeBarre;
+
+                        batch.update(productRef, updateData);
                     } else {
                         const newRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "products"));
                         productId = newRef.id;
-                        batch.set(newRef, { nom: item.nom, nomDisplay: item.nomBrut, codeBarre: item.codeBarre, prixVente: pVente, prixAchat: pAchat, stock: item.qte, variants: item.variants, quantiteVendue: 0, image: item.image || null, createdAt: serverTimestamp(), deleted: false, categorie: item.categorie, description: item.description });
+                        batch.set(newRef, { 
+                            nom: item.nom, nomDisplay: item.nomBrut, codeBarre: item.codeBarre, 
+                            prixVente: pVente, prixAchat: pAchat, stock: item.qte, variants: item.variants, 
+                            quantiteVendue: 0, image: item.image || null, createdAt: serverTimestamp(), 
+                            deleted: false, categorie: item.categorie, description: item.description 
+                        });
                     }
                     
                     if (item.qte > 0 && productId) {
                         const histRef = doc(collection(db, "boutiques", state.currentBoutiqueId, "mouvements_stock"));
                         batch.set(histRef, { productId: productId, nom: item.nomBrut, type: 'ajout', quantite: item.qte, prixAchat: pAchat, date: serverTimestamp(), user: state.userId });
                     }
-                }
 
-                await batch.commit();
-                
-                showToast(`${productsToCreate.length} article(s) enregistré(s) !`);
-                
-                stockForm.reset(); 
-                document.getElementById('add-product-form').classList.add('hidden'); 
-                if (checkboxVariants) checkboxVariants.checked = false;
-                zoneStandard.classList.remove('hidden');
-                zoneVariants.classList.add('hidden');
-                if (document.getElementById('prod-qte')) document.getElementById('prod-qte').required = true;
-                
-                const rows = document.querySelectorAll('.variant-row');
-                for (let i = 1; i < rows.length; i++) rows[i].remove();
-                document.querySelectorAll('.var-nom, .var-qte').forEach(input => input.required = false);
-                
-                if(suggestionsDiv) suggestionsDiv.classList.add('hidden');
-                state.setIsScanningForNewProduct(false);
-                
-                if (imagePreview) {
-                    imagePreview.src = '';
-                    imagePreview.classList.add('hidden');
-                    compressedImageDataUrl = null;
-                }
+                    await batch.commit();
+                    
+                    showToast("Produit enregistré avec succès !", "success");
+                    
+                    stockForm.reset(); 
+                    document.getElementById('add-product-form').classList.add('hidden'); 
+                    if (checkboxVariants) checkboxVariants.checked = false;
+                    zoneStandard.classList.remove('hidden');
+                    zoneVariants.classList.add('hidden');
+                    if (document.getElementById('prod-qte')) document.getElementById('prod-qte').required = true;
+                    
+                    const rows = document.querySelectorAll('.variant-row');
+                    for (let i = 1; i < rows.length; i++) rows[i].remove();
+                    
+                    // Réinitialiser les previews d'images de variantes
+                    document.querySelectorAll('.var-image-preview').forEach(img => {
+                        img.src = '';
+                        img.classList.add('hidden');
+                    });
+                    document.querySelectorAll('.var-nom, .var-qte').forEach(input => input.required = false);
+                    
+                    const suggestionsDiv = document.getElementById('prod-nom-suggestions');
+                    if(suggestionsDiv) suggestionsDiv.classList.add('hidden');
+                    state.setIsScanningForNewProduct(false);
+                    
+                    if (imagePreview) {
+                        imagePreview.src = '';
+                        imagePreview.classList.add('hidden');
+                        compressedImageDataUrl = null;
+                    }
 
-            } catch (err) { 
-                console.error(err); 
-                showToast("Erreur lors de l'enregistrement", "error"); 
+                } catch (err) { 
+                    console.error(err); 
+                    showToast("Erreur lors de l'enregistrement", "error"); 
+                }
+            };
+
+            // Vérifier si le produit existe déjà
+            const q = query(collection(db, "boutiques", state.currentBoutiqueId, "products"), where("nom", "==", nomBaseBrut.toLowerCase()), where("deleted", "==", false));
+            const snap = await getDocs(q);
+
+            let existingDoc = null;
+            if (!snap.empty) {
+                existingDoc = snap.docs[0];
+            } else if (document.getElementById('prod-code').value.trim()) {
+                const code = document.getElementById('prod-code').value.trim();
+                const qCode = query(collection(db, "boutiques", state.currentBoutiqueId, "products"), where("codeBarre", "==", code), where("deleted", "==", false));
+                const snapCode = await getDocs(qCode);
+                if (!snapCode.empty) existingDoc = snapCode.docs[0];
+            }
+
+            if (existingDoc) {
+                const dupModal = document.getElementById('duplicate-product-modal');
+                if (dupModal) {
+                    document.getElementById('duplicate-prod-name').textContent = existingDoc.data().nomDisplay;
+                    dupModal.classList.remove('hidden');
+
+                    document.getElementById('btn-duplicate-add-stock').onclick = async () => {
+                        dupModal.classList.add('hidden');
+                        await finalizeProductSave(existingDoc, 'add_stock');
+                    };
+
+                    document.getElementById('btn-duplicate-add-variant').onclick = async () => {
+                        dupModal.classList.add('hidden');
+                        await finalizeProductSave(existingDoc, 'add_variant');
+                    };
+                    return; // Stoppe l'exécution ici, attend le clic de l'utilisateur
+                } else {
+                    // Fallback si la modale n'est pas dans le DOM
+                    await finalizeProductSave(existingDoc, 'add_stock');
+                }
+            } else {
+                // Nouveau produit
+                await finalizeProductSave(null, 'new');
             }
         });
     }

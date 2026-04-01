@@ -331,6 +331,36 @@ export function setupAuthListener(initializeApplication, showSuperAdminInterface
                     if (shopDoc.exists()) {
                         const shopData = shopDoc.data();
                         const status = shopData.statut || 'actif';
+
+                        // --- GÉNÉRATION DYNAMIQUE DE LA PWA (Gérant/Vendeur) ---
+                        const shopName = shopData.nom || "Ma Boutique";
+                        const fallbackIcon = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="%232563eb"/><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="17 6 23 6 23 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                        const shopLogo = shopData.logo || fallbackIcon;
+
+                        let appleIcon = document.querySelector("link[rel='apple-touch-icon']");
+                        if (appleIcon) appleIcon.href = shopLogo;
+
+                        const dynamicManifest = {
+                            name: shopName + " - Gestion",
+                            short_name: shopName.substring(0, 12),
+                            start_url: "./index.html",
+                            display: "standalone",
+                            background_color: "#f8fafc",
+                            theme_color: "#2563eb",
+                            icons: [{
+                                src: shopLogo,
+                                sizes: "192x192 512x512",
+                                type: shopLogo.startsWith('data:image/svg') ? "image/svg+xml" : "image/png",
+                                purpose: "any maskable"
+                            }]
+                        };
+
+                        const manifestBlob = new Blob([JSON.stringify(dynamicManifest)], { type: 'application/json' });
+                        const manifestUrl = URL.createObjectURL(manifestBlob);
+                        
+                        let manifestLink = document.querySelector("link[rel='manifest']");
+                        if (manifestLink) manifestLink.href = manifestUrl;
+                        // --------------------------------------------------------
                         
                         let isExpired = false;
                         let daysLeft = 0;
