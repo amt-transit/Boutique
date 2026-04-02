@@ -45,7 +45,7 @@ async function loadTeamList() {
         } else {
             list.innerHTML = sellers.map(s => {
                 const isMe = s.id === state.userId;
-                const revokeBtn = !isMe ? `<button onclick="revokeSellerAccess('${s.id}', '${s.email}')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition shadow-sm ml-4" title="Révoquer l'accès"><i data-lucide="user-x" class="w-4 h-4"></i></button>` : '';
+                const revokeBtn = !isMe ? `<button onclick="revokeSellerAccess('${s.id}', '${safeEmail}')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition shadow-sm ml-4" title="Révoquer l'accès"><i data-lucide="user-x" class="w-4 h-4"></i></button>` : '';
                 
                 return `
                     <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50 transition">

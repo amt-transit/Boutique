@@ -543,7 +543,7 @@ function renderStockTable() {
             let rowAction = "";
             
             if (state.userRole === 'admin' && !p.deleted) { 
-                const productData = encodeURIComponent(JSON.stringify(p)); 
+                const productData = encodeURIComponent(JSON.stringify(p)).replace(/'/g, "%27"); 
                 rowAction = `onclick="openEditProduct('${productData}')"`; 
                 rowClass += " cursor-pointer hover:bg-blue-50"; 
             }
@@ -578,7 +578,7 @@ function renderStockTable() {
             div.className = cardClass;
 
             if (state.userRole === 'admin' && !p.deleted) { 
-                const productData = encodeURIComponent(JSON.stringify(p)); 
+                const productData = encodeURIComponent(JSON.stringify(p)).replace(/'/g, "%27"); 
                 div.setAttribute('onclick', `openEditProduct('${productData}')`);
             }
 

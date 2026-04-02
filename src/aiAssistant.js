@@ -107,7 +107,7 @@ export function setupAIAssistant() {
         // Salutations
         { sounds: ['ini ce', 'i ni ce', 'inizé', 'inissé', 'unisson', 'il ni sait', 'initier', 'il n y sait', 'in-city', 'in a say', 'e ni say', 'ini say'], bambara: 'i ni ce' },
         { sounds: ['awni ce', 'aw ni ce', 'on y sait', 'on ni sait', 'awnisey', 'aounisey', 'on a say'], bambara: 'aw ni ce' },
-        { sounds: ['a ni sogorman', 'a ni sogor man', 'en ce moment', 'ans sur comment', "année c'est comment", 'annie segou', 'a ni so go man', 'annie so go', 'a ni sogoman', 'a ni sokor man'], bambara: 'a ni sogorman' },
+        { sounds: ['a ni sogorman', 'a ni sogor man', 'en ce moment', 'ans sur comment', "anisogo", "Anissa comment", "annie c'est comment", "année c'est comment", 'annie segou', 'a ni so go man', 'annie so go', 'a ni sogoman', 'a ni sokor man'], bambara: 'a ni sogorman' },
         { sounds: ['djam', 'djame', 'jame', 'jam', 'djamm'], bambara: 'djam' },
         { sounds: ['kori djam', 'kori jam', 'corrigea', 'corrigeons', 'kori jame'], bambara: 'kori djam' },
 
@@ -318,7 +318,7 @@ export function setupAIAssistant() {
             let feedbackHtml = '';
             // On ne demande pas de vote pour les salutations ou les erreurs
             if (topic && topic !== 'salutation' && topic !== 'erreur') {
-                const safeQuery = lastUserQuery.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                const safeQuery = lastUserQuery.replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, " ").replace(/\r/g, "");
                 feedbackHtml = `
                 <div class="flex items-center gap-3 mt-3 pt-2 border-t border-slate-100 dark:border-slate-700">
                     <span class="text-[9px] text-slate-400 font-medium">Avez-vous compris ?</span>
