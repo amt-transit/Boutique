@@ -320,6 +320,7 @@ export function setupAIAssistant() {
             "il n'y sait": "i ni ce",
             "initier": "i ni ce",
             "on y sait": "aw ni ce",
+            "Annie ségou": "a ni sogor man",
             
             // Commerce
             "son go": "songo",
