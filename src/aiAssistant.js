@@ -316,6 +316,7 @@ export function setupAIAssistant() {
             "en ce moment": "a ni sogor man",
             "ans sur comment": "a ni sogor man",
             "han sur comment": "a ni sogor man",
+            "année c'est comment": "a ni sogor man",
             "unisson": "i ni ce",
             "il n'y sait": "i ni ce",
             "initier": "i ni ce",
