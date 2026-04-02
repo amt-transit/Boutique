@@ -246,11 +246,43 @@ export function setupAIAssistant() {
         // --- DICTIONNAIRE PHONÉTIQUE LOCAL ---
         // Force la voix française (qui lit avec l'accent français) à bien prononcer le Dioula/Nouchi
         const phonetics = {
+            // Salutations
+            "I ni ce": "I ni tsé", "i ni ce": "i ni tsé",
+            "Aw ni ce": "Ao ni tsé", "aw ni ce": "ao ni tsé",
+            "I ni baara": "I ni bara", "i ni baara": "i ni bara",
+            "Djam": "Djame", "djam": "djame",
+            
+            // Commerce / vente
             "Feere": "Féré", "feere": "féré",
-            "Juru": "Djourou", "juru": "djourou",
+            "Sara": "Sara", "sara": "sara",
+            "Wari": "Ouari", "wari": "ouari",
+            "Songo": "Sonnguo", "songo": "sonnguo",
+            "Tono": "Tonou", "tono": "tonou",
             "Minen": "Minène", "minen": "minène",
+
+            // Crédits / dettes
+            "Juru": "Djourou", "juru": "djourou",
+            "Dourou": "Djourou", "dourou": "djourou",
+
+            // Pertes
             "Tiɲɛna": "Tiniéna", "tiɲɛna": "tiniéna",
-            "bɔ": "bo"
+            "Tununa": "Tounouna", "tununa": "tounouna",
+
+            // Équipe
+            "Baarakɛla": "Baraké-la", "baarakɛla": "baraké-la",
+            "Mogo": "Mogou", "mogo": "mogou",
+
+            // Merci / politesse
+            "Barika": "Barika", "barika": "barika",
+            "A barika": "A barika", "a barika": "a barika",
+
+            // Lettres et petits mots
+            "banna": "banna",
+            "bɔ": "bo",
+            "tɛ": "tè",
+            "ɲɛ": "nyè",
+            "ɔ": "o",
+            "ɛ": "è"
         };
         
         let spokenText = clean;
@@ -276,11 +308,14 @@ export function setupAIAssistant() {
     //  MOTEUR DE RÉPONSES BILINGUE (Français / Bambara-Dioula)
     // ════════════════════════════════════════════════════════════
     function getSmartResponse(query, prevTopic) {
-        const nQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+        // Remplacement des caractères spéciaux bambara avant la normalisation standard
+        const nQuery = query.toLowerCase()
+            .replace(/ɛ/g, 'e').replace(/ɔ/g, 'o').replace(/ɲ/g, 'n')
+            .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
         
         const hasWord = words => words.some(w => nQuery.includes(w));
         const countWords = words => words.filter(w => nQuery.includes(w)).length;
-        const isNegative = hasWord(['pas', 'bug', 'erreur', 'marche pas', 'probleme', 'impossible', 'tɛ', 'te', 'bila']);
+        const isNegative = hasWord(['pas', 'bug', 'erreur', 'marche pas', 'probleme', 'impossible', 'te', 'bila']);
         const isFollowUp = hasWord(['et aussi', 'encore', 'autre', 'et pour', 'et si', 'ani', 'tugun']);
 
         // ── Lexique Enrichi (Français + Bambara/Dioula + Nouchi phonétique) ──
@@ -289,22 +324,22 @@ export function setupAIAssistant() {
             merci: countWords(['merci', 'super', 'parfait', 'genial', 'top', 'cimer', 'barika', 'a barika', 'djarabi', 'i ni baara']),
             aide: countWords(['aide', 'aider', 'apprendre', 'debut', 'fonction', 'comment', 'marche', 'deme', 'n deme', 'makan']),
 
-            vente: countWords(['vente', 'vendre', 'encaisser', 'caisse', 'panier', 'ticket', 'facture', 'paiement', 'feere', 'fere', 'féré', 'wuli', 'sara']),
+            vente: countWords(['vente', 'vendre', 'encaisser', 'caisse', 'panier', 'ticket', 'facture', 'paiement', 'feere', 'fere', 'féré', 'wuli', 'sara', 'sara ke', 'wari sara', 'ci', 'fen feere']),
             remise: countWords(['remise', 'reduction', 'promo', 'discount', 'moins cher', 'rabais', 'do bo a la', 'a do bo', 'a da dusu', 'nogo', 'a nogo']),
             monnaie: countWords(['monnaie', 'fond caisse', 'fonds de caisse', 'matin', 'demarrer', 'jeton', 'petite monnaie', 'wari misen', 'warimisen', 'misen']),
             mobile_money: countWords(['wave', 'orange', 'mtn', 'moov', 'mobile money', 'momo', 'electronique', 'wari di', 'telefoni wari']),
-            credit: countWords(['credit', 'dette', 'doit', 'impaye', 'rembourser', 'client', 'pret', 'bon', 'juru', 'djourou', 'njuru', 'n\'juru', 'dibi']),
+            credit: countWords(['credit', 'dette', 'doit', 'impaye', 'rembourser', 'client', 'pret', 'bon', 'juru', 'djourou', 'njuru', 'n\'juru', 'dibi', 'je fana', 'kene', 'wari to']),
             commande: countWords(['commande', 'reserver', 'livraison', 'livrer', 'livreur', 'route', 'preparation', 'expedier', 'ci', 'ci wari']),
 
-            stock: countWords(['stock', 'produit', 'article', 'marchandise', 'inventaire', 'quantite', 'ajouter', 'nouveau', 'minen', 'fen', 'jogo', 'bagage']),
-            prix: countWords(['prix', 'tarif', 'modifier prix', 'changer', 'cout', 'songo', 'a songo', 'da', 'a da', 'wari']),
+            stock: countWords(['stock', 'produit', 'article', 'marchandise', 'inventaire', 'quantite', 'ajouter', 'nouveau', 'minen', 'fen', 'jogo', 'bagage', 'baara', 'fanba', 'donniya']),
+            prix: countWords(['prix', 'tarif', 'modifier prix', 'changer', 'cout', 'songo', 'a songo', 'da', 'a da', 'wari', 'do', 'ke']),
             variante: countWords(['variante', 'taille', 'couleur', 'pointure', 'modele', 'declinaison', 'suguya', 'cogo', 'nyuman']),
-            rupture: countWords(['rupture', 'epuise', 'bas', 'alerte', 'manque', 'faible', 'banna', 'a banna', 'a te yen', 'desi']),
-            perte: countWords(['perte', 'perime', 'casse', 'vole', 'manquant', 'signaler', 'tinena', 'a tinena', 'tununa', 'fili', 'a filila', 'perdu']),
+            rupture: countWords(['rupture', 'epuise', 'bas', 'alerte', 'manque', 'faible', 'banna', 'a banna', 'a te yen', 'desi', 'dese', 'a dogoyara']),
+            perte: countWords(['perte', 'perime', 'casse', 'vole', 'manquant', 'signaler', 'tinena', 'a tinena', 'tununa', 'fili', 'a filila', 'perdu', 'bana', 'dogoya']),
             code_barre: countWords(['code barre', 'scanner', 'etiquette', 'imprimer', 'barcode', 'qr', 'flash', 'foto']),
 
-            depense: countWords(['depense', 'charge', 'facture', 'loyer', 'transport', 'cie', 'sodeci', 'sortie', 'frais', 'wari bo', 'wari boli', 'mako']),
-            bilan: countWords(['benefice', 'bilan', 'rapport', 'chiffre', 'gagne', 'recette', 'point', 'rentable', 'profit', 'tono', 'tono soro', 'wari to', 'saba']),
+            depense: countWords(['depense', 'charge', 'facture', 'loyer', 'transport', 'cie', 'sodeci', 'sortie', 'frais', 'wari bo', 'boli', 'mako', 'don', 'nafo te']),
+            bilan: countWords(['benefice', 'bilan', 'rapport', 'chiffre', 'gagne', 'recette', 'point', 'rentable', 'profit', 'tono', 'tono soro', 'nafama', 'wari to', 'geleya', 'saba']),
             capital: countWords(['fonds investi', 'capital', 'mise de depart', 'investi', 'fond de depart', 'budget', 'wari juju', 'wari kun']),
             pdf: countWords(['pdf', 'exporter', 'telecharger', 'imprimer bilan', 'papier']),
 

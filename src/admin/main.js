@@ -605,23 +605,26 @@ export async function setupAdminAIPage() {
     if (window.lucide) window.lucide.createIcons();
 
     try {
-        // Trie les requêtes des plus récentes aux plus anciennes
-        const q = query(collection(db, "ai_unknowns"), orderBy("date", "desc"));
-        const snap = await getDocs(q);
+        // On récupère tout puis on trie côté client pour éviter d'exclure les documents sans date (orderBy exclut les champs null/inexistants)
+        const snap = await getDocs(collection(db, "ai-unknowns"));
         
         if (snap.empty) {
             listContainer.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-500 italic">Aucune phrase inconnue enregistrée.</td></tr>';
             return;
         }
 
+        const rawDocs = [];
+        snap.forEach(docSnap => rawDocs.push({ id: docSnap.id, ...docSnap.data() }));
+        
+        rawDocs.sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
+
         const rows = [];
-        snap.forEach(docSnap => {
-            const data = docSnap.data();
+        rawDocs.forEach(data => {
             const dateStr = data.date ? new Date(data.date.seconds * 1000).toLocaleString('fr-FR', {day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit'}) : '-';
             
             const statusBadge = '<span class="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">À Traiter</span>';
             
-            const actionBtn = `<button onclick="resolveAIUnknown('${docSnap.id}', '${(data.phrase || '').replace(/'/g, "\\'")}')" class="text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 p-2 rounded-lg transition shadow-sm border border-emerald-200 dark:border-emerald-800" title="J'ai ajouté ce mot au code (Supprimer)"><i data-lucide="check" class="w-5 h-5"></i></button>`;
+            const actionBtn = `<button onclick="resolveAIUnknown('${data.id}', '${(data.phrase || '').replace(/'/g, "\\'")}')" class="text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 p-2 rounded-lg transition shadow-sm border border-emerald-200 dark:border-emerald-800" title="J'ai ajouté ce mot au code (Supprimer)"><i data-lucide="check" class="w-5 h-5"></i></button>`;
 
             rows.push(`
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition bg-white dark:bg-slate-800">
@@ -650,7 +653,7 @@ window.resolveAIUnknown = (id, phrase) => {
         `Avez-vous bien ajouté "${phrase}" dans votre fichier aiAssistant.js ?\n\nSi oui, cette ligne sera supprimée de Firebase pour garder votre liste propre.`,
         async () => {
             try {
-                await deleteDoc(doc(db, "ai_unknowns", id));
+                await deleteDoc(doc(db, "ai-unknowns", id));
                 showToast("Phrase supprimée de la liste !", "success");
                 setupAdminAIPage(); 
             } catch (e) { console.error(e); showToast("Erreur lors de la validation", "error"); }
