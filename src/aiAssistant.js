@@ -309,8 +309,49 @@ export function setupAIAssistant() {
     //  MOTEUR DE RÉPONSES BILINGUE (Français / Bambara-Dioula)
     // ════════════════════════════════════════════════════════════
     function getSmartResponse(query, prevTopic) {
+        // ── Correction phonétique pour le micro (Traductions forcées par le navigateur) ──
+        let correctedQuery = query.toLowerCase();
+        const phoneticCorrections = {
+            // Salutations
+            "en ce moment": "a ni sogor man",
+            "ans sur comment": "a ni sogor man",
+            "han sur comment": "a ni sogor man",
+            "unisson": "i ni ce",
+            "il n'y sait": "i ni ce",
+            "initier": "i ni ce",
+            "on y sait": "aw ni ce",
+            
+            // Commerce
+            "son go": "songo",
+            "sans go": "songo",
+            "sont gros": "songo",
+            "son gros": "songo",
+            "cent go": "songo",
+            "féré": "feere",
+            "ferré": "feere",
+            "ouari": "wari",
+            "harry": "wari",
+            
+            // Finances et gestion
+            "tonneau": "tono",
+            "tonnaud": "tono",
+            "jour où": "juru",
+            "genou": "juru",
+            
+            // Autres
+            "bara": "baara",
+            "bas ras": "baara"
+        };
+        
+        Object.keys(phoneticCorrections).forEach(badFr => {
+            if (correctedQuery.includes(badFr)) {
+                // Remplacement global pour corriger le mot même s'il est répété plusieurs fois
+                correctedQuery = correctedQuery.replace(new RegExp(badFr, 'g'), phoneticCorrections[badFr]);
+            }
+        });
+
         // Remplacement des caractères spéciaux bambara avant la normalisation standard
-        const nQuery = query.toLowerCase()
+        const nQuery = correctedQuery
             .replace(/ɛ/g, 'e').replace(/ɔ/g, 'o').replace(/ɲ/g, 'n')
             .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
         
@@ -320,7 +361,7 @@ export function setupAIAssistant() {
         const isFollowUp = hasWord(['et aussi', 'encore', 'autre', 'et pour', 'et si', 'ani', 'tugun']);
 
         // ── Détection de l'utilisation du Bambara par l'utilisateur ──
-        const bambaraKeywords = ['i ni ce', 'aw ni ce', 'inice', 'awnice', 'anice', 'kori djam', 'barika', 'djarabi', 'baara', 'deme', 'makan', 'feere', 'fere', 'féré', 'wuli', 'sara', 'wari', 'fen feere', 'nogo', 'misen', 'telefoni', 'juru', 'djourou', 'njuru', 'dibi', 'je fana', 'kene', 'minen', 'jogo', 'fanba', 'donniya', 'songo', 'suguya', 'cogo', 'nyuman', 'banna', 'te yen', 'desi', 'dese', 'dogoya', 'tinena', 'tununa', 'fili', 'bana', 'mako', 'nafo', 'tono', 'nafama', 'geleya', 'saba', 'juju', 'kun', 'feerekela', 'sugu tigi', 'interneti', 'baarakela', 'mogo', 'kalan den', 'kuma', 'tariku', 'tugun'];
+        const bambaraKeywords = ['i ni ce', 'aw ni ce', 'inice', 'awnice', 'anice', 'kori djam', 'a ni sogor man', 'barika', 'djarabi', 'baara', 'deme', 'makan', 'feere', 'fere', 'féré', 'wuli', 'sara', 'wari', 'fen feere', 'nogo', 'misen', 'telefoni', 'juru', 'djourou', 'njuru', 'dibi', 'je fana', 'kene', 'minen', 'jogo', 'fanba', 'donniya', 'songo', 'suguya', 'cogo', 'nyuman', 'banna', 'te yen', 'desi', 'dese', 'dogoya', 'tinena', 'tununa', 'fili', 'bana', 'mako', 'nafo', 'tono', 'nafama', 'geleya', 'saba', 'juju', 'kun', 'feerekela', 'sugu tigi', 'interneti', 'baarakela', 'mogo', 'kalan den', 'kuma', 'tariku', 'tugun'];
         const isBambaraUser = bambaraKeywords.some(w => nQuery.includes(w));
 
         // ── Lexique Enrichi (Français + Bambara/Dioula + Nouchi phonétique) ──
