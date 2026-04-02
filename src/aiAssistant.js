@@ -107,7 +107,7 @@ export function setupAIAssistant() {
         // Salutations
         { sounds: ['ini ce', 'i ni ce', 'inizé', 'inissé', 'unisson', 'il ni sait', 'initier', 'il n y sait', 'in-city', 'in a say', 'e ni say', 'ini say'], bambara: 'i ni ce' },
         { sounds: ['awni ce', 'aw ni ce', 'on y sait', 'on ni sait', 'awnisey', 'aounisey', 'on a say'], bambara: 'aw ni ce' },
-        { sounds: ['a ni sogorman', 'a ni sogor man', 'en ce moment', 'ans sur comment', 'annie segou', 'a ni so go man', 'annie so go', 'a ni sogoman', 'a ni sokor man'], bambara: 'a ni sogorman' },
+        { sounds: ['a ni sogorman', 'a ni sogor man', 'en ce moment', 'ans sur comment', "année c'est comment", 'annie segou', 'a ni so go man', 'annie so go', 'a ni sogoman', 'a ni sokor man'], bambara: 'a ni sogorman' },
         { sounds: ['djam', 'djame', 'jame', 'jam', 'djamm'], bambara: 'djam' },
         { sounds: ['kori djam', 'kori jam', 'corrigea', 'corrigeons', 'kori jame'], bambara: 'kori djam' },
 
@@ -198,141 +198,53 @@ export function setupAIAssistant() {
         if (statusText) statusText.textContent = "Utilisez la saisie texte ↓";
         if (micBtn) { micBtn.disabled = true; micBtn.classList.add('opacity-40', 'cursor-not-allowed'); }
     } else {
-        // On crée deux instances : une en français, une en anglais
-        // L'anglais transcrit mieux les sons bambara que le français
-        const recFR = new SR();
-        recFR.lang = 'fr-FR';
-        recFR.interimResults = false;
-        recFR.maxAlternatives = 3; // Demander 3 alternatives pour plus de chances
-
-        const recEN = new SR();
-        recEN.lang = 'en-US';
-        recEN.interimResults = false;
-        recEN.maxAlternatives = 3;
-
-        // État de la double passe
-        let passeFR = null;   // résultat transcription française
-        let passeEN = null;   // résultat transcription anglaise
-        let currentPass = 0; // 0=idle, 1=FR en cours, 2=EN en cours
-        let audioBlob = null; // audio capturé pour rejeu
+        const rec = new SR();
+        rec.lang = 'fr-FR';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
 
         function startListening() {
-            passeFR = null;
-            passeEN = null;
-            currentPass = 1;
             isListening = true;
             micPulse?.classList.remove('hidden');
             if (statusText) statusText.textContent = "Je vous écoute... 🎙️";
-            try { recFR.start(); } catch(e) { isListening = false; }
+            try { rec.start(); } catch(e) { isListening = false; }
         }
 
         function stopListening() {
-            currentPass = 0;
             isListening = false;
             micPulse?.classList.add('hidden');
             if (statusText) statusText.textContent = "Micro ou texte ↓";
         }
 
-        // ── Sélection du meilleur résultat ───────────────────────
-        // Compare les deux transcriptions et choisit la plus
-        // "bambara-like", ou la française par défaut
-        function selectBestTranscript(fr, en) {
-            const { text: frReconstructed, detectedBambaraWords: frWords } = reconstructBambara(fr || '');
-            const { text: enReconstructed, detectedBambaraWords: enWords } = reconstructBambara(en || '');
-
-            const frScore = bambaraLikeScore(frReconstructed);
-            const enScore = bambaraLikeScore(enReconstructed);
-
-            // Si la transcription EN contient plus de mots bambara reconnus
-            // ET a un meilleur score, on la préfère
-            if (en && enWords.length > frWords.length && enScore > frScore) {
-                console.log(`[AI] Passe EN gagne (${enWords.join(', ')}) — score: ${enScore.toFixed(2)} vs FR: ${frScore.toFixed(2)}`);
-                return enReconstructed;
-            }
-
-            // Si FR a reconstruit des mots bambara, la garder
-            if (frWords.length > 0 || frScore > 0.1) {
-                console.log(`[AI] Passe FR avec bambara (${frWords.join(', ')}) — score: ${frScore.toFixed(2)}`);
-                return frReconstructed;
-            }
-
-            // Par défaut : transcription FR brute (texte purement français)
-            console.log(`[AI] Passe FR standard (pas de bambara détecté)`);
-            return fr || '';
-        }
-
-        // ── Handlers de la passe 1 (FR) ──────────────────────────
-        recFR.onresult = e => {
-            // Collecter toutes les alternatives
-            const alts = Array.from(e.results[0]).map(r => r.transcript).join(' | ');
-            passeFR = e.results[0][0].transcript;
-            console.log(`[AI] Passe FR: "${passeFR}" (alts: ${alts})`);
+        rec.onresult = e => {
+            const transcript = e.results[0][0].transcript;
+            console.log(`[AI] Entendu : "${transcript}"`);
+            
+            // La magie opère ici : on corrige les erreurs du navigateur
+            const { text: reconstructedText, detectedBambaraWords } = reconstructBambara(transcript);
+            
+            if (detectedBambaraWords.length > 0) console.log(`[AI] Bambara corrigé :`, detectedBambaraWords);
+            
+            stopListening();
+            handleInput(reconstructedText);
         };
 
-        recFR.onend = () => {
-            // FR terminée → lancer la passe EN immédiatement
-            if (currentPass === 1) {
-                currentPass = 2;
-                if (statusText) statusText.textContent = "Analyse vocale... ⚡";
-                try {
-                    recEN.start();
-                } catch(e) {
-                    // Si EN échoue, traiter quand même avec FR seul
-                    const best = passeFR ? selectBestTranscript(passeFR, null) : null;
-                    if (best) handleInput(best);
-                    stopListening();
-                }
-            }
+        rec.onend = () => {
+            stopListening();
         };
 
-        recFR.onerror = e => {
-            console.warn('[AI] Erreur passe FR:', e.error);
+        rec.onerror = e => {
+            console.warn('[AI] Erreur micro:', e.error);
             if (e.error === 'not-allowed') {
                 addMsg("⚠️ Accès au micro refusé. Utilisez la saisie texte.", 'ai');
-                stopListening();
             }
-            // Continuer avec passe EN même si FR a échoué
-            if (currentPass === 1) {
-                currentPass = 2;
-                try { recEN.start(); } catch(ex) { stopListening(); }
-            }
-        };
-
-        // ── Handlers de la passe 2 (EN) ──────────────────────────
-        recEN.onresult = e => {
-            passeEN = e.results[0][0].transcript;
-            console.log(`[AI] Passe EN: "${passeEN}"`);
-        };
-
-        recEN.onend = () => {
-            if (currentPass === 2) {
-                // Les deux passes sont terminées → sélectionner le meilleur
-                const best = selectBestTranscript(passeFR, passeEN);
-                stopListening();
-                if (best && best.trim()) {
-                    handleInput(best);
-                } else {
-                    addMsg("Je n'ai pas entendu. Réessayez ou utilisez le texte.", 'ai');
-                }
-            }
-        };
-
-        recEN.onerror = e => {
-            console.warn('[AI] Erreur passe EN:', e.error);
-            if (currentPass === 2) {
-                // EN a échoué mais on a peut-être FR
-                const best = passeFR ? selectBestTranscript(passeFR, null) : null;
-                stopListening();
-                if (best) handleInput(best);
-                else addMsg("Je n'ai pas entendu. Réessayez.", 'ai');
-            }
+            stopListening();
         };
 
         // ── Bouton micro ─────────────────────────────────────────
         micBtn?.addEventListener('click', () => {
             if (isListening) {
-                recFR.abort();
-                recEN.abort();
+                rec.abort();
                 stopListening();
             } else {
                 stopSpeaking();
