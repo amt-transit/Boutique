@@ -140,11 +140,12 @@ export function setupAIAssistant() {
             speak(response);
             if (statusText) statusText.textContent = "Micro ou texte ↓";
 
-            // NOUVEAU : Enregistrement silencieux des phrases non comprises
+            // --- NOUVEAU : Envoi automatique dans ai_unknowns si incompris ---
             if (topic === 'erreur') {
-                console.log("Tentative d'envoi du mot inconnu à Firebase :", text);
-                autoLogUnknown(text);
+                window.logUnknownQuery(text);
             }
+            // -----------------------------------------------------------------
+
         }, 800 + Math.random() * 600); // Délai réaliste de réflexion
     }
 
@@ -441,3 +442,15 @@ window.rateAI = async function(query, topic, isHelpful, btnElement) {
         console.error("Erreur d'apprentissage IA :", e);
     }
 }
+// --- Fonction de collecte automatique des mots incompris ---
+window.logUnknownQuery = async function(query) {
+    try {
+        const { db, collection, addDoc, serverTimestamp } = await import('./firebase.js');
+        await addDoc(collection(db, "ai_unknowns"), {
+            phrase: query,
+            date: serverTimestamp()
+        });
+    } catch (e) {
+        console.error("Erreur d'enregistrement IA Inconnu :", e);
+    }
+};

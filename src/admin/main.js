@@ -605,17 +605,18 @@ export async function setupAdminAIPage() {
     if (window.lucide) window.lucide.createIcons();
 
     try {
-        // On récupère tout puis on trie côté client pour éviter d'exclure les documents sans date (orderBy exclut les champs null/inexistants)
-        const snap = await getDocs(collection(db, "ai-unknowns"));
+        // LECTURE DE LA BONNE COLLECTION : ai_unknowns
+        const snap = await getDocs(collection(db, "ai_unknowns"));
         
         if (snap.empty) {
-            listContainer.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-500 italic">Aucune phrase inconnue enregistrée.</td></tr>';
+            listContainer.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-emerald-500 font-bold italic">L\'IA a tout compris ! Aucune phrase en attente.</td></tr>';
             return;
         }
 
         const rawDocs = [];
         snap.forEach(docSnap => rawDocs.push({ id: docSnap.id, ...docSnap.data() }));
         
+        // Tri par date de la plus récente à la plus ancienne
         rawDocs.sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
 
         const rows = [];
@@ -650,11 +651,12 @@ window.setupAdminAIPage = setupAdminAIPage;
 window.resolveAIUnknown = (id, phrase) => {
     showConfirmModal(
         "Mot traité",
-        `Avez-vous bien ajouté "${phrase}" dans votre fichier aiAssistant.js ?\n\nSi oui, cette ligne sera supprimée de Firebase pour garder votre liste propre.`,
+        `Avez-vous bien ajouté "${phrase}" dans votre lexique (aiAssistant.js) ?\n\nSi oui, cette phrase sera supprimée de la liste.`,
         async () => {
             try {
-                await deleteDoc(doc(db, "ai-unknowns", id));
-                showToast("Phrase supprimée de la liste !", "success");
+                // SUPPRESSION DANS LA BONNE COLLECTION
+                await deleteDoc(doc(db, "ai_unknowns", id));
+                showToast("Phrase supprimée avec succès !", "success");
                 setupAdminAIPage(); 
             } catch (e) { console.error(e); showToast("Erreur lors de la validation", "error"); }
         }
