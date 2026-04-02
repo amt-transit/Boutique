@@ -325,7 +325,7 @@ export function setupAIAssistant() {
 
         // ── Lexique Enrichi (Français + Bambara/Dioula + Nouchi phonétique) ──
         const scores = {
-            salutation: countWords(['bonjour', 'salut', 'coucou', 'hello', 'hey', 'bjr', 'i ni ce', 'aw ni ce', 'inice', 'awnice', 'anice', 'djam', 'kori djam']),
+            salutation: countWords(['bonjour', 'salut', 'coucou', 'hello', 'hey', 'bjr', 'i ni ce', 'aw ni ce', 'inice', 'awnice', 'anice', 'djam', 'kori djam', 'a ni sogor man']),
             merci: countWords(['merci', 'super', 'parfait', 'genial', 'top', 'cimer', 'barika', 'a barika', 'djarabi', 'i ni baara']),
             aide: countWords(['aide', 'aider', 'apprendre', 'debut', 'fonction', 'comment faire', 'comment ca marche', 'marche', 'deme', 'n deme', 'makan']),
 
