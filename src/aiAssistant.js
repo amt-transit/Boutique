@@ -319,11 +319,15 @@ export function setupAIAssistant() {
         const isNegative = hasWord(['pas', 'bug', 'erreur', 'marche pas', 'probleme', 'impossible', 'te', 'bila']);
         const isFollowUp = hasWord(['et aussi', 'encore', 'autre', 'et pour', 'et si', 'ani', 'tugun']);
 
+        // ── Détection de l'utilisation du Bambara par l'utilisateur ──
+        const bambaraKeywords = ['i ni ce', 'aw ni ce', 'inice', 'awnice', 'anice', 'kori djam', 'barika', 'djarabi', 'baara', 'deme', 'makan', 'feere', 'fere', 'féré', 'wuli', 'sara', 'wari', 'fen feere', 'nogo', 'misen', 'telefoni', 'juru', 'djourou', 'njuru', 'dibi', 'je fana', 'kene', 'minen', 'jogo', 'fanba', 'donniya', 'songo', 'suguya', 'cogo', 'nyuman', 'banna', 'te yen', 'desi', 'dese', 'dogoya', 'tinena', 'tununa', 'fili', 'bana', 'mako', 'nafo', 'tono', 'nafama', 'geleya', 'saba', 'juju', 'kun', 'feerekela', 'sugu tigi', 'interneti', 'baarakela', 'mogo', 'kalan den', 'kuma', 'tariku', 'tugun'];
+        const isBambaraUser = bambaraKeywords.some(w => nQuery.includes(w));
+
         // ── Lexique Enrichi (Français + Bambara/Dioula + Nouchi phonétique) ──
         const scores = {
             salutation: countWords(['bonjour', 'salut', 'coucou', 'hello', 'hey', 'bjr', 'i ni ce', 'aw ni ce', 'inice', 'awnice', 'anice', 'djam', 'kori djam']),
             merci: countWords(['merci', 'super', 'parfait', 'genial', 'top', 'cimer', 'barika', 'a barika', 'djarabi', 'i ni baara']),
-            aide: countWords(['aide', 'aider', 'apprendre', 'debut', 'fonction', 'comment', 'marche', 'deme', 'n deme', 'makan']),
+            aide: countWords(['aide', 'aider', 'apprendre', 'debut', 'fonction', 'comment faire', 'comment ca marche', 'marche', 'deme', 'n deme', 'makan']),
 
             vente: countWords(['vente', 'vendre', 'encaisser', 'caisse', 'panier', 'ticket', 'facture', 'paiement', 'feere', 'fere', 'féré', 'wuli', 'sara', 'sara ke', 'wari sara', 'ci', 'fen feere']),
             remise: countWords(['remise', 'reduction', 'promo', 'discount', 'moins cher', 'rabais', 'do bo a la', 'a do bo', 'a da dusu', 'nogo', 'a nogo']),
@@ -345,7 +349,7 @@ export function setupAIAssistant() {
             pdf: countWords(['pdf', 'exporter', 'telecharger', 'imprimer bilan', 'papier']),
 
             fournisseur: countWords(['fournisseur', 'grossiste', 'approvisionnement', 'achat', 'contact', 'feerekela', 'sugu tigi']),
-            catalogue: countWords(['catalogue', 'en ligne', 'internet', 'lien', 'partager', 'whatsapp', 'site', 'vitrine', 'interneti']),
+            catalogue: countWords(['catalogue', 'en ligne', 'internet', 'lien', 'partager', 'whatsapp', 'site', 'vitrine', 'interneti', 'acceder', 'ouvrir']),
             equipe: countWords(['equipe', 'vendeur', 'employe', 'gerant', 'acces', 'compte', 'utilisateur', 'ajouter personne', 'baarakela', 'mogo', 'kalan den']),
             audit: countWords(['audit', 'journal', 'historique', 'trace', 'mouvement', 'supprime', 'erreur', 'log', 'kuma', 'tariku']),
             pwa: countWords(['installer', 'appli', 'ecran accueil', 'pwa', 'telecharger', 'telephone']),
@@ -358,53 +362,165 @@ export function setupAIAssistant() {
 
         const bestTopic = Object.entries(scores).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1])[0]?.[0];
 
-        // ── Réponses Bilingues & Simples ──
+        // ── Base de Connaissances (KB) : Version 100% Français et Version Bilingue ──
         const KB = {
-            salutation: { r: "I ni ce ! Bonjour ! 👋 Prêt à gérer la boutique ? (I bɛ di ?)\n\nQue souhaitez-vous faire ? (Mun bɛ i mago la ?)", s: ["Vendre (Feere)", "Voir le stock (Minen)", "Bénéfice (Tono)"] },
-            merci: { r: "I ni baara ! Avec grand plaisir ! 😊 Je suis là pour vous aider (N bɛ se ka i dɛmɛ).", s: ["Vendre (Feere)", "Ajouter marchandise"] },
-            aide: { r: "N bɛ se ka i dɛmɛ ! Je peux vous aider avec :\n\n→ **Vente (Feere)**\n→ **Stock et Marchandises (Minen)**\n→ **Bénéfices (Tono)**\n→ **Crédits (Juru)**", s: ["Encaisser une vente", "Voir mes bénéfices"] },
-            
-            vente: { r: "📦 **Pour vendre (Ka feere kɛ) :**\n\n1️⃣ Je vous ouvre la caisse !\n2️⃣ Touchez les articles.\n3️⃣ Cliquez sur le gros bouton vert ENCAISSER.", s: ["Crédit (Juru)", "Remise (A dɔ bɔ)", "Mobile Money"], action: "ventes" },
-            remise: { r: "🏷️ **Diminuer le prix (A dɔ bɔ) :**\n\nDans la Vente, sous le panier, cliquez sur '+ Ajouter Remise'. Tapez l'argent à enlever.", s: ["Vendre (Feere)", "Mobile money"], action: "ventes" },
-            monnaie: { r: "💰 **Monnaie du matin (Wari misen) :**\n\nDans la Vente, en haut à droite. Tapez la petite monnaie que vous avez dans le tiroir, puis enregistrez 💾.", s: ["Bénéfice (Tono)", "Dépense (Wari bɔ)"], action: "ventes" },
-            mobile_money: { r: "📱 **Paiement Mobile Money :**\n\nPour payer par Wave ou Orange, cliquez sur 'Mobile Money' (bouton turquoise) au moment de payer.", s: ["Vendre (Feere)", "Crédit (Juru)"], action: "ventes" },
-            credit: { r: "👥 **Crédit (Juru) :**\n\n→ **Pour donner à crédit :** Dans Vente, bouton orange 'Crédit Client'.\n→ **Pour faire payer un crédit :** Je vous emmène voir vos clients.", s: ["Payer un crédit"], action: "credits" },
-            commande: { r: "📋 **Livraisons (Ci) :**\n\nJe vous ouvre la page des commandes. Vous pourrez donner la commande à un livreur ou envoyer un message WhatsApp.", s: ["Catalogue en ligne"], action: "commandes" },
-            
-            stock: { r: "📦 **Stock (Minen) :**\n\nJe vous ouvre le magasin !\n→ Cliquez sur 'Nouveau Produit' pour ajouter des marchandises (Fen).", s: ["Perte (Tiɲɛna)", "Prix (Songo)"], action: "stock" },
-            prix: { r: "✏️ **Changer un prix (A songo) :**\n\nAllez dans le Stock, touchez la marchandise, changez le Prix de Vente et enregistrez.", s: ["Voir le stock (Minen)"], action: "stock" },
-            variante: { r: "🎨 **Tailles et Couleurs (Suguya) :**\n\nQuand vous ajoutez une marchandise, cochez la case bleue 'Variantes'. Vous pourrez ajouter les tailles et les couleurs.", s: ["Ajouter marchandise"], action: "stock" },
-            rupture: { r: "⚠️ **Marchandise finie (A banna) :**\n\nL'application vous prévient en rouge quand il reste moins de 5 articles. Triez le stock par 'Stock Faible' pour voir.", s: ["Fournisseurs", "Ajouter stock"], action: "stock" },
-            perte: { r: "🗑️ **Perte ou Vol (Tiɲɛna) :**\n\nSi un article est cassé ou perdu, allez dans Stock, cliquez sur l'article, puis sur le bouton rouge 'Signaler une perte' en bas.", s: ["Journal (Tariku)"], action: "stock" },
-            code_barre: { r: "📷 **Scanner avec le téléphone :**\n\nTouchez l'icône appareil photo 📷 pour scanner un code barre rapidement.", s: ["Vendre (Feere)", "Voir le stock"], action: "stock" },
-            
-            depense: { r: "💸 **Dépenses (Wari bɔ) :**\n\nPour les factures, le transport ou la nourriture, je vous ouvre la page Dépenses pour tout noter.", s: ["Bénéfice (Tono)"], action: "charges" },
-            bilan: { r: "📊 **Bénéfices (Tono) :**\n\nVoici vos chiffres ! L'onglet Bilan calcule votre argent et ce que vous avez gagné (Tono sɔrɔ).", s: ["Exporter PDF", "Dépense (Wari bɔ)"], action: "rapports" },
-            capital: { r: "🏦 **Capital (Wari juju) :**\n\nSur la page Bilan, tapez l'argent que vous avez investi au début dans la case bleue.", s: ["Bénéfice (Tono)"], action: "rapports" },
-            pdf: { r: "📄 **Imprimer le Bilan (Papier) :**\n\nSur la page Bilan, cliquez sur le bouton rouge PDF pour télécharger vos chiffres.", s: ["Bénéfice (Tono)"], action: "rapports" },
-        
-            fournisseur: { r: "🚚 **Fournisseurs (Feerekela) :**\n\nJe vous ouvre votre carnet d'adresses. Vous pourrez enregistrer vos grossistes.", s: ["Voir le stock"], action: "fournisseurs" },
-            catalogue: { r: "🌐 **Boutique WhatsApp (Interneti) :**\n\nVos clients peuvent voir vos articles sur leur téléphone ! Allez dans 'Profil' ⚙️ et cliquez sur 'Copier' pour partager le lien.", s: ["Voir les commandes"] },
-            equipe: { r: "👥 **Ajouter un vendeur (Baarakɛla) :**\n\nAllez dans le menu et cliquez sur 'Gestion Équipe' pour donner un code d'accès à votre employé.", s: ["Journal (Tariku)"] },
-            audit: { r: "🔍 **Journal (Tariku) :**\n\nC'est la mémoire de la boutique. Tout ce qui est fait ou effacé est écrit ici. Impossible de tricher !", s: ["Bénéfice (Tono)"], action: "audit" },
-            pwa: { r: "📲 **Mettre sur le téléphone :**\n\nPour installer l'application, ouvrez le menu de votre navigateur (Chrome/Safari) et choisissez 'Installer' ou 'Sur l'écran d'accueil'.", s: [] },
-            mode_sombre: { r: "🌙 **Mode Nuit (Dibi) :**\n\nOuvrez le menu sur le côté et cliquez sur 'Mode Sombre' pour protéger vos yeux.", s: [] }
+            salutation: { 
+                r_fr: "Bonjour ! 👋 Prêt à gérer la boutique ?\n\nQue souhaitez-vous faire ?", 
+                r_bi: "I ni ce ! Bonjour ! 👋 Prêt à gérer la boutique ? (I bɛ di ?)\n\nQue souhaitez-vous faire ? (Mun bɛ i mago la ?)", 
+                s_fr: ["Vendre", "Voir le stock", "Bénéfice"], 
+                s_bi: ["Vendre (Feere)", "Voir le stock (Minen)", "Bénéfice (Tono)"] 
+            },
+            merci: { 
+                r_fr: "Avec grand plaisir ! 😊 Je suis là pour vous aider.", 
+                r_bi: "I ni baara ! Avec grand plaisir ! 😊 Je suis là pour vous aider (N bɛ se ka i dɛmɛ).", 
+                s_fr: ["Vendre", "Ajouter marchandise"] 
+            },
+            aide: { 
+                r_fr: "Je peux vous aider avec :\n\n→ **Vente**\n→ **Stock et Marchandises**\n→ **Bénéfices**\n→ **Crédits**", 
+                r_bi: "N bɛ se ka i dɛmɛ ! Je peux vous aider avec :\n\n→ **Vente (Feere)**\n→ **Stock et Marchandises (Minen)**\n→ **Bénéfices (Tono)**\n→ **Crédits (Juru)**", 
+                s_fr: ["Encaisser une vente", "Voir mes bénéfices"] 
+            },
+            vente: { 
+                r_fr: "📦 **Pour vendre :**\n\n1️⃣ Je vous ouvre la caisse !\n2️⃣ Touchez les articles.\n3️⃣ Cliquez sur le gros bouton vert ENCAISSER.", 
+                r_bi: "📦 **Pour vendre (Ka feere kɛ) :**\n\n1️⃣ Je vous ouvre la caisse !\n2️⃣ Touchez les articles.\n3️⃣ Cliquez sur le gros bouton vert ENCAISSER.", 
+                s_fr: ["Crédit", "Remise", "Mobile Money"], 
+                s_bi: ["Crédit (Juru)", "Remise (A dɔ bɔ)", "Mobile Money"], action: "ventes" 
+            },
+            remise: { 
+                r_fr: "🏷️ **Diminuer le prix :**\n\nDans la Vente, sous le panier, cliquez sur '+ Ajouter Remise'. Tapez l'argent à enlever.", 
+                r_bi: "🏷️ **Diminuer le prix (A dɔ bɔ) :**\n\nDans la Vente, sous le panier, cliquez sur '+ Ajouter Remise'. Tapez l'argent à enlever.", 
+                s_fr: ["Vendre", "Mobile money"], 
+                s_bi: ["Vendre (Feere)", "Mobile money"], action: "ventes" 
+            },
+            monnaie: { 
+                r_fr: "💰 **Monnaie du matin :**\n\nDans la Vente, en haut à droite. Tapez la petite monnaie que vous avez dans le tiroir, puis enregistrez 💾.", 
+                r_bi: "💰 **Monnaie du matin (Wari misen) :**\n\nDans la Vente, en haut à droite. Tapez la petite monnaie que vous avez dans le tiroir, puis enregistrez 💾.", 
+                s_fr: ["Bénéfice", "Dépense"], 
+                s_bi: ["Bénéfice (Tono)", "Dépense (Wari bɔ)"], action: "ventes" 
+            },
+            mobile_money: { 
+                r_fr: "📱 **Paiement Mobile Money :**\n\nPour payer par Wave ou Orange, cliquez sur 'Mobile Money' (bouton turquoise) au moment de payer.", 
+                s_fr: ["Vendre", "Crédit"], 
+                s_bi: ["Vendre (Feere)", "Crédit (Juru)"], action: "ventes" 
+            },
+            credit: { 
+                r_fr: "👥 **Crédit :**\n\n→ **Pour donner à crédit :** Dans Vente, bouton orange 'Crédit Client'.\n→ **Pour faire payer un crédit :** Je vous emmène voir vos clients.", 
+                r_bi: "👥 **Crédit (Juru) :**\n\n→ **Pour donner à crédit :** Dans Vente, bouton orange 'Crédit Client'.\n→ **Pour faire payer un crédit :** Je vous emmène voir vos clients.", 
+                s_fr: ["Payer un crédit"], action: "credits" 
+            },
+            commande: { 
+                r_fr: "📋 **Livraisons :**\n\nJe vous ouvre la page des commandes. Vous pourrez donner la commande à un livreur ou envoyer un message WhatsApp.", 
+                r_bi: "📋 **Livraisons (Ci) :**\n\nJe vous ouvre la page des commandes. Vous pourrez donner la commande à un livreur ou envoyer un message WhatsApp.", 
+                s_fr: ["Catalogue en ligne"], action: "commandes" 
+            },
+            stock: { 
+                r_fr: "📦 **Stock :**\n\nJe vous ouvre le magasin !\n→ Cliquez sur 'Nouveau Produit' pour ajouter des marchandises.", 
+                r_bi: "📦 **Stock (Minen) :**\n\nJe vous ouvre le magasin !\n→ Cliquez sur 'Nouveau Produit' pour ajouter des marchandises (Fen).", 
+                s_fr: ["Perte", "Prix"], 
+                s_bi: ["Perte (Tiɲɛna)", "Prix (Songo)"], action: "stock" 
+            },
+            prix: { 
+                r_fr: "✏️ **Changer un prix :**\n\nAllez dans le Stock, touchez la marchandise, changez le Prix de Vente et enregistrez.", 
+                r_bi: "✏️ **Changer un prix (A songo) :**\n\nAllez dans le Stock, touchez la marchandise, changez le Prix de Vente et enregistrez.", 
+                s_fr: ["Voir le stock"], 
+                s_bi: ["Voir le stock (Minen)"], action: "stock" 
+            },
+            variante: { 
+                r_fr: "🎨 **Tailles et Couleurs :**\n\nQuand vous ajoutez une marchandise, cochez la case bleue 'Variantes'. Vous pourrez ajouter les tailles et les couleurs.", 
+                r_bi: "🎨 **Tailles et Couleurs (Suguya) :**\n\nQuand vous ajoutez une marchandise, cochez la case bleue 'Variantes'. Vous pourrez ajouter les tailles et les couleurs.", 
+                s_fr: ["Ajouter marchandise"], action: "stock" 
+            },
+            rupture: { 
+                r_fr: "⚠️ **Marchandise finie :**\n\nL'application vous prévient en rouge quand il reste moins de 5 articles. Triez le stock par 'Stock Faible' pour voir.", 
+                r_bi: "⚠️ **Marchandise finie (A banna) :**\n\nL'application vous prévient en rouge quand il reste moins de 5 articles. Triez le stock par 'Stock Faible' pour voir.", 
+                s_fr: ["Fournisseurs", "Ajouter stock"], action: "stock" 
+            },
+            perte: { 
+                r_fr: "🗑️ **Perte ou Vol :**\n\nSi un article est cassé ou perdu, allez dans Stock, cliquez sur l'article, puis sur le bouton rouge 'Signaler une perte' en bas.", 
+                r_bi: "🗑️ **Perte ou Vol (Tiɲɛna) :**\n\nSi un article est cassé ou perdu, allez dans Stock, cliquez sur l'article, puis sur le bouton rouge 'Signaler une perte' en bas.", 
+                s_fr: ["Journal"], 
+                s_bi: ["Journal (Tariku)"], action: "stock" 
+            },
+            code_barre: { 
+                r_fr: "📷 **Scanner avec le téléphone :**\n\nTouchez l'icône appareil photo 📷 pour scanner un code barre rapidement.", 
+                s_fr: ["Vendre", "Voir le stock"], 
+                s_bi: ["Vendre (Feere)", "Voir le stock (Minen)"], action: "stock" 
+            },
+            depense: { 
+                r_fr: "💸 **Dépenses :**\n\nPour les factures, le transport ou la nourriture, je vous ouvre la page Dépenses pour tout noter.", 
+                r_bi: "💸 **Dépenses (Wari bɔ) :**\n\nPour les factures, le transport ou la nourriture, je vous ouvre la page Dépenses pour tout noter.", 
+                s_fr: ["Bénéfice"], 
+                s_bi: ["Bénéfice (Tono)"], action: "charges" 
+            },
+            bilan: { 
+                r_fr: "📊 **Bénéfices :**\n\nVoici vos chiffres ! L'onglet Bilan calcule votre argent et ce que vous avez gagné.", 
+                r_bi: "📊 **Bénéfices (Tono) :**\n\nVoici vos chiffres ! L'onglet Bilan calcule votre argent et ce que vous avez gagné (Tono sɔrɔ).", 
+                s_fr: ["Exporter PDF", "Dépense"], 
+                s_bi: ["Exporter PDF", "Dépense (Wari bɔ)"], action: "rapports" 
+            },
+            capital: { 
+                r_fr: "🏦 **Capital :**\n\nSur la page Bilan, tapez l'argent que vous avez investi au début dans la case bleue.", 
+                r_bi: "🏦 **Capital (Wari juju) :**\n\nSur la page Bilan, tapez l'argent que vous avez investi au début dans la case bleue.", 
+                s_fr: ["Bénéfice"], 
+                s_bi: ["Bénéfice (Tono)"], action: "rapports" 
+            },
+            pdf: { 
+                r_fr: "📄 **Imprimer le Bilan :**\n\nSur la page Bilan, cliquez sur le bouton rouge PDF pour télécharger vos chiffres.", 
+                r_bi: "📄 **Imprimer le Bilan (Papier) :**\n\nSur la page Bilan, cliquez sur le bouton rouge PDF pour télécharger vos chiffres.", 
+                s_fr: ["Bénéfice"], 
+                s_bi: ["Bénéfice (Tono)"], action: "rapports" 
+            },
+            fournisseur: { 
+                r_fr: "🚚 **Fournisseurs :**\n\nJe vous ouvre votre carnet d'adresses. Vous pourrez enregistrer vos grossistes.", 
+                r_bi: "🚚 **Fournisseurs (Feerekela) :**\n\nJe vous ouvre votre carnet d'adresses. Vous pourrez enregistrer vos grossistes.", 
+                s_fr: ["Voir le stock"] 
+            },
+            catalogue: { 
+                r_fr: "🌐 **Boutique WhatsApp :**\n\nVos clients peuvent voir vos articles sur leur téléphone ! Allez dans 'Profil' ⚙️ et cliquez sur 'Copier' pour partager le lien.", 
+                r_bi: "🌐 **Boutique WhatsApp (Interneti) :**\n\nVos clients peuvent voir vos articles sur leur téléphone ! Allez dans 'Profil' ⚙️ et cliquez sur 'Copier' pour partager le lien.", 
+                s_fr: ["Voir les commandes"] 
+            },
+            equipe: { 
+                r_fr: "👥 **Ajouter un vendeur :**\n\nAllez dans le menu et cliquez sur 'Gestion Équipe' pour donner un code d'accès à votre employé.", 
+                r_bi: "👥 **Ajouter un vendeur (Baarakɛla) :**\n\nAllez dans le menu et cliquez sur 'Gestion Équipe' pour donner un code d'accès à votre employé.", 
+                s_fr: ["Journal"], 
+                s_bi: ["Journal (Tariku)"] 
+            },
+            audit: { 
+                r_fr: "🔍 **Journal :**\n\nC'est la mémoire de la boutique. Tout ce qui est fait ou effacé est écrit ici. Impossible de tricher !", 
+                r_bi: "🔍 **Journal (Tariku) :**\n\nC'est la mémoire de la boutique. Tout ce qui est fait ou effacé est écrit ici. Impossible de tricher !", 
+                s_fr: ["Bénéfice"], 
+                s_bi: ["Bénéfice (Tono)"] 
+            },
+            pwa: { 
+                r_fr: "📲 **Mettre sur le téléphone :**\n\nPour installer l'application, ouvrez le menu de votre navigateur (Chrome/Safari) et choisissez 'Installer' ou 'Sur l'écran d'accueil'.", 
+                s_fr: [] 
+            },
+            mode_sombre: { 
+                r_fr: "🌙 **Mode Nuit :**\n\nOuvrez le menu sur le côté et cliquez sur 'Mode Sombre' pour protéger vos yeux.", 
+                r_bi: "🌙 **Mode Nuit (Dibi) :**\n\nOuvrez le menu sur le côté et cliquez sur 'Mode Sombre' pour protéger vos yeux.", 
+                s_fr: [] 
+            }
         };
 
         // ── Réponse de secours ──
         const fallback = {
-            r: isNegative 
+            r_fr: isNegative 
+                ? "Un problème ? 🤔 Dites-moi simplement : 'Je veux vendre' ou 'Voir le bénéfice'." 
+                : "Je n'ai pas bien compris. Parlez-moi simplement :\n\n→ **Vendre**\n→ **Bénéfice**\n→ **Crédit**\n→ **Stock**",
+            r_bi: isNegative 
                 ? "Un problème ? 🤔 Dites-moi simplement : 'Je veux vendre' ou 'Voir le bénéfice'." 
                 : "Je n'ai pas bien compris. Parlez-moi simplement :\n\n→ **'Feere'** (Vendre)\n→ **'Tono'** (Bénéfice)\n→ **'Juru'** (Crédit)\n→ **'Minen'** (Stock)",
-            s: ["Vendre (Feere)", "Stock (Minen)", "Bénéfice (Tono)"]
+            s_fr: ["Vendre", "Stock", "Bénéfice"],
+            s_bi: ["Vendre (Feere)", "Stock (Minen)", "Bénéfice (Tono)"]
         };
 
         const result = bestTopic && KB[bestTopic] ? KB[bestTopic] : fallback;
 
         return {
-            response: result.r,
+            response: isBambaraUser ? (result.r_bi || result.r_fr) : result.r_fr,
             topic: bestTopic || 'erreur',
-            suggestions: result.s || [],
+            suggestions: isBambaraUser ? (result.s_bi || result.s_fr) : result.s_fr,
             action: result.action || null
         };
     }
